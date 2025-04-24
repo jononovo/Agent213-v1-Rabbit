@@ -65,7 +65,7 @@ async function processNodeDefinitions(modules: Record<string, any>, folderPath: 
       // Register the node
       discoveredNodes.set(definition.type, {
         id: definition.type,
-        name: definition.name || definition.type,
+        name: definition.name || definition.displayName || definition.type,
         description: definition.description || '',
         category: definition.category || 'custom',
         icon: definition.icon || null,
