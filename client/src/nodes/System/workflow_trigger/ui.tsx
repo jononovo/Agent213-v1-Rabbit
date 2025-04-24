@@ -115,7 +115,28 @@ export const component = function WorkflowTriggerNode({
           type: 'checkbox',
           description: 'Wait for the workflow to complete before continuing'
         }
-      ]
+      ],
+      // Add onChange handler for immediate UI updates
+      onChange: (fieldKey: string, value: any) => {
+        // Immediately reflect changes in the node data
+        if (fieldKey === 'workflowId') {
+          // Get the workflow name for the selected ID
+          const workflow = availableWorkflows.find(w => w.id.toString() === value.toString());
+          const workflowName = workflow ? workflow.name : `ID: ${value}`;
+          
+          console.log(`Selected workflow: ${workflowName} (ID: ${value})`);
+          
+          // Update the node data to show changes immediately
+          if (typeof (data as any).onChange === 'function') {
+            (data as any).onChange({
+              ...data,
+              workflowId: value,
+              // Make sure it immediately updates the UI
+              _refresh: Date.now()
+            });
+          }
+        }
+      }
     };
     
     // Add the settings to the node data using onChange
@@ -132,7 +153,11 @@ export const component = function WorkflowTriggerNode({
   // Get selected workflow name for display
   const getSelectedWorkflowName = () => {
     if (!nodeData.workflowId) return 'None selected';
-    const workflow = availableWorkflows.find(w => w.id === nodeData.workflowId);
+    // Convert workflowId to number if it's a string
+    const workflowIdNum = typeof nodeData.workflowId === 'string' 
+      ? parseInt(nodeData.workflowId) 
+      : nodeData.workflowId;
+    const workflow = availableWorkflows.find(w => w.id === workflowIdNum);
     return workflow ? workflow.name : `ID: ${nodeData.workflowId}`;
   };
   
@@ -189,15 +214,14 @@ export const component = function WorkflowTriggerNode({
         <div className="p-3 text-sm">
           {isConfigured ? (
             <div className="text-slate-700">
-              <p className="flex items-center">
-                <span className="font-medium text-slate-600">Workflow:</span>
-                <span className="ml-1 text-sm">{getSelectedWorkflowName()}</span>
+              <p className="text-lg font-medium text-slate-800">
+                Workflow: {getSelectedWorkflowName()}
               </p>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-sm text-slate-600 mt-2">
                 Input Field: {nodeData.inputField || 'json'}
               </p>
               {nodeData.waitForCompletion === false && (
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 mt-1">
                   Runs asynchronously
                 </p>
               )}
