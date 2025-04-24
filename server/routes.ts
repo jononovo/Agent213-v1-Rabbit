@@ -681,6 +681,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Lead Generation API endpoint
+  app.post('/api/lead-generation', processLeadGenRequest);
+  
   // Execute a tool directly (for testing)
   app.post('/api/tools/execute', async (req: Request, res: Response) => {
     try {

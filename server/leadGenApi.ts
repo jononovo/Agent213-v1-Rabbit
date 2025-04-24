@@ -170,7 +170,9 @@ export async function processLeadGenRequest(req: Request, res: Response) {
               body: JSON.stringify({
                 requestId,
                 success: false,
-                error: workflowError.message
+                error: typeof workflowError === 'object' && workflowError !== null && 'message' in workflowError 
+                  ? String(workflowError.message) 
+                  : 'Unknown workflow execution error'
               })
             });
           } catch (webhookError) {
