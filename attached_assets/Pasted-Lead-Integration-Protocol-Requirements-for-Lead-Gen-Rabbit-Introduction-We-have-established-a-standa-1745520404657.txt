@@ -1,0 +1,143 @@
+Lead Integration Protocol Requirements for Lead-Gen Rabbit
+Introduction
+We have established a standardized integration protocol with Lead-Gen Lion that we require all lead generation providers to follow. This document outlines the exact requirements for integrating Lead-Gen Rabbit with our platform using the same webhook-based approach.
+
+Webhook Endpoint Requirement
+Your system must expose a webhook endpoint with the following URL structure:
+
+/api/webhooks/workflow/{workflowId}/node/webhook_trigger-1
+Where {workflowId} is a unique identifier for your lead generation workflow.
+
+Integration Flow
+1. Request Format (Our Platform → Your System)
+We will send POST requests to your webhook endpoint with the following JSON structure:
+
+{
+  "searchId": "unique-identifier-optional",
+  "query": "The search query string",
+  "moduleTypes": ["COMPANY_OVERVIEW", "DECISION_MAKER", "EMAIL_DISCOVERY"],
+  "configuration": {
+    "incrementalUpdates": true,
+    "validationThresholds": {
+      "companyScore": 60,
+      "contactScore": 70,
+      "emailScore": 65
+    },
+    "filterCriteria": {
+      "industries": ["insurance", "technology"],
+      "companySize": { "min": 50, "max": 1000 },
+      "locations": ["New York", "California"]
+    }
+  },
+  "callbackUrl": "https://our-platform.example.com/api/external-workflow/webhook"
+}
+2. Initial Response (Your System → Our Platform)
+Your system must immediately respond with a 200 status code and this JSON structure:
+
+{
+  "success": true,
+  "message": "Lead generation workflow started",
+  "searchId": "unique-identifier",
+  "status": "in_progress"
+}
+3. Incremental Updates (Your System → Our Platform)
+As your workflow progresses, you must send incremental updates to our callbackUrl at specific completion milestones (minimum: 10%, 35%, and 70% completion points), using this format:
+
+{
+  "searchId": "same-identifier-from-request",
+  "status": "in_progress",
+  "stage": "COMPANY_OVERVIEW|DECISION_MAKER|EMAIL_DISCOVERY",
+  "progress": 10|35|70,
+  "timestamp": "2025-04-25T12:34:56Z",
+  "results": {
+    // Partial results available at that stage
+    "companies": [
+      // Partial company data
+    ],
+    "contacts": [
+      // Partial contact data, if available
+    ],
+    "metadata": {
+      "moduleType": "COMPANY_OVERVIEW",
+      "completedSearches": ["COMPANY_OVERVIEW"],
+      "validationScores": {
+        "companyValidation": 85
+      }
+    }
+  }
+}
+4. Final Response (Your System → Our Platform)
+Upon completion, you must send a final response with the complete result set:
+
+{
+  "searchId": "same-identifier-from-request",
+  "status": "completed",
+  "timestamp": "2025-04-25T12:45:00Z",
+  "results": {
+    "companies": [
+      {
+        "name": "Company Name",
+        "website": "https://example.com",
+        "industry": "Technology",
+        "size": "100-500",
+        "location": "New York, NY",
+        "description": "Company description",
+        "validationScore": 85
+      }
+    ],
+    "contacts": [
+      {
+        "name": "John Smith",
+        "role": "CEO",
+        "department": "Executive",
+        "email": "john.smith@example.com",
+        "nameConfidenceScore": 95,
+        "emailValidationScore": 80,
+        "seniority": 100,
+        "isDecisionMaker": true
+      }
+    ],
+    "metadata": {
+      "moduleType": "EMAIL_DISCOVERY",
+      "completedSearches": ["COMPANY_OVERVIEW", "DECISION_MAKER", "EMAIL_DISCOVERY"],
+      "validationScores": {
+        "companyValidation": 85,
+        "contactValidation": 90
+      }
+    }
+  }
+}
+5. Error Handling
+If errors occur during processing, you must send an error response:
+
+{
+  "searchId": "same-identifier-from-request",
+  "status": "failed",
+  "timestamp": "2025-04-25T12:45:00Z",
+  "error": "Detailed error message"
+}
+Authentication Requirements
+Your system must support Bearer token authentication:
+
+Authorization: Bearer YOUR_API_KEY
+You must provide us with an API key through a secure channel.
+
+Technical Requirements
+Response Times: Initial acknowledgment must be sent within 5 seconds of receiving the request.
+
+Update Frequency: Incremental updates must be sent at minimum completion milestones (10%, 35%, 70%) or more frequently.
+
+Processing Time: Complete search operations should aim to finish within 5 minutes.
+
+Data Quality:
+
+All company records must include at minimum: name, website, industry, size, and location
+All contact records must include at minimum: name, role, and email (when discovered)
+All validation scores must use a consistent scale (0-100)
+Rate Limiting: Your system should handle at least 10 concurrent search requests.
+
+Compliance Verification
+Before we can integrate your system into our production environment, we will perform a series of integration tests to verify compliance with this protocol. Any deviations from this specification will require correction before approval.
+
+Please confirm that Lead-Gen Rabbit can fully comply with this integration protocol, or identify any areas where modifications may be required.
+

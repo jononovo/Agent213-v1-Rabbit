@@ -370,10 +370,23 @@ async function handleWebhookRequest(
   workflowId: number,
   nodeId: string
 ): Promise<void> {
+  const requestId = uuidv4();
+  console.log(`[${requestId}] Webhook request received:`, {
+    workflowId,
+    nodeId,
+    method: req.method,
+    path: req.path,
+    headers: req.headers,
+    body: req.body,
+    query: req.query,
+    params: req.params
+  });
+  
   try {
     // Get the workflow
     const workflow = await storage.getWorkflow(workflowId);
     if (!workflow) {
+      console.log(`[${requestId}] Webhook error: Workflow ${workflowId} not found`);
       return res.status(404).json({ 
         success: false, 
         message: "Webhook target workflow not found" 
@@ -387,27 +400,39 @@ async function handleWebhookRequest(
       method: req.method,
       query: req.query,
       params: req.params,
-      nodeId: nodeId
+      nodeId: nodeId,
+      requestId: requestId
     };
 
     // Execute the workflow with the webhook data
-    console.log(`Executing workflow ${workflowId} via webhook trigger, node ${nodeId}`);
+    console.log(`[${requestId}] Executing workflow ${workflowId} via webhook trigger, node ${nodeId}`);
     const result = await runWorkflow(workflowId, webhookInput, { 
       includeDetail: false,
-      executionMode: "webhook"
+      executionMode: "webhook",
+      debug: true // Enable debug mode for more detailed logs
+    });
+
+    console.log(`[${requestId}] Webhook execution complete:`, {
+      status: 'success',
+      workflowId,
+      nodeId,
+      executionTime: result.executionDetails?.executionTime,
+      nodesExecuted: result.executionDetails?.nodesExecuted
     });
 
     // Return the workflow execution result
     res.json({
       success: true,
       message: "Webhook received and workflow executed",
+      requestId: requestId,
       result: result.output
     });
   } catch (error) {
-    console.error("Webhook execution error:", error);
+    console.error(`[${requestId}] Webhook execution error:`, error);
     res.status(500).json({ 
       success: false, 
       message: "Error processing webhook", 
+      requestId: requestId,
       error: error instanceof Error ? error.message : String(error)
     });
   }
