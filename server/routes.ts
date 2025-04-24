@@ -1796,7 +1796,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate request body
       const executeSchema = z.object({
+        // Support both input and inputs fields (for compatibility with different client implementations)
         input: z.any().optional(),
+        inputs: z.any().optional(),
+        // Support for workflow runner specific options
+        waitForResult: z.boolean().optional(),
+        timeout: z.number().optional(),
         options: z.object({
           includeDetail: z.boolean().optional(),
           debug: z.boolean().optional(),
@@ -1813,10 +1818,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const { input, options } = result.data;
+      // Extract input data, prioritizing inputs field if both are present
+      const inputData = result.data.inputs || result.data.input || {};
+      
+      // Merge options with workflow runner specific options
+      const options: Record<string, any> = {
+        ...(result.data.options || {}),
+        ...(result.data.waitForResult !== undefined ? { waitForResult: result.data.waitForResult } : {}),
+        ...(result.data.timeout !== undefined ? { timeout: result.data.timeout } : {})
+      };
       
       // Execute the workflow
-      const outcome = await runWorkflow(id, input || {}, options || {});
+      const outcome = await runWorkflow(id, inputData, options);
       
       // Return the result
       res.json(outcome);
