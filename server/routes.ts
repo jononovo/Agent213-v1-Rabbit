@@ -16,6 +16,7 @@ import { log } from "./vite";
 import { workflowGenerationService } from "./services/workflowGenerationService";
 import { createAgentCoordinator } from "./services/agentCoordinator";
 import { registerAllTools } from "./tools/implementations";
+import { processLeadGenRequest } from "./leadGenApi";
 
 /**
  * Utility function to execute a workflow
