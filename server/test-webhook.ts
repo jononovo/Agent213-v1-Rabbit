@@ -90,11 +90,10 @@ async function testSimplifiedCompanySearch() {
     }
   };
   
-  // Step 4: Send 100% completed result
+  // Step 4: Send 100% completed result - using exact format specified by Lead Gen Rabbit
   const data100pct = {
     searchId,
     status: "completed",
-    stage: "COMPANY_SEARCH_COMPLETE",
     progress: 100,
     results: {
       companies: [
@@ -102,37 +101,41 @@ async function testSimplifiedCompanySearch() {
           name: "Example Tech Inc",
           website: "https://exampletech.com",
           industry: "Technology",
-          score: 92,
+          location: "San Francisco, CA",
           description: "A technology company specializing in software development",
-          address: "123 Tech Way, San Francisco, CA",
-          employees: "50-100",
-          founded: 2015
+          employeeCount: 75,
+          foundedYear: 2015,
+          revenue: "$10M-$50M",
+          headquarters: "San Francisco, CA"
         },
         {
           name: "Sample Solutions LLC",
           website: "https://samplesolutions.com",
           industry: "Business Services",
-          score: 85,
+          location: "Chicago, IL",
           description: "Business solutions provider focusing on digital transformation",
-          address: "456 Business Blvd, Chicago, IL",
-          employees: "10-50",
-          founded: 2018
+          employeeCount: 32,
+          foundedYear: 2018,
+          revenue: "$1M-$10M",
+          headquarters: "Chicago, IL"
         },
         {
           name: "Acme Enterprises",
           website: "https://acme-enterprises.com",
           industry: "Manufacturing",
-          score: 78,
+          location: "Detroit, MI",
           description: "Manufacturing company with global reach",
-          address: "789 Industry Ave, Detroit, MI",
-          employees: "100-250",
-          founded: 2005
+          employeeCount: 147,
+          foundedYear: 2005,
+          revenue: "$50M-$100M",
+          headquarters: "Detroit, MI"
         }
       ],
       metadata: {
-        moduleType: "COMPANY_SEARCH",
-        completedSearches: ["initial", "refinement", "validation"],
-        message: "Company search completed successfully."
+        moduleType: "COMPANY_OVERVIEW",
+        validationScores: {
+          companyScore: 85
+        }
       }
     }
   };
