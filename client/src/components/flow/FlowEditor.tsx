@@ -902,6 +902,41 @@ const FlowEditor = ({
         ));
       }
     };
+    
+    // Handler for node data update events (used by workflow_trigger node)
+    const handleNodeDataUpdate = (event: CustomEvent) => {
+      if (event.detail && event.detail.nodeId && event.detail.data) {
+        const { nodeId, data: updatedData } = event.detail;
+        
+        console.log('Node data update for node:', nodeId, updatedData);
+        
+        // Update the node with the new data
+        setNodes((nds) =>
+          nds.map((node) => {
+            if (node.id === nodeId) {
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  ...updatedData
+                }
+              };
+            }
+            return node;
+          })
+        );
+        
+        // Save workflow after node data update
+        if (saveMutation && saveMutation.mutate) {
+          saveMutation.mutate({
+            id: workflow?.id,
+            name,
+            nodes,
+            edges
+          });
+        }
+      }
+    };
 
     // Add event listeners for custom events
     window.addEventListener('node-settings-open', handleNodeSettingsOpen as EventListener);
@@ -911,6 +946,7 @@ const FlowEditor = ({
     window.addEventListener('node-delete', handleNodeDelete as EventListener);
     window.addEventListener('node-duplicate', handleNodeDuplicate as EventListener);
     window.addEventListener('node-note-update', handleNodeNoteUpdate as EventListener);
+    window.addEventListener('node-data-update', handleNodeDataUpdate as EventListener);
     
     // Cleanup function to remove event listeners
     return () => {
@@ -921,6 +957,7 @@ const FlowEditor = ({
       window.removeEventListener('node-delete', handleNodeDelete as EventListener);
       window.removeEventListener('node-duplicate', handleNodeDuplicate as EventListener);
       window.removeEventListener('node-note-update', handleNodeNoteUpdate as EventListener);
+      window.removeEventListener('node-data-update', handleNodeDataUpdate as EventListener);
     };
   }, [nodes, setNodes, setSelectedNode, setSettingsDrawerOpen, name, edges, saveMutation, toast]);
   

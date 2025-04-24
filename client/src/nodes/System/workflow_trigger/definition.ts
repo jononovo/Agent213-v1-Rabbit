@@ -5,33 +5,32 @@
  * enabling modular workflow design and orchestration.
  */
 
-import { NodeDefinition } from '@/nodes/types';
+import { NodeDefinition } from '@/types';
 import { defaultData } from './executor';
 
 export const definition: NodeDefinition = {
   type: 'workflow_trigger',
   name: 'Workflow Trigger',
-  description: 'Triggers another workflow from within a workflow, allowing for modular workflow design',
-  category: 'actions',
-  version: '1.0.0',
-  icon: 'git-branch',  // Use string icon identifier instead of React component
+  description: 'Trigger and optionally wait for another workflow to complete',
+  category: 'System',
+  version: 1,
+  documentationUrl: '/docs/nodes/workflow-trigger',
+  icon: 'GitBranch',
   inputs: {
     input: {
       type: 'any',
-      description: 'Input data to pass to the triggered workflow'
+      description: 'Input data to send to the triggered workflow',
+      isArray: false,
+      optional: false
     }
   },
   outputs: {
     output: {
       type: 'any',
-      description: 'Output data received from the triggered workflow'
-    },
-    error: {
-      type: 'string',
-      description: 'Error message if workflow execution failed'
+      description: 'Result data from the executed workflow',
+      isArray: false
     }
   },
-  // We'll use custom UI for workflow selection instead of simple configOptions
   defaultData
 };
 

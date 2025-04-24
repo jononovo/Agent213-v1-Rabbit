@@ -5,10 +5,8 @@
  * managing API calls to trigger other workflows and process their results.
  */
 
-import { createNodeOutput, createErrorOutput } from '@/nodes/nodeOutputUtils';
-import { NodeExecutionData } from '@/nodes/types';
+import type { NodeExecutionData, WorkflowItem } from '@shared/nodeTypes';
 
-// Define configuration data interface for this node
 export interface WorkflowTriggerNodeData {
   workflowId: number | null;
   inputField: string;
@@ -16,23 +14,24 @@ export interface WorkflowTriggerNodeData {
   waitForCompletion: boolean;
 }
 
-// Default configuration for the node
+// Default values for node data
 export const defaultData: WorkflowTriggerNodeData = {
   workflowId: null,
-  inputField: 'json',
-  timeout: 30000,
+  inputField: 'json',  // 'json', 'text', or 'content'
+  timeout: 30000,      // Default timeout: 30 seconds
   waitForCompletion: true
 };
 
-// Helper function to make API requests
+/**
+ * Helper function to make API requests
+ */
 async function apiRequest(endpoint: string, method: string = 'GET', data?: any): Promise<any> {
-  const url = endpoint.startsWith('http') ? endpoint : `/api${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  const url = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   
   const options: RequestInit = {
     method,
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
     },
     credentials: 'same-origin'
   };
@@ -41,18 +40,22 @@ async function apiRequest(endpoint: string, method: string = 'GET', data?: any):
     options.body = JSON.stringify(data);
   }
   
-  const response = await fetch(url, options);
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`API request failed: ${response.status} ${response.statusText}\n${errorText}`);
-  }
-  
   try {
-    return await response.json();
-  } catch (error) {
-    // Return text if not valid JSON
+    const response = await fetch(url, options);
+    
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+    }
+    
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return await response.json();
+    }
+    
     return await response.text();
+  } catch (error) {
+    console.error(`API request error for ${endpoint}:`, error);
+    throw error;
   }
 }
 
@@ -61,90 +64,79 @@ async function apiRequest(endpoint: string, method: string = 'GET', data?: any):
  */
 export const execute = async (
   data: WorkflowTriggerNodeData, 
-  inputs: Record<string, any>
-): Promise<Record<string, any>> => {
-  console.log('Workflow Trigger Node - Starting execution', data);
+  inputs: NodeExecutionData
+): Promise<NodeExecutionData> => {
+  console.log('Executing workflow trigger node with data:', data);
   
-  const startTime = new Date();
+  // Validate required workflow ID
+  if (!data.workflowId) {
+    throw new Error('No workflow selected. Please configure the node with a valid workflow.');
+  }
+  
+  // Get input data
+  const inputItems = inputs?.items || [];
+  if (!inputItems.length) {
+    throw new Error('No input data received');
+  }
   
   try {
-    // Extract configuration from node data
-    const workflowId = data.workflowId;
-    const inputField = data.inputField || 'json';
-    const timeout = data.timeout || 30000;
-    const waitForCompletion = data.waitForCompletion !== false; // Default to true
+    const startTime = new Date();
+    console.log(`Triggering workflow ID ${data.workflowId} with ${inputItems.length} items`);
     
-    // Validate workflow ID
-    if (!workflowId) {
-      return createErrorOutput('Missing workflow ID in configuration');
-    }
-    
-    // Extract input data from connected nodes
-    let inputData: any = null;
-    
-    if (inputs && Object.keys(inputs).length > 0) {
-      const firstInput = Object.values(inputs)[0];
-      if (firstInput?.items?.length > 0) {
-        const item = firstInput.items[0];
-        
-        // Get data based on specified input field
-        if (inputField === 'json' && item.json) {
-          inputData = item.json;
-        } else if (inputField === 'text' && item.json?.text) {
-          inputData = item.json.text;
-        } else if (inputField === 'content' && item.json?.content) {
-          inputData = item.json.content;
-        } else {
-          // Default fallback - use whatever we can get
-          inputData = item.json || item.text || item;
+    // Format the input data based on the selected inputField
+    const triggerPayload = {
+      workflowId: data.workflowId,
+      inputData: inputItems.map(item => {
+        if (data.inputField === 'json') {
+          return item.json;
+        } else if (data.inputField === 'text') {
+          return item.text;
+        } else if (data.inputField === 'content' && item.json?.content) {
+          return item.json.content;
         }
-      }
-    }
-    
-    // Execute the workflow via API
-    console.log(`Triggering workflow ${workflowId} with input:`, inputData);
-    
-    // Create a promise for the API call
-    const responsePromise = apiRequest(`/workflows/${workflowId}/execute`, 'POST', {
-      input: inputData,
-      metadata: {
-        source: 'workflow_trigger',
-        parentNodeId: data.id || 'unknown',
-        waitForCompletion
-      }
-    });
-    
-    // Handle timeout if configured
-    let response;
-    if (timeout > 0) {
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error(`Workflow execution timed out after ${timeout}ms`)), timeout);
-      });
-      
-      response = await Promise.race([responsePromise, timeoutPromise]);
-    } else {
-      response = await responsePromise;
-    }
-    
-    console.log(`Workflow ${workflowId} execution completed:`, response);
-    
-    // Format the response as a workflow item for output
-    const outputItem = {
-      json: response?.data || response,
-      text: typeof response?.data === 'string' ? response.data : JSON.stringify(response)
+        return item;
+      })
     };
     
-    return createNodeOutput({
-      output: outputItem.json,
-      error: null
-    }, { startTime, workflowId, executionId: response?.executionId || 'unknown' });
-  } catch (error: any) {
-    console.error('Workflow Trigger Node - Execution error:', error);
+    // Call the API to trigger the workflow
+    let workflowResult;
+    if (data.waitForCompletion) {
+      // Execute and wait for results
+      workflowResult = await apiRequest('/api/workflows/execute', 'POST', {
+        workflowId: data.workflowId,
+        input: triggerPayload.inputData,
+        timeout: data.timeout
+      });
+    } else {
+      // Trigger execution without waiting
+      workflowResult = await apiRequest('/api/workflows/trigger', 'POST', {
+        workflowId: data.workflowId,
+        input: triggerPayload.inputData
+      });
+    }
     
-    // Return an error result that can be handled downstream
-    return createErrorOutput(error.message || 'Unknown error', {
-      startTime,
-      details: error.response?.data || error.stack
-    });
+    // Process the result
+    const endTime = new Date();
+    const processedItems: WorkflowItem[] = [
+      {
+        json: workflowResult,
+        text: JSON.stringify(workflowResult)
+      }
+    ];
+    
+    // Return the output data
+    return {
+      items: processedItems,
+      meta: {
+        startTime,
+        endTime,
+        source: 'workflow_trigger',
+        details: workflowResult
+      }
+    };
+  } catch (error: any) {
+    console.error('Error executing workflow trigger:', error);
+    const errorMessage = error.message || 'Unknown error occurred';
+    throw new Error(`Workflow trigger error: ${errorMessage}`);
   }
 };
