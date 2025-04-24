@@ -1,0 +1,83 @@
+{
+  "name": "Company Search Workflow",
+  "description": "Searches for companies based on user input criteria",
+  "nodes": [
+    {
+      "id": "text_input-1",
+      "type": "text_input",
+      "position": {
+        "x": 100,
+        "y": 100
+      },
+      "data": {
+        "label": "Search Input",
+        "description": "Input search criteria for companies"
+      }
+    },
+    {
+      "id": "company_search-1",
+      "type": "company_search",
+      "position": {
+        "x": 400,
+        "y": 100
+      },
+      "data": {
+        "prompt": "",
+        "includeIndustry": true,
+        "includeEmployeeCount": true,
+        "includeRevenue": true,
+        "includeFunding": true,
+        "includeDescription": true,
+        "maxResults": 5
+      }
+    },
+    {
+      "id": "json_parser-1",
+      "type": "json_parser",
+      "position": {
+        "x": 700,
+        "y": 100
+      },
+      "data": {
+        "path": "companies"
+      }
+    },
+    {
+      "id": "workflow_trigger-1",
+      "type": "workflow_trigger",
+      "position": {
+        "x": 1000,
+        "y": 100
+      },
+      "data": {
+        "workflowId": null,
+        "inputField": "json",
+        "timeout": 30000,
+        "waitForCompletion": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-input-search-1",
+      "source": "text_input-1",
+      "target": "company_search-1",
+      "sourceHandle": "text",
+      "targetHandle": "query"
+    },
+    {
+      "id": "edge-search-parser-1",
+      "source": "company_search-1",
+      "target": "json_parser-1",
+      "sourceHandle": "companies",
+      "targetHandle": "json"
+    },
+    {
+      "id": "edge-parser-trigger-1",
+      "source": "json_parser-1",
+      "target": "workflow_trigger-1",
+      "sourceHandle": "json",
+      "targetHandle": "input"
+    }
+  ]
+}
