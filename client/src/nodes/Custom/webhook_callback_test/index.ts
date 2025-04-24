@@ -1,25 +1,21 @@
 /**
- * Webhook Callback Test Node
+ * Webhook Callback Test Node Index
  * 
- * This exports the node definition and implementation
+ * This file exports all components for the Webhook Callback Test Node
  */
 
-import { definition, interfaceDefinition, settingsDefinition } from './definition';
-import { execute } from './executor';
+import { definition } from './definition';
 import { component } from './ui';
+import { execute } from './executor';
 
 export { 
   definition,
-  interfaceDefinition,
-  settingsDefinition,
   component,
   execute
 };
 
 export default {
   definition,
-  interfaceDefinition,
-  settingsDefinition,
   component,
   execute
 };
