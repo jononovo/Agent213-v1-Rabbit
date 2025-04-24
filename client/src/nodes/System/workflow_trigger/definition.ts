@@ -17,6 +17,7 @@ const defaultData = {
 
 export const definition: NodeDefinition = {
   type: 'workflow_trigger',
+  name: 'Workflow Trigger',
   displayName: 'Workflow Trigger',
   description: 'Trigger and optionally wait for another workflow to complete',
   category: 'actions',
