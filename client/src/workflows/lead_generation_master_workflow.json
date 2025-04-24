@@ -3,54 +3,52 @@
   "description": "Orchestrates the entire lead generation process from company search to contact discovery and email verification",
   "nodes": [
     {
-      "id": "text_input-1",
-      "type": "text_input",
+      "id": "webhook_trigger-1",
+      "type": "webhook_trigger",
       "position": {
         "x": 100,
-        "y": 200
+        "y": 100
       },
       "data": {
-        "label": "Company Search Query",
-        "description": "Enter search criteria for target companies",
-        "placeholder": "Tech companies in Healthcare sector with 50-200 employees",
-        "defaultValue": ""
-      }
-    },
-    {
-      "id": "text_input-2",
-      "type": "text_input",
-      "position": {
-        "x": 100,
-        "y": 350
-      },
-      "data": {
-        "label": "Target Job Titles",
-        "description": "Enter job titles to target, separated by commas",
-        "placeholder": "CEO, CTO, VP of Engineering, Head of Product",
-        "defaultValue": "CEO, CTO, VP of Engineering, VP of Marketing, VP of Sales"
+        "label": "Lead Generation API",
+        "description": "External API webhook for lead generation requests",
+        "method": "POST",
+        "responseMode": "async",
+        "authentication": "none"
       }
     },
     {
       "id": "function_node-1",
       "type": "function_node",
       "position": {
-        "x": 400,
-        "y": 350
+        "x": 350,
+        "y": 100
       },
       "data": {
-        "code": "function process(input) {\n  // Split comma-separated string into array of job titles\n  const titles = input.split(',').map(title => title.trim()).filter(title => title.length > 0);\n  return titles;\n}"
+        "code": "function process(input) {\n  // Extract data from webhook payload\n  const payload = input.payload || {};\n  \n  return {\n    searchQuery: payload.searchQuery || '',\n    targetTitles: payload.targetTitles || 'CEO, CTO, VP of Engineering, VP of Marketing, VP of Sales',\n    maxResults: payload.maxResults || 10,\n    includeLinkedIn: payload.includeLinkedIn !== false,\n    includeEmail: payload.includeEmail !== false,\n    includePhone: payload.includePhone === true,\n    webhookUrl: payload.webhookUrl,\n    exportFormat: payload.exportFormat || 'json'\n  };\n}"
+      }
+    },
+    {
+      "id": "function_node-2",
+      "type": "function_node",
+      "position": {
+        "x": 350,
+        "y": 250
+      },
+      "data": {
+        "code": "function process(input) {\n  // Extract and process the target titles\n  const titles = input.targetTitles.split(',').map(title => title.trim()).filter(title => title.length > 0);\n  return {\n    ...input,\n    processedTitles: titles\n  };\n}"
       }
     },
     {
       "id": "workflow_trigger-1",
       "type": "workflow_trigger",
       "position": {
-        "x": 400,
-        "y": 200
+        "x": 600,
+        "y": 100
       },
       "data": {
         "workflowId": null,
-        "inputField": "text",
+        "inputField": "searchQuery",
         "timeout": 30000,
         "waitForCompletion": true,
         "label": "Company Search Workflow"
@@ -129,17 +127,24 @@
   ],
   "edges": [
     {
-      "id": "edge-input1-trigger1-1",
-      "source": "text_input-1",
-      "target": "workflow_trigger-1",
-      "sourceHandle": "text",
+      "id": "edge-webhook-function1-1",
+      "source": "webhook_trigger-1",
+      "target": "function_node-1",
+      "sourceHandle": "output",
       "targetHandle": "input"
     },
     {
-      "id": "edge-input2-function-1",
-      "source": "text_input-2",
-      "target": "function_node-1",
-      "sourceHandle": "text",
+      "id": "edge-function1-function2-1",
+      "source": "function_node-1",
+      "target": "function_node-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-function2-workflow1-1",
+      "source": "function_node-2",
+      "target": "workflow_trigger-1",
+      "sourceHandle": "output",
       "targetHandle": "input"
     },
     {

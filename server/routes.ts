@@ -16,7 +16,6 @@ import { log } from "./vite";
 import { workflowGenerationService } from "./services/workflowGenerationService";
 import { createAgentCoordinator } from "./services/agentCoordinator";
 import { registerAllTools } from "./tools/implementations";
-import { processLeadGenRequest } from "./leadGenApi";
 
 /**
  * Utility function to execute a workflow
@@ -681,8 +680,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Lead Generation API endpoint
-  app.post('/api/lead-generation', processLeadGenRequest);
   
   // Execute a tool directly (for testing)
   app.post('/api/tools/execute', async (req: Request, res: Response) => {
