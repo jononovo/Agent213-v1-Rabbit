@@ -1,0 +1,106 @@
+External Workflow Integration Protocol
+This document outlines the API and webhook integration requirements for our business intelligence platform.
+
+1. Search Request Format (From Our Platform → Your System)
+Our platform will make POST requests to your designated endpoint with the following JSON structure:
+
+{
+  "searchId": "unique-identifier-optional",
+  "query": "The search query string",
+  "moduleTypes": ["COMPANY_OVERVIEW", "DECISION_MAKER", "EMAIL_DISCOVERY"],
+  "configuration": {
+    "incrementalUpdates": true,
+    "validationThresholds": {
+      "companyScore": 60,
+      "contactScore": 70,
+      "emailScore": 65
+    },
+    "filterCriteria": {
+      "industries": ["insurance", "technology"],
+      "companySize": { "min": 50, "max": 1000 },
+      "locations": ["New York", "California"]
+    }
+  },
+  "callbackUrl": "https://our-platform.example.com/api/external-workflow/webhook"
+}
+Field Descriptions:
+searchId: Optional unique identifier for the search (if not provided, your system should generate one)
+query: The main search query (required)
+moduleTypes: Array of search module types to execute (optional, defaults to all modules)
+configuration: Optional settings for the search process
+callbackUrl: URL where search results should be sent (required)
+2. Search Result Format (From Your System → Our Platform)
+Your system should send results to our webhook endpoint using the following JSON structure:
+
+{
+  "searchId": "same-identifier-from-request",
+  "status": "in_progress|completed|failed",
+  "stage": "COMPANY_OVERVIEW|DECISION_MAKER|EMAIL_DISCOVERY",
+  "progress": 75,
+  "timestamp": "2025-04-25T12:34:56Z",
+  "results": {
+    "companies": [
+      {
+        "name": "Company Name",
+        "website": "https://example.com",
+        "industry": "Technology",
+        "size": "100-500",
+        "location": "New York, NY",
+        "description": "Company description",
+        "validationScore": 85
+      }
+    ],
+    "contacts": [
+      {
+        "name": "John Smith",
+        "role": "CEO",
+        "department": "Executive",
+        "email": "john.smith@example.com",
+        "nameConfidenceScore": 95,
+        "emailValidationScore": 80,
+        "seniority": 100,
+        "isDecisionMaker": true
+      }
+    ],
+    "metadata": {
+      "moduleType": "DECISION_MAKER",
+      "completedSearches": ["companyOverview", "decisionMakerSearch"],
+      "validationScores": {
+        "companyValidation": 85,
+        "contactValidation": 90
+      }
+    }
+  },
+  "error": "Error message if status is 'failed'"
+}
+Field Descriptions:
+searchId: The identifier matching the initial request
+status: Current status of the search process
+stage: Current processing stage (only for 'in_progress' status)
+progress: Percentage completion (0-100)
+timestamp: ISO-8601 timestamp of when this result was generated
+results: Object containing any available results (companies, contacts, metadata)
+error: Error description (only present when status is 'failed')
+3. Implementation Requirements
+Authentication:
+
+All API requests will include an API key in the Authorization header
+HTTP Basic Auth or Bearer Token authentication are both acceptable
+Error Handling:
+
+All errors should return appropriate HTTP status codes (4xx for client errors, 5xx for server errors)
+Error responses should include a descriptive message
+Rate Limiting:
+
+Our system will respect rate limits if specified in responses
+Please document any rate limits in your API documentation
+Timeouts:
+
+Searches should complete within a reasonable timeframe (preferably under 5 minutes)
+For longer searches, incremental updates are essential
+Data Requirements:
+
+Company data should include at minimum: name, website, industry, size, location
+Contact data should include at minimum: name, role, email (if discovered)
+All validation scores should use a consistent scale (0-100)
+This protocol allows for efficient asynchronous processing of search requests while providing real-time updates as results become available.

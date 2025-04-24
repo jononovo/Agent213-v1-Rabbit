@@ -25,7 +25,7 @@
         "y": 100
       },
       "data": {
-        "code": "function process(input) {\n  // Extract data from webhook payload\n  const payload = input.payload || {};\n  \n  return {\n    searchQuery: payload.searchQuery || '',\n    targetTitles: payload.targetTitles || 'CEO, CTO, VP of Engineering, VP of Marketing, VP of Sales',\n    maxResults: payload.maxResults || 10,\n    includeLinkedIn: payload.includeLinkedIn !== false,\n    includeEmail: payload.includeEmail !== false,\n    includePhone: payload.includePhone === true,\n    webhookUrl: payload.webhookUrl,\n    exportFormat: payload.exportFormat || 'json'\n  };\n}"
+        "code": "function process(input) {\n  // Extract data from webhook payload\n  const payload = input.payload || {};\n  \n  // Match external system format\n  const searchId = payload.searchId || `search-${Date.now()}`;\n  const query = payload.query || '';\n  const moduleTypes = payload.moduleTypes || ['COMPANY_OVERVIEW', 'DECISION_MAKER', 'EMAIL_DISCOVERY'];\n  const filterCriteria = payload.configuration?.filterCriteria || {};\n  const callbackUrl = payload.callbackUrl;\n  \n  // Map to our internal format\n  return {\n    searchId,\n    searchQuery: query,\n    targetTitles: 'CEO, CTO, VP of Engineering, VP of Marketing, VP of Sales',\n    maxResults: 10,\n    includeLinkedIn: true,\n    includeEmail: true,\n    includePhone: false,\n    callbackUrl: callbackUrl,\n    moduleTypes,\n    filterCriteria,\n    incrementalUpdates: payload.configuration?.incrementalUpdates !== false,\n    validationThresholds: payload.configuration?.validationThresholds || {\n      companyScore: 60,\n      contactScore: 70,\n      emailScore: 65\n    }\n  };\n}"
       }
     },
     {
@@ -36,7 +36,7 @@
         "y": 250
       },
       "data": {
-        "code": "function process(input) {\n  // Extract and process the target titles\n  const titles = input.targetTitles.split(',').map(title => title.trim()).filter(title => title.length > 0);\n  return {\n    ...input,\n    processedTitles: titles\n  };\n}"
+        "code": "function process(input) {\n  // Extract and process the target titles\n  const titles = input.targetTitles.split(',').map(title => title.trim()).filter(title => title.length > 0);\n  \n  // If incremental updates are enabled, send initial progress update\n  if (input.incrementalUpdates && input.callbackUrl) {\n    // Send a progress update to callback URL\n    try {\n      fetch(input.callbackUrl, {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application/json'\n        },\n        body: JSON.stringify({\n          searchId: input.searchId,\n          status: 'in_progress',\n          stage: 'COMPANY_OVERVIEW',\n          progress: 10,\n          timestamp: new Date().toISOString(),\n          results: {\n            metadata: {\n              moduleType: 'COMPANY_OVERVIEW',\n              completedSearches: [],\n              validationScores: {}\n            }\n          }\n        })\n      }).catch(err => console.error('Error sending progress update:', err));\n    } catch (error) {\n      console.error('Failed to send progress update:', error);\n    }\n  }\n  \n  return {\n    ...input,\n    processedTitles: titles\n  };\n}"
       }
     },
     {
@@ -55,14 +55,25 @@
       }
     },
     {
-      "id": "decision-1",
-      "type": "decision",
+      "id": "function_node-4",
+      "type": "function_node",
       "position": {
         "x": 700,
         "y": 200
       },
       "data": {
-        "condition": "input && Array.isArray(input) && input.length > 0"
+        "code": "function process(input) {\n  // Check for valid input and send progress update\n  const isValid = input && Array.isArray(input) && input.length > 0;\n  \n  // Get searchId and callbackUrl from context\n  const { searchId, callbackUrl, incrementalUpdates } = input[0] || {};\n  \n  // If incremental updates are enabled, send progress update\n  if (incrementalUpdates && callbackUrl) {\n    // Send a progress update to callback URL\n    try {\n      fetch(callbackUrl, {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application/json'\n        },\n        body: JSON.stringify({\n          searchId: searchId,\n          status: 'in_progress',\n          stage: 'DECISION_MAKER',\n          progress: 35,\n          timestamp: new Date().toISOString(),\n          results: {\n            companies: input,\n            metadata: {\n              moduleType: 'DECISION_MAKER',\n              completedSearches: ['COMPANY_OVERVIEW'],\n              validationScores: {\n                companyValidation: 85\n              }\n            }\n          }\n        })\n      }).catch(err => console.error('Error sending DECISION_MAKER progress update:', err));\n    } catch (error) {\n      console.error('Failed to send DECISION_MAKER progress update:', error);\n    }\n  }\n  \n  return isValid;\n}"
+      }
+    },
+    {
+      "id": "decision-1",
+      "type": "decision",
+      "position": {
+        "x": 700,
+        "y": 320
+      },
+      "data": {
+        "condition": "input === true"
       }
     },
     {
@@ -81,14 +92,25 @@
       }
     },
     {
-      "id": "decision-2",
-      "type": "decision",
+      "id": "function_node-5",
+      "type": "function_node",
       "position": {
         "x": 1300,
         "y": 200
       },
       "data": {
-        "condition": "input && Array.isArray(input) && input.length > 0"
+        "code": "function process(input) {\n  // Check for valid input and send progress update\n  const isValid = input && Array.isArray(input) && input.length > 0;\n  \n  // Get searchId and callbackUrl from context\n  const { searchId, callbackUrl, incrementalUpdates } = input[0] || {};\n  \n  // If incremental updates are enabled, send progress update\n  if (incrementalUpdates && callbackUrl) {\n    // Send a progress update to callback URL\n    try {\n      fetch(callbackUrl, {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application/json'\n        },\n        body: JSON.stringify({\n          searchId: searchId,\n          status: 'in_progress',\n          stage: 'EMAIL_DISCOVERY',\n          progress: 70,\n          timestamp: new Date().toISOString(),\n          results: {\n            companies: [],\n            contacts: input,\n            metadata: {\n              moduleType: 'EMAIL_DISCOVERY',\n              completedSearches: ['COMPANY_OVERVIEW', 'DECISION_MAKER'],\n              validationScores: {\n                companyValidation: 85,\n                contactValidation: 80\n              }\n            }\n          }\n        })\n      }).catch(err => console.error('Error sending EMAIL_DISCOVERY progress update:', err));\n    } catch (error) {\n      console.error('Failed to send EMAIL_DISCOVERY progress update:', error);\n    }\n  }\n  \n  return isValid;\n}"
+      }
+    },
+    {
+      "id": "decision-2",
+      "type": "decision",
+      "position": {
+        "x": 1300,
+        "y": 320
+      },
+      "data": {
+        "condition": "input === true"
       }
     },
     {
@@ -107,18 +129,29 @@
       }
     },
     {
-      "id": "http_request-1",
-      "type": "http_request",
+      "id": "function_node-3",
+      "type": "function_node",
       "position": {
         "x": 1900,
         "y": 200
       },
       "data": {
-        "url": "https://api.example.com/leads",
+        "code": "function process(input) {\n  // Format response according to external system requirements\n  const searchId = input.searchId || `search-${Date.now()}`;\n  \n  // Extract company and contact data\n  const companies = [];\n  const contacts = [];\n  \n  if (Array.isArray(input)) {\n    input.forEach(item => {\n      if (item.company) {\n        companies.push({\n          name: item.company.name,\n          website: item.company.website,\n          industry: item.company.industry,\n          size: item.company.size,\n          location: item.company.location,\n          description: item.company.description,\n          validationScore: item.company.validationScore || 85\n        });\n      }\n      \n      if (item.contact) {\n        contacts.push({\n          name: item.contact.name,\n          role: item.contact.role || item.contact.title,\n          department: item.contact.department,\n          email: item.contact.email,\n          nameConfidenceScore: item.contact.nameConfidenceScore || 90,\n          emailValidationScore: item.contact.emailValidationScore || 80,\n          seniority: item.contact.seniority || 80,\n          isDecisionMaker: true\n        });\n      }\n    });\n  }\n  \n  // Format response according to external system requirements\n  const response = {\n    searchId: searchId,\n    status: 'completed',\n    timestamp: new Date().toISOString(),\n    results: {\n      companies: companies,\n      contacts: contacts,\n      metadata: {\n        moduleType: 'EMAIL_DISCOVERY',\n        completedSearches: ['COMPANY_OVERVIEW', 'DECISION_MAKER', 'EMAIL_DISCOVERY'],\n        validationScores: {\n          companyValidation: 85,\n          contactValidation: 90\n        }\n      }\n    }\n  };\n  \n  return response;\n}"
+      }
+    },
+    {
+      "id": "http_request-1",
+      "type": "http_request",
+      "position": {
+        "x": 2200,
+        "y": 200
+      },
+      "data": {
+        "url": "{{input.callbackUrl}}",
         "method": "POST",
         "headers": {
           "Content-Type": "application/json",
-          "Authorization": "Bearer YOUR_API_KEY"
+          "Authorization": "Bearer {{process.env.API_KEY}}"
         },
         "body": "",
         "timeout": 10000
@@ -148,10 +181,17 @@
       "targetHandle": "input"
     },
     {
-      "id": "edge-trigger1-decision1-1",
+      "id": "edge-trigger1-function4-1",
       "source": "workflow_trigger-1",
-      "target": "decision-1",
+      "target": "function_node-4",
       "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-function4-decision1-1",
+      "source": "function_node-4",
+      "target": "decision-1",
+      "sourceHandle": "output", 
       "targetHandle": "input"
     },
     {
@@ -162,8 +202,15 @@
       "targetHandle": "input"
     },
     {
-      "id": "edge-trigger2-decision2-1",
+      "id": "edge-trigger2-function5-1",
       "source": "workflow_trigger-2",
+      "target": "function_node-5",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-function5-decision2-1",
+      "source": "function_node-5",
       "target": "decision-2",
       "sourceHandle": "output",
       "targetHandle": "input"
@@ -176,8 +223,15 @@
       "targetHandle": "input"
     },
     {
-      "id": "edge-trigger3-http-1",
+      "id": "edge-trigger3-function3-1",
       "source": "workflow_trigger-3",
+      "target": "function_node-3",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-function3-http-1",
+      "source": "function_node-3",
       "target": "http_request-1",
       "sourceHandle": "output",
       "targetHandle": "body"
