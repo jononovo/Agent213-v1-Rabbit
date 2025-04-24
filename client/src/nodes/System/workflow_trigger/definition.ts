@@ -36,8 +36,7 @@ export const definition: NodeDefinition = {
       displayName: 'Output',
       description: 'Result data from the executed workflow'
     }
-  },
-  defaultData
+  }
 };
 
 export default definition;
