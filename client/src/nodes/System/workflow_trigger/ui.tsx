@@ -15,6 +15,7 @@ export interface WorkflowTriggerNodeData {
   inputField?: string;
   timeout?: number;
   waitForCompletion?: boolean;
+  settings?: any;
 }
 
 // Default data for the node
@@ -40,7 +41,7 @@ export const validator = (data: WorkflowTriggerNodeData) => {
 };
 
 // UI component for the Workflow Trigger node
-function WorkflowTriggerNode({ 
+export const component = React.memo(function WorkflowTriggerNode({ 
   id, 
   data,
   selected,
@@ -48,11 +49,14 @@ function WorkflowTriggerNode({
 }: NodeProps<WorkflowTriggerNodeData>) {
   const [availableWorkflows, setAvailableWorkflows] = useState<any[]>([]);
   
-  // Combine default data with provided data
+  // Combine default data with provided data for local rendering
   const nodeData = {
     ...defaultData,
     ...data
   };
+  
+  // Debug info
+  console.log(`Rendering workflow_trigger node with data:`, nodeData);
   
   // Load available workflows
   useEffect(() => {
@@ -83,6 +87,11 @@ function WorkflowTriggerNode({
   
   // Register with settings drawer
   useEffect(() => {
+    // Skip if no onChange or if we don't have workflow options yet
+    if (typeof (data as any).onChange !== 'function' || !availableWorkflows.length) {
+      return;
+    }
+    
     // Define the settings for the global settings drawer
     const settings = {
       title: 'Workflow Trigger Settings',
@@ -123,43 +132,37 @@ function WorkflowTriggerNode({
           type: 'checkbox',
           description: 'Wait for the workflow to complete before continuing'
         }
-      ],
-      onSettingsChange: (newSettings: Record<string, any>) => {
-        // When settings change in the drawer, immediately update the node
-        if (typeof (data as any).onChange === 'function') {
-          (data as any).onChange({
-            ...data,
-            ...newSettings,
-            _refresh: Date.now() // Force immediate refresh
-          });
-        }
-      }
+      ]
     };
     
     // Add the settings to the node data using onChange
-    if (typeof (data as any).onChange === 'function') {
-      (data as any).onChange({
-        ...data,
-        settings,
-        label: "Workflow Trigger",
-        description: "Triggers another workflow from within this workflow"
-      });
-    }
+    (data as any).onChange({
+      ...data,
+      settings,
+      label: "Workflow Trigger",
+      description: "Triggers another workflow from within this workflow"
+    });
   }, [id, data, availableWorkflows]);
   
   // Get selected workflow name for display
   const getSelectedWorkflowName = () => {
-    if (!nodeData.workflowId) return 'None selected';
+    // First check the direct workflowId property (might be already set)
+    const workflowId = nodeData.workflowId || 
+                      (nodeData.settings && nodeData.settings.workflowId);
+                      
+    if (!workflowId) return 'None selected';
     
     // Convert workflowId to string for comparison
-    const workflowIdStr = String(nodeData.workflowId);
+    const workflowIdStr = String(workflowId);
     
     // Find the workflow in available workflows
     const workflow = availableWorkflows.find(wf => String(wf.id) === workflowIdStr);
-    return workflow ? workflow.name : `ID: ${nodeData.workflowId}`;
+    return workflow ? workflow.name : `ID: ${workflowId}`;
   };
   
-  const isConfigured = !!nodeData.workflowId;
+  // Check if the node is configured
+  const isConfigured = Boolean(nodeData.workflowId || 
+                    (nodeData.settings && nodeData.settings.workflowId));
 
   return (
     <>
@@ -255,7 +258,4 @@ function WorkflowTriggerNode({
       />
     </>
   );
-}
-
-// Export the component for use in the node registry
-export const component = WorkflowTriggerNode;
+});
