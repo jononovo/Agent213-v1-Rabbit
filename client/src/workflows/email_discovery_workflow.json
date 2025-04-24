@@ -1,0 +1,134 @@
+{
+  "name": "Email Discovery Workflow",
+  "description": "Discovers and verifies email addresses for identified contacts",
+  "nodes": [
+    {
+      "id": "json_parser-1",
+      "type": "json_parser",
+      "position": {
+        "x": 100,
+        "y": 100
+      },
+      "data": {
+        "path": ""
+      }
+    },
+    {
+      "id": "data_transform-1",
+      "type": "data_transform",
+      "position": {
+        "x": 400,
+        "y": 100
+      },
+      "data": {
+        "transformations": [
+          {
+            "source": "input",
+            "target": "contact",
+            "type": "direct"
+          },
+          {
+            "source": "input.company",
+            "target": "company",
+            "type": "direct"
+          }
+        ]
+      }
+    },
+    {
+      "id": "email_discovery-1",
+      "type": "email_discovery",
+      "position": {
+        "x": 700,
+        "y": 100
+      },
+      "data": {
+        "includeVerification": true,
+        "useDomainPatterns": true,
+        "includeConfidenceScore": true,
+        "maxAttempts": 3,
+        "emailFormats": [
+          "first.last@domain.com",
+          "flast@domain.com",
+          "firstl@domain.com",
+          "first@domain.com"
+        ]
+      }
+    },
+    {
+      "id": "json_parser-2",
+      "type": "json_parser",
+      "position": {
+        "x": 1000,
+        "y": 100
+      },
+      "data": {
+        "path": "contact"
+      }
+    },
+    {
+      "id": "function_node-1",
+      "type": "function_node",
+      "position": {
+        "x": 1300,
+        "y": 100
+      },
+      "data": {
+        "code": "function process(input) {\n  // Ensure we have an array\n  const contacts = Array.isArray(input) ? input : [input];\n  \n  // Format the lead data\n  return contacts.map(contact => {\n    return {\n      name: contact.name || 'Unknown',\n      title: contact.title || 'Unknown',\n      company: contact.company || 'Unknown',\n      email: contact.email || 'Unknown',\n      linkedIn: contact.linkedIn || '',\n      phone: contact.phone || '',\n      emailConfidence: contact.emailConfidence || 0,\n      verificationStatus: contact.emailVerificationStatus || 'unknown'\n    };\n  });\n}"
+      }
+    },
+    {
+      "id": "text_formatter-1",
+      "type": "text_formatter",
+      "position": {
+        "x": 1600,
+        "y": 100
+      },
+      "data": {
+        "format": "csv",
+        "options": {
+          "header": true,
+          "delimiter": ",",
+          "columns": ["name", "title", "company", "email", "linkedIn", "phone", "emailConfidence", "verificationStatus"]
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-input-transform-1",
+      "source": "json_parser-1",
+      "target": "data_transform-1",
+      "sourceHandle": "json",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-transform-discovery-1",
+      "source": "data_transform-1",
+      "target": "email_discovery-1",
+      "sourceHandle": "contact",
+      "targetHandle": "contact"
+    },
+    {
+      "id": "edge-discovery-parser-1",
+      "source": "email_discovery-1",
+      "target": "json_parser-2",
+      "sourceHandle": "contact",
+      "targetHandle": "json"
+    },
+    {
+      "id": "edge-parser-function-1",
+      "source": "json_parser-2",
+      "target": "function_node-1",
+      "sourceHandle": "json",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-function-formatter-1",
+      "source": "function_node-1",
+      "target": "text_formatter-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    }
+  ]
+}

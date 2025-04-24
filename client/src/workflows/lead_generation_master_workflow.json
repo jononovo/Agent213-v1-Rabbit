@@ -1,0 +1,181 @@
+{
+  "name": "Lead Generation Master Workflow",
+  "description": "Orchestrates the entire lead generation process from company search to contact discovery and email verification",
+  "nodes": [
+    {
+      "id": "text_input-1",
+      "type": "text_input",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "label": "Company Search Query",
+        "description": "Enter search criteria for target companies",
+        "placeholder": "Tech companies in Healthcare sector with 50-200 employees",
+        "defaultValue": ""
+      }
+    },
+    {
+      "id": "text_input-2",
+      "type": "text_input",
+      "position": {
+        "x": 100,
+        "y": 350
+      },
+      "data": {
+        "label": "Target Job Titles",
+        "description": "Enter job titles to target, separated by commas",
+        "placeholder": "CEO, CTO, VP of Engineering, Head of Product",
+        "defaultValue": "CEO, CTO, VP of Engineering, VP of Marketing, VP of Sales"
+      }
+    },
+    {
+      "id": "function_node-1",
+      "type": "function_node",
+      "position": {
+        "x": 400,
+        "y": 350
+      },
+      "data": {
+        "code": "function process(input) {\n  // Split comma-separated string into array of job titles\n  const titles = input.split(',').map(title => title.trim()).filter(title => title.length > 0);\n  return titles;\n}"
+      }
+    },
+    {
+      "id": "workflow_trigger-1",
+      "type": "workflow_trigger",
+      "position": {
+        "x": 400,
+        "y": 200
+      },
+      "data": {
+        "workflowId": null,
+        "inputField": "text",
+        "timeout": 30000,
+        "waitForCompletion": true,
+        "label": "Company Search Workflow"
+      }
+    },
+    {
+      "id": "decision-1",
+      "type": "decision",
+      "position": {
+        "x": 700,
+        "y": 200
+      },
+      "data": {
+        "condition": "input && Array.isArray(input) && input.length > 0"
+      }
+    },
+    {
+      "id": "workflow_trigger-2",
+      "type": "workflow_trigger",
+      "position": {
+        "x": 1000,
+        "y": 200
+      },
+      "data": {
+        "workflowId": null,
+        "inputField": "json",
+        "timeout": 30000,
+        "waitForCompletion": true,
+        "label": "Contact Finder Workflow"
+      }
+    },
+    {
+      "id": "decision-2",
+      "type": "decision",
+      "position": {
+        "x": 1300,
+        "y": 200
+      },
+      "data": {
+        "condition": "input && Array.isArray(input) && input.length > 0"
+      }
+    },
+    {
+      "id": "workflow_trigger-3",
+      "type": "workflow_trigger",
+      "position": {
+        "x": 1600,
+        "y": 200
+      },
+      "data": {
+        "workflowId": null,
+        "inputField": "json",
+        "timeout": 40000,
+        "waitForCompletion": true,
+        "label": "Email Discovery Workflow"
+      }
+    },
+    {
+      "id": "http_request-1",
+      "type": "http_request",
+      "position": {
+        "x": 1900,
+        "y": 200
+      },
+      "data": {
+        "url": "https://api.example.com/leads",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer YOUR_API_KEY"
+        },
+        "body": "",
+        "timeout": 10000
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-input1-trigger1-1",
+      "source": "text_input-1",
+      "target": "workflow_trigger-1",
+      "sourceHandle": "text",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-input2-function-1",
+      "source": "text_input-2",
+      "target": "function_node-1",
+      "sourceHandle": "text",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-trigger1-decision1-1",
+      "source": "workflow_trigger-1",
+      "target": "decision-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-decision1-trigger2-1",
+      "source": "decision-1",
+      "target": "workflow_trigger-2",
+      "sourceHandle": "true",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-trigger2-decision2-1",
+      "source": "workflow_trigger-2",
+      "target": "decision-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-decision2-trigger3-1",
+      "source": "decision-2",
+      "target": "workflow_trigger-3",
+      "sourceHandle": "true",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-trigger3-http-1",
+      "source": "workflow_trigger-3",
+      "target": "http_request-1",
+      "sourceHandle": "output",
+      "targetHandle": "body"
+    }
+  ]
+}

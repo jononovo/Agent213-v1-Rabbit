@@ -1,0 +1,81 @@
+{
+  "name": "Contact Finder Workflow",
+  "description": "Identifies key decision makers at target companies",
+  "nodes": [
+    {
+      "id": "json_parser-1",
+      "type": "json_parser",
+      "position": {
+        "x": 100,
+        "y": 100
+      },
+      "data": {
+        "path": ""
+      }
+    },
+    {
+      "id": "contact_finder-1",
+      "type": "contact_finder",
+      "position": {
+        "x": 400,
+        "y": 100
+      },
+      "data": {
+        "jobTitles": ["CEO", "CTO", "VP of Engineering", "VP of Marketing", "VP of Sales"],
+        "includeLinkedIn": true,
+        "includeEmail": true,
+        "includePhone": false,
+        "maxContacts": 3,
+        "prioritizeLeadership": true
+      }
+    },
+    {
+      "id": "json_parser-2",
+      "type": "json_parser",
+      "position": {
+        "x": 700,
+        "y": 100
+      },
+      "data": {
+        "path": "contacts"
+      }
+    },
+    {
+      "id": "workflow_trigger-1",
+      "type": "workflow_trigger",
+      "position": {
+        "x": 1000,
+        "y": 100
+      },
+      "data": {
+        "workflowId": null,
+        "inputField": "json",
+        "timeout": 30000,
+        "waitForCompletion": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-input-finder-1",
+      "source": "json_parser-1",
+      "target": "contact_finder-1",
+      "sourceHandle": "json",
+      "targetHandle": "company"
+    },
+    {
+      "id": "edge-finder-parser-1",
+      "source": "contact_finder-1",
+      "target": "json_parser-2",
+      "sourceHandle": "contacts",
+      "targetHandle": "json"
+    },
+    {
+      "id": "edge-parser-trigger-1",
+      "source": "json_parser-2",
+      "target": "workflow_trigger-1",
+      "sourceHandle": "json",
+      "targetHandle": "input"
+    }
+  ]
+}
