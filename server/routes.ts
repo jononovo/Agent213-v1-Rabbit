@@ -458,19 +458,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Import the webhook service
       const { sendWebhookCallback } = await import('./services/webhookService');
       
-      const { callbackUrl, data } = req.body;
+      const { callbackUrl, data, method = 'POST', headers = {} } = req.body;
       
       if (!callbackUrl) {
         return res.status(400).json({ success: false, message: "callbackUrl is required" });
       }
       
-      console.log(`Testing webhook callback to ${callbackUrl}`);
+      console.log(`Testing webhook callback to ${callbackUrl}`, {
+        method,
+        headers: Object.keys(headers).reduce((acc, key) => {
+          // Mask sensitive header values
+          acc[key] = key.toLowerCase().includes('auth') ? '****' : headers[key];
+          return acc;
+        }, {} as Record<string, string>)
+      });
       
       // Send the test callback
       const result = await sendWebhookCallback(callbackUrl, data || {
         searchId: `test-${Date.now()}`,
         status: "test",
         message: "This is a test callback from Lead Gen Rabbit"
+      }, {
+        method,
+        headers,
+        logPrefix: 'WebhookTest'
       });
       
       // Return the result
