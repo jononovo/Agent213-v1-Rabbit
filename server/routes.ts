@@ -592,36 +592,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { model, messages, temperature, max_tokens } = req.body;
       
+      console.log('[Perplexity Proxy] Request received:', JSON.stringify({
+        model,
+        messageCount: messages?.length,
+        temperature,
+        max_tokens
+      }, null, 2));
+      
       // Validate request
       if (!messages || !Array.isArray(messages)) {
+        console.log('[Perplexity Proxy] Error: Invalid messages format');
         return res.status(400).json({ error: 'Invalid messages format' });
       }
       
       // Get API key from environment
       const apiKey = process.env.PERPLEXITY_API_KEY;
       if (!apiKey) {
+        console.log('[Perplexity Proxy] Error: API key not configured');
         return res.status(400).json({ error: 'Perplexity API key not configured' });
       }
       
       // Prepare API request
       const perplexityUrl = 'https://api.perplexity.ai/chat/completions';
+      const requestBody = {
+        model: model || 'llama-3.1-sonar-small-128k-online',
+        messages,
+        temperature: temperature || 0.7,
+        max_tokens: max_tokens || 1000
+      };
+      
+      console.log('[Perplexity Proxy] Sending request to Perplexity API:', JSON.stringify(requestBody, null, 2));
+      
       const response = await fetch(perplexityUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({
-          model: model || 'llama-3.1-sonar-small-128k-online',
-          messages,
-          temperature: temperature || 0.7,
-          max_tokens: max_tokens || 1000
-        })
+        body: JSON.stringify(requestBody)
       });
+      
+      console.log('[Perplexity Proxy] Response status:', response.status);
       
       // Handle response
       if (!response.ok) {
         const errorText = await response.text();
+        console.log('[Perplexity Proxy] Error response:', errorText);
         return res.status(response.status).json({ 
           error: `Perplexity API error: ${response.status} ${response.statusText}`,
           details: errorText
@@ -629,9 +645,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const responseData = await response.json();
+      console.log('[Perplexity Proxy] Success response:', JSON.stringify({
+        model: responseData.model,
+        usage: responseData.usage,
+        choicesCount: responseData.choices?.length,
+        responsePreview: responseData.choices?.[0]?.message?.content?.substring(0, 100) + '...'
+      }, null, 2));
+      
       return res.json(responseData);
     } catch (error) {
-      console.error('Perplexity proxy error:', error);
+      console.error('[Perplexity Proxy] Error:', error);
       return res.status(500).json({
         error: 'Error processing Perplexity API request',
         details: error instanceof Error ? error.message : String(error)

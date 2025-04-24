@@ -9,7 +9,7 @@ import React, { memo } from 'react';
 import { Handle, Position } from 'reactflow';
 import { CheckCircle } from 'lucide-react';
 
-import { NodeContainer } from '@/components/flow/NodeContainer';
+import { NodeContainer } from '@/components/nodes/common/NodeContainer';
 
 interface WorkflowOutputProps {
   id: string;

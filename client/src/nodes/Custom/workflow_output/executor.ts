@@ -70,11 +70,13 @@ export const execute = async (
     
     // Return the error
     return createNodeOutput(
-      { error: error.message || 'Error processing workflow output' },
+      { errorMessage: error.message || 'Error processing workflow output' },
       {
         startTime,
-        error: true,
-        errorMessage: error.message || 'Error processing workflow output'
+        additionalMeta: {
+          hasError: true,
+          errorMessage: error.message || 'Error processing workflow output'
+        }
       }
     );
   }
