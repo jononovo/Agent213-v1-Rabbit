@@ -173,7 +173,7 @@ export const component = React.memo(function WorkflowTriggerNode({
         id="input"
         isConnectable={isConnectable}
         style={{ 
-          top: '0px', 
+          top: '-6px', 
           width: '12px', 
           height: '12px', 
           background: 'white',
@@ -249,7 +249,7 @@ export const component = React.memo(function WorkflowTriggerNode({
         id="output"
         isConnectable={isConnectable}
         style={{ 
-          bottom: '0px', 
+          bottom: '-6px', 
           width: '12px', 
           height: '12px', 
           background: 'white',
