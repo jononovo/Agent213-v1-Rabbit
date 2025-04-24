@@ -8,13 +8,25 @@ import React, { useEffect, useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { GitBranch, Settings, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { WorkflowTriggerNodeData, defaultData } from './executor';
 
-// Re-export defaultData from executor
-export { defaultData } from './executor';
+// Define the node data interface
+export interface WorkflowTriggerNodeData {
+  workflowId?: number | string | null;
+  inputField?: string;
+  timeout?: number;
+  waitForCompletion?: boolean;
+}
+
+// Default data for the node
+export const defaultData: WorkflowTriggerNodeData = {
+  workflowId: null,
+  inputField: 'json',
+  timeout: 30000,
+  waitForCompletion: true
+};
 
 // Validator function for node data
-const validator = (data: WorkflowTriggerNodeData) => {
+export const validator = (data: WorkflowTriggerNodeData) => {
   const errors: string[] = [];
   
   if (!data.workflowId) {
@@ -27,24 +39,20 @@ const validator = (data: WorkflowTriggerNodeData) => {
   };
 };
 
-// Export validator for use in other components
-export { validator };
-
 // UI component for the Workflow Trigger node
-export const component = function WorkflowTriggerNode({ 
+function WorkflowTriggerNode({ 
   id, 
   data,
   selected,
   isConnectable = true 
 }: NodeProps<WorkflowTriggerNodeData>) {
-  // Store the merged data in state so we can update it when props change
-  const [nodeData, setNodeData] = useState(() => ({ ...defaultData, ...data }));
   const [availableWorkflows, setAvailableWorkflows] = useState<any[]>([]);
   
-  // Update nodeData when props change
-  useEffect(() => {
-    setNodeData({ ...defaultData, ...data });
-  }, [data]);
+  // Combine default data with provided data
+  const nodeData = {
+    ...defaultData,
+    ...data
+  };
   
   // Load available workflows
   useEffect(() => {
@@ -52,8 +60,8 @@ export const component = function WorkflowTriggerNode({
       try {
         const response = await fetch('/api/workflows');
         if (response.ok) {
-          const data = await response.json();
-          setAvailableWorkflows(Array.isArray(data) ? data : []);
+          const workflowData = await response.json();
+          setAvailableWorkflows(Array.isArray(workflowData) ? workflowData : []);
         } else {
           console.error('Failed to fetch workflows');
         }
@@ -116,25 +124,14 @@ export const component = function WorkflowTriggerNode({
           description: 'Wait for the workflow to complete before continuing'
         }
       ],
-      // Add onChange handler for immediate UI updates
-      onChange: (fieldKey: string, value: any) => {
-        // Immediately reflect changes in the node data
-        if (fieldKey === 'workflowId') {
-          // Get the workflow name for the selected ID
-          const workflow = availableWorkflows.find(w => w.id.toString() === value.toString());
-          const workflowName = workflow ? workflow.name : `ID: ${value}`;
-          
-          console.log(`Selected workflow: ${workflowName} (ID: ${value})`);
-          
-          // Update the node data to show changes immediately
-          if (typeof (data as any).onChange === 'function') {
-            (data as any).onChange({
-              ...data,
-              workflowId: value,
-              // Make sure it immediately updates the UI
-              _refresh: Date.now()
-            });
-          }
+      onSettingsChange: (newSettings: Record<string, any>) => {
+        // When settings change in the drawer, immediately update the node
+        if (typeof (data as any).onChange === 'function') {
+          (data as any).onChange({
+            ...data,
+            ...newSettings,
+            _refresh: Date.now() // Force immediate refresh
+          });
         }
       }
     };
@@ -153,11 +150,12 @@ export const component = function WorkflowTriggerNode({
   // Get selected workflow name for display
   const getSelectedWorkflowName = () => {
     if (!nodeData.workflowId) return 'None selected';
-    // Convert workflowId to number if it's a string
-    const workflowIdNum = typeof nodeData.workflowId === 'string' 
-      ? parseInt(nodeData.workflowId) 
-      : nodeData.workflowId;
-    const workflow = availableWorkflows.find(w => w.id === workflowIdNum);
+    
+    // Convert workflowId to string for comparison
+    const workflowIdStr = String(nodeData.workflowId);
+    
+    // Find the workflow in available workflows
+    const workflow = availableWorkflows.find(wf => String(wf.id) === workflowIdStr);
     return workflow ? workflow.name : `ID: ${nodeData.workflowId}`;
   };
   
@@ -257,4 +255,7 @@ export const component = function WorkflowTriggerNode({
       />
     </>
   );
-};
+}
+
+// Export the component for use in the node registry
+export const component = WorkflowTriggerNode;

@@ -6,21 +6,7 @@
  */
 
 import type { NodeExecutionData, WorkflowItem } from '@shared/nodeTypes';
-
-export interface WorkflowTriggerNodeData {
-  workflowId: number | null;
-  inputField: string;
-  timeout: number;
-  waitForCompletion: boolean;
-}
-
-// Default values for node data
-export const defaultData: WorkflowTriggerNodeData = {
-  workflowId: null,
-  inputField: 'json',  // 'json', 'text', or 'content'
-  timeout: 30000,      // Default timeout: 30 seconds
-  waitForCompletion: true
-};
+import { WorkflowTriggerNodeData, defaultData } from './ui';  // Import from UI to maintain a single source of truth
 
 /**
  * Helper function to make API requests
