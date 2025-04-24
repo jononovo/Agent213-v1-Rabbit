@@ -83,8 +83,13 @@ export const component = function PerplexityApiNode({ data, id, selected, isConn
         {
           key: 'model',
           label: 'Model',
-          type: 'text',
-          description: 'Perplexity AI model to use'
+          type: 'select',
+          description: 'Perplexity AI model to use',
+          options: [
+            { value: 'llama-3.1-sonar-small-128k-online', label: 'Llama 3.1 Sonar Small' },
+            { value: 'llama-3.1-sonar-large-128k-online', label: 'Llama 3.1 Sonar Large' },
+            { value: 'llama-3.1-sonar-huge-128k-online', label: 'Llama 3.1 Sonar Huge' }
+          ]
         },
         {
           key: 'apiKey',

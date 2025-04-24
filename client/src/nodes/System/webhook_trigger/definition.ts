@@ -9,6 +9,14 @@ import { z } from 'zod';
 
 import { Webhook } from 'lucide-react';
 
+// Default configuration for the node
+const defaultData = {
+  path: '',
+  secret: '',
+  authType: 'none',
+  methods: ['POST']
+};
+
 const definition = {
   type: 'webhook_trigger',
   name: 'Webhook Trigger',
@@ -16,6 +24,7 @@ const definition = {
   category: 'actions',
   icon: Webhook,
   version: '1.0.0',
+  defaultData: defaultData,
   inputs: {},
   outputs: {
     payload: {

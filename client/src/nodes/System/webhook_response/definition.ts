@@ -8,6 +8,16 @@ import { z } from 'zod';
 
 import { Send } from 'lucide-react';
 
+// Default configuration for the node
+const defaultData = {
+  url: '',
+  method: 'POST',
+  headers: '',
+  retryCount: 3,
+  retryDelay: 1000,
+  timeout: 5000
+};
+
 const definition = {
   type: 'webhook_response',
   name: 'Webhook Response',
@@ -15,6 +25,7 @@ const definition = {
   category: 'actions',
   icon: Send,
   version: '1.0.0',
+  defaultData: defaultData,
   inputs: {
     data: {
       type: 'any',

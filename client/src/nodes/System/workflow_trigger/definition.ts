@@ -17,11 +17,13 @@ const defaultData = {
 
 export const definition: NodeDefinition = {
   type: 'workflow_trigger',
+  name: 'Workflow Trigger', // Adding name field
   displayName: 'Workflow Trigger',
   description: 'Trigger and optionally wait for another workflow to complete',
   category: 'actions',
   version: '1.0.0',
   icon: 'GitBranch',
+  defaultData: defaultData, // Add required defaultData field
   inputs: {
     input: {
       type: 'any',
