@@ -1,0 +1,85 @@
+Current Project Documentation: Webhook Callback Test Node for Lead Gen Rabbit Integration
+Current Status
+I'm implementing and testing a custom node called "Webhook Callback Test" for the workflow system. This node allows users to test webhook callbacks directly from workflows, which is essential for the Lead Gen Rabbit integration.
+
+Components Already Implemented:
+Custom Node Structure:
+
+Created webhook_callback_test directory in client/src/nodes/Custom/
+Implemented all required files:
+definition.ts: Node type definition with inputs/outputs and configuration
+executor.ts: Business logic for sending webhook requests
+ui.tsx: Visual representation and user interface for the node
+index.ts: Export file that registers the node with the system
+Webhook Service:
+
+Created server/services/webhookService.ts with sendWebhookCallback function
+Implemented proper server-side HTTP requests with error handling
+Added timeout management and logging for webhook calls
+Server-Side Endpoint:
+
+Added /api/test-webhook endpoint in server/routes.ts
+Set up proper handling of webhook test requests with response logging
+Current Task in Progress
+I'm currently attempting to create a test workflow to demonstrate and verify the webhook callback node's functionality:
+
+Creating a test workflow via the web interface
+Adding the webhook test node to the workflow
+Configuring the node to test Lead Gen Rabbit webhook integration with:
+Endpoint URL configuration
+HTTP method (POST)
+Content-Type (application/json)
+Authentication token (LGR-API-ff82c91d7184d5eeb3f3a142)
+Progress update payload (35%)
+Next Steps Planned
+Complete test workflow setup:
+
+Create the "Webhook Test Workflow" in the UI
+Add the Webhook Callback Test node
+Configure with Lead Gen Rabbit endpoint and parameters
+Test different progress states:
+
+Create separate nodes for each progress milestone (10%, 35%, 70%, 100%)
+Configure appropriate payloads for each stage
+Document integration points:
+
+Document the webhook URL format that Lead Gen Rabbit should use
+Document the expected payload structure and authentication requirements
+Create sample curl commands for Lead Gen Rabbit developers to test with
+Fix remaining TypeScript errors:
+
+Resolve label vs displayName property issues in node definition
+Address server-side type errors in webhook handling
+Technical Details
+Node Definition Structure
+export const definition: NodeDefinition = {
+  type: 'webhook_callback_test',
+  name: 'Webhook Callback Test',
+  description: 'Tests webhook callbacks by sending data to a URL',
+  icon: 'webhook',
+  category: 'utility',
+  version: '1.0.0',
+  isCustom: true,
+  inputs: {
+    url: { type: 'string', description: 'The URL to send the webhook callback to' },
+    data: { type: 'object', description: 'The data to send in the webhook callback' },
+    headers: { type: 'object', description: 'Headers to include in the request' }
+  },
+  outputs: {
+    result: { type: 'object', description: 'The result of the webhook callback' }
+  },
+  // Configuration options omitted for brevity
+}
+Webhook Service Function
+async function sendWebhookCallback(
+  callbackUrl: string, 
+  data: any, 
+  options: { method?: string, headers?: Record<string, string>, timeout?: number, logPrefix?: string } = {}
+): Promise<any> {
+  // Implementation details omitted for brevity
+}
+Lead Gen Rabbit Integration Details
+Production Webhook URL: https://lead-rabbit.replit.app/api/webhooks/workflow/6/node/webhook_trigger-1
+Development Webhook URL: https://358f51b5-fd9b-4fb9-82f8-7cf56a3f18d6-00-161sbihgzmt13.worf.replit.dev/api/webhooks/workflow/6/node/webhook_trigger-1
+API Key: LGR-API-ff82c91d7184d5eeb3f3a142 (sent as Bearer token in Authorization header)
+Progress Milestones: 10%, 35%, 70%, 100%
