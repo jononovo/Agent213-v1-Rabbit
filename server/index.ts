@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import session from 'express-session';
 import { sessionOptions } from './session';
 import { storage } from "./storage";
+import { importWebhookTestWorkflow } from "./importTestWorkflow";
 
 const app = express();
 app.use(express.json());
@@ -48,6 +49,9 @@ app.use((req, res, next) => {
   try {
     // Set up routes
     server = await registerRoutes(app);
+    
+    // Import test workflow for webhook callback testing
+    await importWebhookTestWorkflow();
     
     // Setup error handler
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

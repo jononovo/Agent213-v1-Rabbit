@@ -38,10 +38,8 @@ export const definition: NodeDefinition = {
     {
       key: 'url',
       type: 'string',
-      label: 'Callback URL',
       description: 'The URL to send the webhook callback to',
-      default: '',
-      required: true
+      default: ''
     },
     {
       key: 'method',
