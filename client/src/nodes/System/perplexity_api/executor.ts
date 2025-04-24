@@ -19,7 +19,7 @@ export interface PerplexityApiNodeData {
 
 // Default configuration for the node
 export const defaultData: PerplexityApiNodeData = {
-  model: 'llama-3.1-sonar-small-128k-online',
+  model: 'sonar',
   temperature: 0.7,
   maxTokens: 1000,
   apiKey: '',
@@ -58,8 +58,8 @@ export const execute = async (
       { role: 'user', content: prompt }
     ];
 
-    // Use the server proxy endpoint to call Perplexity API
-    const apiUrl = '/api/proxy/perplexity';
+    // Call Perplexity API directly
+    const apiUrl = 'https://api.perplexity.ai/chat/completions';
     const requestBody = {
       model: data.model || defaultData.model, // Ensure we always have a model
       messages: messages,
@@ -70,11 +70,14 @@ export const execute = async (
     // Debug log to check what's being sent
     console.log('Perplexity API request:', JSON.stringify(requestBody, null, 2));
 
-    // Make API request via server proxy
+    // Use the model as entered by the user without any modifications
+    
+    // Make API request directly to Perplexity
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify(requestBody)
     });
