@@ -6,32 +6,37 @@
  */
 
 import { NodeDefinition } from '@/lib/types/workflow';
-import { defaultData } from './executor';
+
+// Default data (duplicated here to avoid circular dependency)
+const defaultData = {
+  workflowId: null,
+  inputField: 'json',
+  timeout: 30000,
+  waitForCompletion: true
+};
 
 export const definition: NodeDefinition = {
   type: 'workflow_trigger',
-  name: 'Workflow Trigger',
+  displayName: 'Workflow Trigger',
   description: 'Trigger and optionally wait for another workflow to complete',
-  category: 'System',
-  version: 1,
-  documentationUrl: '/docs/nodes/workflow-trigger',
+  category: 'actions',
+  version: '1.0.0',
   icon: 'GitBranch',
   inputs: {
     input: {
       type: 'any',
+      displayName: 'Input',
       description: 'Input data to send to the triggered workflow',
-      isArray: false,
-      optional: false
+      required: true
     }
   },
   outputs: {
     output: {
       type: 'any',
-      description: 'Result data from the executed workflow',
-      isArray: false
+      displayName: 'Output',
+      description: 'Result data from the executed workflow'
     }
-  },
-  defaultData
+  }
 };
 
 export default definition;
