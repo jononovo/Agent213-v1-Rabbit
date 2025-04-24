@@ -1,10 +1,14 @@
 /**
- * Webhook Callback Test Node Implementation
+ * Webhook Callback Test Node Executor
  * 
  * This node allows testing webhook callbacks by sending data to a specified URL
  */
 
 import { NodeExecutionData, WorkflowItem } from '@shared/nodeTypes';
+
+/**
+ * Main executor function for the webhook callback test node
+ */
 
 /**
  * Execute the webhook callback test node

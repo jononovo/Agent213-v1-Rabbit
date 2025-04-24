@@ -4,13 +4,22 @@
  * This exports the node definition and implementation
  */
 
-import * as definition from './definition';
-import * as implementation from './implementation';
+import { definition, interfaceDefinition, settingsDefinition } from './definition';
+import { execute } from './executor';
+import { component } from './ui';
 
-export const nodeDefinition = {
-  ...definition,
-  implementation: implementation.execute,
-  settingsDefinition: definition.settingsDefinition
+export { 
+  definition,
+  interfaceDefinition,
+  settingsDefinition,
+  component,
+  execute
 };
 
-export default nodeDefinition;
+export default {
+  definition,
+  interfaceDefinition,
+  settingsDefinition,
+  component,
+  execute
+};
