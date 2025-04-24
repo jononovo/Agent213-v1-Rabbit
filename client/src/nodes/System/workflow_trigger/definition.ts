@@ -5,7 +5,7 @@
  * enabling modular workflow design and orchestration.
  */
 
-import { NodeDefinition } from '@/types';
+import { NodeDefinition } from '@/lib/types/workflow';
 import { defaultData } from './executor';
 
 export const definition: NodeDefinition = {

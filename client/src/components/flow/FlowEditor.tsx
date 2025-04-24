@@ -929,10 +929,11 @@ const FlowEditor = ({
         // Save workflow after node data update
         if (saveMutation && saveMutation.mutate) {
           saveMutation.mutate({
-            id: workflow?.id,
             name,
-            nodes,
-            edges
+            data: {
+              nodes,
+              edges
+            }
           });
         }
       }
