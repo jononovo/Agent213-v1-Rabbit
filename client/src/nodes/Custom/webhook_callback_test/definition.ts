@@ -44,7 +44,6 @@ export const definition: NodeDefinition = {
     {
       key: 'method',
       type: 'select',
-      label: 'HTTP Method',
       description: 'The HTTP method to use for the request',
       default: 'POST',
       options: [
@@ -56,7 +55,6 @@ export const definition: NodeDefinition = {
     {
       key: 'contentType',
       type: 'select',
-      label: 'Content Type',
       description: 'The content type of the request',
       default: 'application/json',
       options: [
@@ -67,14 +65,12 @@ export const definition: NodeDefinition = {
     {
       key: 'useInputData',
       type: 'boolean',
-      label: 'Use Input Data',
       description: 'If true, uses the data from the input port. Otherwise, uses the template data.',
       default: false
     },
     {
       key: 'templateData',
       type: 'json',
-      label: 'Template Data',
       description: 'The template data to send in JSON format',
       default: `{
   "searchId": "test-${Date.now()}",
@@ -95,14 +91,12 @@ export const definition: NodeDefinition = {
     {
       key: 'includeAuthToken',
       type: 'boolean',
-      label: 'Include Auth Token',
       description: 'Whether to include an authorization token in the request',
       default: false
     },
     {
       key: 'authToken',
       type: 'string',
-      label: 'Authorization Token',
       description: 'The token to include in the Authorization header (Bearer token)',
       default: '',
       visible: { includeAuthToken: true }
