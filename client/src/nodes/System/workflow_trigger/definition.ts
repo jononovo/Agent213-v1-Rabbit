@@ -5,7 +5,7 @@
  * enabling modular workflow design and orchestration.
  */
 
-import { NodeDefinition } from '@/lib/types/workflow';
+import { NodeDefinition } from '@/nodes/types';
 
 // Default data (duplicated here to avoid circular dependency)
 const defaultData = {
@@ -17,25 +17,21 @@ const defaultData = {
 
 export const definition: NodeDefinition = {
   type: 'workflow_trigger',
-  name: 'Workflow Trigger', // Adding name field
-  displayName: 'Workflow Trigger',
+  name: 'Workflow Trigger',
   description: 'Trigger and optionally wait for another workflow to complete',
   category: 'actions',
   version: '1.0.0',
   icon: 'GitBranch',
-  defaultData: defaultData, // Add required defaultData field
+  defaultData: defaultData,
   inputs: {
     input: {
       type: 'any',
-      displayName: 'Input',
-      description: 'Input data to send to the triggered workflow',
-      required: true
+      description: 'Input data to send to the triggered workflow'
     }
   },
   outputs: {
     output: {
       type: 'any',
-      displayName: 'Output',
       description: 'Result data from the executed workflow'
     }
   }

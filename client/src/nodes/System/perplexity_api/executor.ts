@@ -19,7 +19,7 @@ export interface PerplexityApiNodeData {
 
 // Default configuration for the node
 export const defaultData: PerplexityApiNodeData = {
-  model: 'llama-3.1-sonar-small-128k-online',
+  model: 'sonar',
   temperature: 0.7,
   maxTokens: 1000,
   apiKey: '',
@@ -61,11 +61,14 @@ export const execute = async (
     // Call Perplexity API directly
     const apiUrl = 'https://api.perplexity.ai/chat/completions';
     const requestBody = {
-      model: data.model,
+      model: data.model || defaultData.model, // Ensure we always have a model
       messages: messages,
       temperature: data.temperature,
       max_tokens: data.maxTokens
     };
+    
+    // Debug log to check what's being sent
+    console.log('Perplexity API request:', JSON.stringify(requestBody, null, 2));
 
     // Use the model as entered by the user without any modifications
     
