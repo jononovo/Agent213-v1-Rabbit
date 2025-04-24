@@ -13,6 +13,7 @@ export const definition: NodeDefinition = {
   icon: 'webhook',
   category: 'utility',
   version: '1.0.0',
+  isCustom: true,
   inputs: {
     url: {
       type: 'string',
@@ -64,12 +65,64 @@ export const definition: NodeDefinition = {
         { value: 'application/json', label: 'application/json' },
         { value: 'application/x-www-form-urlencoded', label: 'application/x-www-form-urlencoded' }
       ]
+    },
+    {
+      key: 'useInputData',
+      type: 'boolean',
+      label: 'Use Input Data',
+      description: 'If true, uses the data from the input port. Otherwise, uses the template data.',
+      default: false
+    },
+    {
+      key: 'templateData',
+      type: 'json',
+      label: 'Template Data',
+      description: 'The template data to send in JSON format',
+      default: `{
+  "searchId": "test-${Date.now()}",
+  "status": "in_progress",
+  "stage": "COMPANY_OVERVIEW",
+  "progress": 10,
+  "timestamp": "${new Date().toISOString()}",
+  "results": {
+    "companies": [],
+    "metadata": {
+      "moduleType": "COMPANY_OVERVIEW",
+      "completedSearches": [],
+      "validationScores": {}
+    }
+  }
+}`
+    },
+    {
+      key: 'includeAuthToken',
+      type: 'boolean',
+      label: 'Include Auth Token',
+      description: 'Whether to include an authorization token in the request',
+      default: false
+    },
+    {
+      key: 'authToken',
+      type: 'string',
+      label: 'Authorization Token',
+      description: 'The token to include in the Authorization header (Bearer token)',
+      default: '',
+      visible: { includeAuthToken: true }
     }
   ],
   defaultData: {
     url: '',
     method: 'POST',
-    contentType: 'application/json'
+    contentType: 'application/json',
+    useInputData: false,
+    includeAuthToken: false,
+    templateData: `{
+  "searchId": "test-${Date.now()}",
+  "status": "in_progress",
+  "stage": "COMPANY_OVERVIEW",
+  "progress": 10,
+  "timestamp": "${new Date().toISOString()}"
+}`
   }
 };
 
