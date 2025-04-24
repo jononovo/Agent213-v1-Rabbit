@@ -1,0 +1,203 @@
+{
+  "name": "Webhook Test Workflow",
+  "description": "Tests the webhook callback functionality for Lead Gen Rabbit integration with different progress states",
+  "nodes": [
+    {
+      "id": "start_node-1",
+      "type": "start_node",
+      "position": {
+        "x": 100,
+        "y": 100
+      },
+      "data": {
+        "label": "Begin Test",
+        "description": "Start the webhook test flow"
+      }
+    },
+    {
+      "id": "webhook_callback_test-1",
+      "type": "webhook_callback_test",
+      "position": {
+        "x": 400,
+        "y": 100
+      },
+      "data": {
+        "label": "10% Progress",
+        "description": "Send 10% progress webhook",
+        "url": "https://lead-rabbit.replit.app/api/webhooks/workflow/6/node/webhook_trigger-1",
+        "method": "POST",
+        "contentType": "application/json",
+        "useInputData": false,
+        "includeAuthToken": true,
+        "authToken": "LGR-API-ff82c91d7184d5eeb3f3a142",
+        "templateData": "{\n  \"searchId\": \"test-${Date.now()}\",\n  \"status\": \"in_progress\",\n  \"stage\": \"COMPANY_OVERVIEW\",\n  \"progress\": 10,\n  \"timestamp\": \"${new Date().toISOString()}\",\n  \"results\": {\n    \"companies\": [],\n    \"metadata\": {\n      \"moduleType\": \"COMPANY_OVERVIEW\",\n      \"completedSearches\": [],\n      \"validationScores\": {}\n    }\n  }\n}"
+      }
+    },
+    {
+      "id": "delay_node-1",
+      "type": "delay_node",
+      "position": {
+        "x": 700,
+        "y": 100
+      },
+      "data": {
+        "label": "Wait 2 Seconds",
+        "description": "Wait between webhook calls",
+        "delay": 2000
+      }
+    },
+    {
+      "id": "webhook_callback_test-2",
+      "type": "webhook_callback_test",
+      "position": {
+        "x": 400,
+        "y": 200
+      },
+      "data": {
+        "label": "35% Progress",
+        "description": "Send 35% progress webhook",
+        "url": "https://lead-rabbit.replit.app/api/webhooks/workflow/6/node/webhook_trigger-1",
+        "method": "POST",
+        "contentType": "application/json",
+        "useInputData": false,
+        "includeAuthToken": true,
+        "authToken": "LGR-API-ff82c91d7184d5eeb3f3a142",
+        "templateData": "{\n  \"searchId\": \"test-${Date.now()}\",\n  \"status\": \"in_progress\",\n  \"stage\": \"COMPANY_OVERVIEW\",\n  \"progress\": 35,\n  \"timestamp\": \"${new Date().toISOString()}\",\n  \"results\": {\n    \"companies\": [\n      {\n        \"name\": \"Test Company 1\",\n        \"website\": \"https://testcompany1.com\",\n        \"industry\": \"Technology\",\n        \"score\": 85\n      }\n    ],\n    \"metadata\": {\n      \"moduleType\": \"COMPANY_OVERVIEW\",\n      \"completedSearches\": [\"initial\"],\n      \"validationScores\": {\n        \"companyScore\": 85\n      }\n    }\n  }\n}"
+      }
+    },
+    {
+      "id": "delay_node-2",
+      "type": "delay_node",
+      "position": {
+        "x": 700,
+        "y": 200
+      },
+      "data": {
+        "label": "Wait 2 Seconds",
+        "description": "Wait between webhook calls",
+        "delay": 2000
+      }
+    },
+    {
+      "id": "webhook_callback_test-3",
+      "type": "webhook_callback_test",
+      "position": {
+        "x": 400,
+        "y": 300
+      },
+      "data": {
+        "label": "70% Progress",
+        "description": "Send 70% progress webhook",
+        "url": "https://lead-rabbit.replit.app/api/webhooks/workflow/6/node/webhook_trigger-1",
+        "method": "POST",
+        "contentType": "application/json",
+        "useInputData": false,
+        "includeAuthToken": true,
+        "authToken": "LGR-API-ff82c91d7184d5eeb3f3a142",
+        "templateData": "{\n  \"searchId\": \"test-${Date.now()}\",\n  \"status\": \"in_progress\",\n  \"stage\": \"DECISION_MAKER\",\n  \"progress\": 70,\n  \"timestamp\": \"${new Date().toISOString()}\",\n  \"results\": {\n    \"companies\": [\n      {\n        \"name\": \"Test Company 1\",\n        \"website\": \"https://testcompany1.com\",\n        \"industry\": \"Technology\",\n        \"score\": 85\n      },\n      {\n        \"name\": \"Test Company 2\",\n        \"website\": \"https://testcompany2.com\",\n        \"industry\": \"Software\",\n        \"score\": 78\n      }\n    ],\n    \"contacts\": [\n      {\n        \"name\": \"John Doe\",\n        \"title\": \"CEO\",\n        \"company\": \"Test Company 1\",\n        \"score\": 82\n      }\n    ],\n    \"metadata\": {\n      \"moduleType\": \"DECISION_MAKER\",\n      \"completedSearches\": [\"initial\", \"detailed\"],\n      \"validationScores\": {\n        \"companyScore\": 85,\n        \"contactScore\": 82\n      }\n    }\n  }\n}"
+      }
+    },
+    {
+      "id": "delay_node-3",
+      "type": "delay_node",
+      "position": {
+        "x": 700,
+        "y": 300
+      },
+      "data": {
+        "label": "Wait 2 Seconds",
+        "description": "Wait between webhook calls",
+        "delay": 2000
+      }
+    },
+    {
+      "id": "webhook_callback_test-4",
+      "type": "webhook_callback_test",
+      "position": {
+        "x": 400,
+        "y": 400
+      },
+      "data": {
+        "label": "100% Progress",
+        "description": "Send 100% progress webhook",
+        "url": "https://lead-rabbit.replit.app/api/webhooks/workflow/6/node/webhook_trigger-1",
+        "method": "POST",
+        "contentType": "application/json",
+        "useInputData": false,
+        "includeAuthToken": true,
+        "authToken": "LGR-API-ff82c91d7184d5eeb3f3a142",
+        "templateData": "{\n  \"searchId\": \"test-${Date.now()}\",\n  \"status\": \"completed\",\n  \"stage\": \"EMAIL_DISCOVERY\",\n  \"progress\": 100,\n  \"timestamp\": \"${new Date().toISOString()}\",\n  \"results\": {\n    \"companies\": [\n      {\n        \"name\": \"Test Company 1\",\n        \"website\": \"https://testcompany1.com\",\n        \"industry\": \"Technology\",\n        \"score\": 85\n      },\n      {\n        \"name\": \"Test Company 2\",\n        \"website\": \"https://testcompany2.com\",\n        \"industry\": \"Software\",\n        \"score\": 78\n      }\n    ],\n    \"contacts\": [\n      {\n        \"name\": \"John Doe\",\n        \"title\": \"CEO\",\n        \"company\": \"Test Company 1\",\n        \"email\": \"john.doe@testcompany1.com\",\n        \"score\": 82\n      },\n      {\n        \"name\": \"Jane Smith\",\n        \"title\": \"CTO\",\n        \"company\": \"Test Company 1\",\n        \"email\": \"jane.smith@testcompany1.com\",\n        \"score\": 75\n      },\n      {\n        \"name\": \"Alex Johnson\",\n        \"title\": \"VP of Marketing\",\n        \"company\": \"Test Company 2\",\n        \"email\": \"alex.johnson@testcompany2.com\",\n        \"score\": 79\n      }\n    ],\n    \"metadata\": {\n      \"moduleType\": \"EMAIL_DISCOVERY\",\n      \"completedSearches\": [\"initial\", \"detailed\", \"validation\"],\n      \"validationScores\": {\n        \"companyScore\": 85,\n        \"contactScore\": 82,\n        \"emailScore\": 79\n      }\n    }\n  }\n}"
+      }
+    },
+    {
+      "id": "end_node-1",
+      "type": "end_node",
+      "position": {
+        "x": 700,
+        "y": 400
+      },
+      "data": {
+        "label": "Test Complete",
+        "description": "Webhook test complete"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": "start_node-1",
+      "target": "webhook_callback_test-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-2",
+      "source": "webhook_callback_test-1",
+      "target": "delay_node-1",
+      "sourceHandle": "result",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-3",
+      "source": "delay_node-1",
+      "target": "webhook_callback_test-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-4",
+      "source": "webhook_callback_test-2",
+      "target": "delay_node-2",
+      "sourceHandle": "result",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-5",
+      "source": "delay_node-2",
+      "target": "webhook_callback_test-3",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-6",
+      "source": "webhook_callback_test-3",
+      "target": "delay_node-3",
+      "sourceHandle": "result",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-7",
+      "source": "delay_node-3",
+      "target": "webhook_callback_test-4",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-8",
+      "source": "webhook_callback_test-4",
+      "target": "end_node-1",
+      "sourceHandle": "result",
+      "targetHandle": "input"
+    }
+  ]
+}
