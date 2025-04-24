@@ -451,6 +451,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/health', (req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
+
+  // Test webhook callback
+  app.post('/api/test-webhook', async (req: Request, res: Response) => {
+    try {
+      // Import the webhook service
+      const { sendWebhookCallback } = await import('./services/webhookService');
+      
+      const { callbackUrl, data } = req.body;
+      
+      if (!callbackUrl) {
+        return res.status(400).json({ success: false, message: "callbackUrl is required" });
+      }
+      
+      console.log(`Testing webhook callback to ${callbackUrl}`);
+      
+      // Send the test callback
+      const result = await sendWebhookCallback(callbackUrl, data || {
+        searchId: `test-${Date.now()}`,
+        status: "test",
+        message: "This is a test callback from Lead Gen Rabbit"
+      });
+      
+      // Return the result
+      res.json({
+        success: true,
+        message: "Webhook test executed",
+        result
+      });
+    } catch (error) {
+      console.error("Webhook test error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error testing webhook",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
   
   // Endpoint to manually trigger saving of all data
   app.post('/api/admin/save-all-data', async (req: Request, res: Response) => {
