@@ -1,7 +1,7 @@
 /**
- * Webhook Response Node UI Component
+ * Send to Webhook Node UI Component
  * 
- * This component renders the webhook response node in the workflow editor.
+ * This component renders the send to webhook node in the workflow editor.
  */
 
 import React from 'react';
@@ -9,7 +9,7 @@ import { Send, ExternalLink } from 'lucide-react';
 import DefaultNode from '../../Default/ui';
 import { Badge } from '@/components/ui/badge';
 
-export default function WebhookResponseNode({ id, data }: { id: string, data: any }) {
+export default function SendToWebhookNode({ id, data }: { id: string, data: any }) {
   // Extract node settings
   const settings = data?.settings || {};
   const url = settings.url || 'No URL configured';
