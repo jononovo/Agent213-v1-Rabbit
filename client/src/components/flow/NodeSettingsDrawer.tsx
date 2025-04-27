@@ -937,7 +937,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       // Create a copy of the current settings
       const updatedSettings = { ...settings };
       
-      // For workflow_trigger nodes, we need to make the workflowId directly accessible
+      // For workflow_trigger and embed_other_workflow nodes, we need to make the workflowId directly accessible
       // in the node data as well as in settings
       const nodeUpdates: Record<string, any> = {
         ...updatedSettings,
@@ -947,11 +947,11 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
         }
       };
       
-      // For workflow_trigger nodes, add workflowId as a direct property 
-      // This is required for the workflowTriggerExecutor
-      if (node.type === 'workflow_trigger' && updatedSettings.workflowId) {
+      // For workflow_trigger or embed_other_workflow nodes, add workflowId as a direct property 
+      // This is required for the workflow executor
+      if ((node.type === 'workflow_trigger' || node.type === 'embed_other_workflow') && updatedSettings.workflowId) {
         nodeUpdates.workflowId = updatedSettings.workflowId;
-        console.log('Saving workflow_trigger node with workflowId:', updatedSettings.workflowId);
+        console.log(`Saving ${node.type} node with workflowId:`, updatedSettings.workflowId);
       }
       
       // Update the node with all changes
@@ -1249,7 +1249,7 @@ return (
                 </div>
               )}
               
-              {node.type === 'workflow_trigger' && (
+              {(node.type === 'workflow_trigger' || node.type === 'embed_other_workflow') && (
                 <div className="mb-4">
                   <p className="text-sm text-muted-foreground">
                     Configure settings for the Embed Other Workflow node.
