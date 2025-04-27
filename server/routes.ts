@@ -16,6 +16,7 @@ import { log } from "./vite";
 import { workflowGenerationService } from "./services/workflowGenerationService";
 import { createAgentCoordinator } from "./services/agentCoordinator";
 import { registerAllTools } from "./tools/implementations";
+import { registerWorkflowExecution, clearWorkflowExecution } from "./utils/timeoutManager";
 
 /**
  * Utility function to execute a workflow
@@ -99,6 +100,9 @@ export async function runWorkflow(
   
   // Start executing the workflow
   console.log(`Executing workflow ${workflowId}: ${workflow.name}`);
+  
+  // Register this workflow execution with the timeout manager (1 minute timeout)
+  const clearTimeout = registerWorkflowExecution(executionLog.id, workflowId);
   
   try {
     // Implement basic execution, but preferably use an existing solution:
@@ -338,6 +342,9 @@ export async function runWorkflow(
         nodesExecuted: processedNodes.size
       }
     });
+    
+    // Clear the timeout since the workflow has completed
+    clearTimeout();
     
     return result;
     
