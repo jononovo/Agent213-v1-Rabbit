@@ -70,7 +70,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       };
       
       // Check for direct properties that should be in settings (like workflowId)
-      if (node.type === 'workflow_trigger' && node.data.workflowId) {
+      if ((node.type === 'workflow_trigger' || node.type === 'embed_other_workflow') && node.data.workflowId) {
         initialSettings.workflowId = node.data.workflowId.toString();
       }
       
@@ -110,8 +110,8 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       if (!res.ok) throw new Error('Failed to fetch workflows');
       return res.json();
     },
-    // Only fetch when node is workflow_trigger and drawer is open
-    enabled: isOpen && node?.type === 'workflow_trigger'
+    // Only fetch when node is workflow_trigger or embed_other_workflow and drawer is open
+    enabled: isOpen && (node?.type === 'workflow_trigger' || node?.type === 'embed_other_workflow')
   });
   
   // Dynamically update the agent dropdown options when agents are loaded
@@ -690,6 +690,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           }
         ];
       case 'workflow_trigger':
+      case 'embed_other_workflow':
         return [
           {
             id: 'workflowId',
