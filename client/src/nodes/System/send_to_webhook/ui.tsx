@@ -72,9 +72,9 @@ export default function SendToWebhookNode({ id, data }: { id: string, data: any 
     </div>
   );
 
-  // Render using the DefaultNode wrapper
+  // Render using the BaseNode wrapper
   return (
-    <DefaultNode 
+    <BaseNode 
       id={id} 
       data={{
         ...data,

@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Globe, Link } from 'lucide-react';
-import DefaultNode from '../../Default/ui';
+import { BaseNode } from '@/nodes/Base';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -47,7 +47,7 @@ export default function WebhookTriggerNode({ id, data }: { id: string, data: any
   // Node content with webhook URL display
   const nodeContent = (
     <div className="p-4 flex flex-col gap-3">
-      {/* Badge moved to header in DefaultNode */}
+      {/* Badge moved to header in BaseNode */}
       
       <div className="bg-muted/80 p-2 rounded-md flex flex-col gap-1">
         <div className="text-xs text-muted-foreground mb-1">Webhook URL:</div>
@@ -74,9 +74,9 @@ export default function WebhookTriggerNode({ id, data }: { id: string, data: any
     </div>
   );
   
-  // Render using the DefaultNode wrapper
+  // Render using the BaseNode wrapper
   return (
-    <DefaultNode 
+    <BaseNode 
       id={id} 
       data={{
         ...data,

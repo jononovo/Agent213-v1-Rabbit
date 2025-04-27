@@ -11,7 +11,7 @@ import { FormItem, FormLabel } from '@/components/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Slider } from '@/components/ui/slider';
-import DefaultNode from '@/nodes/Default/ui';
+import { BaseNode } from '@/nodes/Base';
 import { defaultData } from './definition';
 
 // Define the node data structure
@@ -158,14 +158,21 @@ const CompanySearchUI: React.FC<{
     </div>
   );
   
-  // Wrap in the DefaultNode
+  // Wrap in the BaseNode - BaseNode expects different props than DefaultNode
   return (
-    <DefaultNode
-      inputs={[{ name: 'query', type: 'string' }, { name: 'filters', type: 'object' }]}
-      outputs={[{ name: 'companies', type: 'array' }, { name: 'metadata', type: 'object' }]}
-    >
-      {nodeContent}
-    </DefaultNode>
+    <BaseNode
+      id="company_search"
+      data={{
+        label: "Company Search",
+        description: "Search for company information",
+        type: "company_search",
+        category: "lead_generation",
+        childrenContent: nodeContent, // Use childrenContent prop instead of children
+        // Define input/output points as needed
+        inputPoints: [{ id: 'query', type: 'string' }, { id: 'filters', type: 'object' }],
+        outputPoints: [{ id: 'companies', type: 'array' }, { id: 'metadata', type: 'object' }]
+      }}
+    />
   );
 };
 
