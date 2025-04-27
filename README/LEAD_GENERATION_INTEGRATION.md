@@ -361,7 +361,7 @@ All errors follow a consistent format:
 ## Design Choices
 
 1. **Hybrid Approach** - We use both specialized workflows for each step of the lead generation process and a master orchestration workflow for better visibility and flexibility.
-2. **Standard System Nodes** - We use standard system nodes (workflow_trigger, data_validator, etc.) rather than custom nodes for better compatibility.
+2. **Standard System Nodes** - We use standard system nodes (embed_other_workflow, data_validator, etc.) rather than custom nodes for better compatibility.
 3. **Incremental Updates** - External applications receive incremental updates as the process progresses, rather than waiting for the entire process to complete.
 4. **Comprehensive API Integration** - The integration includes authentication, rate limiting, timeout handling, and structured error responses.
 5. **Webhook-Based Communication** - Real-time progress updates are sent via webhooks to provide immediate visibility into the search process.
