@@ -448,6 +448,56 @@ async function handleWebhookRequest(
   }
 }
 
+/**
+ * Stop a running workflow
+ * 
+ * This function manually stops a running workflow by updating its log
+ * status to 'stopped' and clearing the workflow timeout
+ */
+export async function stopWorkflow(workflowId: number, logId?: number): Promise<boolean> {
+  try {
+    // Find the most recent running log for this workflow if logId not provided
+    if (!logId) {
+      const logs = await storage.getLogs(undefined, workflowId);
+      const runningLog = logs.find(log => 
+        (log.status === 'running' || log.status === 'in_progress') && 
+        log.startedAt && 
+        !log.completedAt
+      );
+      
+      if (runningLog) {
+        logId = runningLog.id;
+      } else {
+        console.log(`No running logs found for workflow ${workflowId}`);
+        return false;
+      }
+    }
+    
+    if (!logId) {
+      return false;
+    }
+    
+    // Update the log to stopped status
+    await storage.updateLog(logId, {
+      status: 'stopped',
+      completedAt: new Date(),
+      executionPath: {
+        message: `Workflow execution manually stopped by user`,
+        status: 'stopped'
+      }
+    });
+    
+    // Clear any registered timeout
+    clearWorkflowExecution(workflowId);
+    
+    console.log(`Workflow ${workflowId} (Log ${logId}) manually stopped`);
+    return true;
+  } catch (error) {
+    console.error(`Error stopping workflow ${workflowId}:`, error);
+    return false;
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const server = createServer(app);
   
@@ -1898,6 +1948,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Stop a running workflow
+  app.post("/api/workflows/:id/stop", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid workflow ID" });
+      }
+
+      const { logId } = req.body;
+      
+      // Call the stopWorkflow function
+      const result = await stopWorkflow(id, logId);
+      
+      if (result) {
+        res.json({ 
+          success: true, 
+          message: "Workflow stopped successfully" 
+        });
+      } else {
+        res.status(404).json({ 
+          success: false, 
+          message: "No running workflow found or failed to stop workflow" 
+        });
+      }
+    } catch (error) {
+      console.error("Error stopping workflow:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Error stopping workflow",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Execute a workflow
   app.post("/api/workflows/:id/execute", async (req, res) => {
     try {
