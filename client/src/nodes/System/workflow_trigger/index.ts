@@ -1,5 +1,5 @@
 /**
- * Workflow Trigger Node
+ * Embed Other Workflow Node
  * 
  * Entry point for the workflow_trigger node that allows running one workflow from within another.
  * Exports the node definition, UI component, and executor.

@@ -1,5 +1,5 @@
 /**
- * Workflow Trigger Node Definition
+ * Embed Other Workflow Node Definition
  * 
  * This node allows triggering another workflow from within the current workflow,
  * enabling modular workflow design and orchestration.

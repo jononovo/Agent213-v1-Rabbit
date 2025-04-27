@@ -1,7 +1,7 @@
 /**
  * Embed Other Workflow Node UI Component
  * 
- * UI component for the workflow trigger node with settings drawer integration.
+ * UI component for the Embed Other Workflow node with settings drawer integration.
  * This node allows embedding and running another workflow within the current workflow.
  */
 
@@ -41,7 +41,7 @@ export const validator = (data: WorkflowTriggerNodeData) => {
   };
 };
 
-// UI component for the Workflow Trigger node
+// UI component for the Embed Other Workflow node
 export const component = React.memo(function WorkflowTriggerNode({ 
   id, 
   data,
