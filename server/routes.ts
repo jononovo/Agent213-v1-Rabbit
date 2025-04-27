@@ -16,7 +16,7 @@ import { log } from "./vite";
 import { workflowGenerationService } from "./services/workflowGenerationService";
 import { createAgentCoordinator } from "./services/agentCoordinator";
 import { registerAllTools } from "./tools/implementations";
-import { registerWorkflowExecution, clearWorkflowExecution } from "./utils/timeoutManager";
+import { registerWorkflowExecution, clearWorkflowExecution, checkForTimedOutWorkflows } from "./utils/timeoutManager";
 
 /**
  * Utility function to execute a workflow
@@ -362,6 +362,9 @@ export async function runWorkflow(
       }
     });
     
+    // Clear the timeout since the workflow has completed (with error)
+    clearTimeout();
+    
     throw error;
   }
 }
@@ -448,6 +451,22 @@ async function handleWebhookRequest(
 export async function registerRoutes(app: Express): Promise<Server> {
   const server = createServer(app);
   
+  // Set up a periodic check for timed-out workflows
+  // Run every 5 minutes (300000 ms)
+  const timeoutCheckInterval = setInterval(async () => {
+    try {
+      console.log("Running periodic check for timed-out workflows");
+      await checkForTimedOutWorkflows();
+    } catch (error) {
+      console.error("Error checking for timed-out workflows:", error);
+    }
+  }, 300000);
+  
+  // Ensure the interval is cleared when the server closes
+  server.on('close', () => {
+    clearInterval(timeoutCheckInterval);
+  });
+  
   // Add token validation middleware
   app.use((req: Request, res: Response, next: NextFunction) => {
     // We could validate tokens here
@@ -516,6 +535,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error during manual save:', error);
       res.status(500).json({ success: false, message: 'Error saving data', error: String(error) });
+    }
+  });
+  
+  // Endpoint to manually check for timed-out workflows
+  app.post('/api/admin/check-workflow-timeouts', async (req: Request, res: Response) => {
+    try {
+      console.log('Manual check for timed-out workflows triggered');
+      await checkForTimedOutWorkflows();
+      res.json({ success: true, message: 'Workflow timeout check completed successfully' });
+    } catch (error) {
+      console.error('Error checking for timed-out workflows:', error);
+      res.status(500).json({ success: false, message: 'Error checking for timed-out workflows', error: String(error) });
     }
   });
   
