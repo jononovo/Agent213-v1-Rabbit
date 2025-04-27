@@ -689,7 +689,6 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
             description: 'Maximum time in milliseconds to wait for agent response. Default: 30000 (30 seconds)'
           }
         ];
-      case 'workflow_trigger':
       case 'embed_other_workflow':
         return [
           {

@@ -94,7 +94,7 @@ export async function executeWorkflow(
       'text_input', 
       'internal_new_agent',
       'internal_ai_chat_agent',
-      'workflow_trigger',
+      'embed_other_workflow',
       'agent_trigger'
     ];
     
@@ -118,7 +118,7 @@ export async function executeWorkflow(
           (node.type === 'internal_ai_chat_agent' && metadata.source === 'ai_chat') ||
           (node.type === 'internal_new_agent' && metadata.source !== 'ai_chat') ||
           node.type === 'text_input' || 
-          node.type === 'workflow_trigger' ||
+          node.type === 'embed_other_workflow' ||
           node.type === 'agent_trigger';
         
         if (isSourceCompatible) {

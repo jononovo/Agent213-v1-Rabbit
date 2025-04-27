@@ -125,7 +125,7 @@ const createNodeTypes = () => {
     'webhook', 'scheduler', 'email_trigger', 'email_send',
     'database_query', 'filter', 'text_prompt', 'visualize_text',
     'transform', 'chat_interface', 'generate_text', 'prompt_crafter',
-    'valid_response', 'perplexity', 'agent_trigger', 'workflow_trigger',
+    'valid_response', 'perplexity', 'agent_trigger', 'embed_other_workflow',
     'response_message', 'api_response_message', 'generateText',
     'visualizeText', 'routing', 'promptCrafter', 'validResponse'
   ];
@@ -794,7 +794,7 @@ const FlowEditor = ({
       }
     };
 
-    const handleWorkflowTriggerUpdate = (event: CustomEvent) => {
+    const handleEmbedOtherWorkflowUpdate = (event: CustomEvent) => {
       if (event.detail && event.detail.nodeId && event.detail.settings) {
         const { nodeId, settings } = event.detail;
         
@@ -903,7 +903,7 @@ const FlowEditor = ({
       }
     };
     
-    // Handler for node data update events (used by workflow_trigger node)
+    // Handler for node data update events (used by embed_other_workflow node)
     const handleNodeDataUpdate = (event: CustomEvent) => {
       if (event.detail && event.detail.nodeId && event.detail.data) {
         const { nodeId, data: updatedData } = event.detail;
@@ -942,7 +942,7 @@ const FlowEditor = ({
     // Add event listeners for custom events
     window.addEventListener('node-settings-open', handleNodeSettingsOpen as EventListener);
     window.addEventListener('agent-trigger-update', handleAgentTriggerUpdate as EventListener);
-    window.addEventListener('workflow-trigger-update', handleWorkflowTriggerUpdate as EventListener);
+    window.addEventListener('embed-other-workflow-update', handleWorkflowTriggerUpdate as EventListener);
     window.addEventListener('monkey-agent-update-node', handleMonkeyAgentNodeUpdate as EventListener);
     window.addEventListener('node-delete', handleNodeDelete as EventListener);
     window.addEventListener('node-duplicate', handleNodeDuplicate as EventListener);
@@ -953,7 +953,7 @@ const FlowEditor = ({
     return () => {
       window.removeEventListener('node-settings-open', handleNodeSettingsOpen as EventListener);
       window.removeEventListener('agent-trigger-update', handleAgentTriggerUpdate as EventListener);
-      window.removeEventListener('workflow-trigger-update', handleWorkflowTriggerUpdate as EventListener);
+      window.removeEventListener('embed-other-workflow-update', handleWorkflowTriggerUpdate as EventListener);
       window.removeEventListener('monkey-agent-update-node', handleMonkeyAgentNodeUpdate as EventListener);
       window.removeEventListener('node-delete', handleNodeDelete as EventListener);
       window.removeEventListener('node-duplicate', handleNodeDuplicate as EventListener);
