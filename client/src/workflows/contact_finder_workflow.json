@@ -41,8 +41,8 @@
       }
     },
     {
-      "id": "workflow_trigger-1",
-      "type": "workflow_trigger",
+      "id": "embed_other_workflow-1",
+      "type": "embed_other_workflow",
       "position": {
         "x": 1000,
         "y": 100
@@ -73,7 +73,7 @@
     {
       "id": "edge-parser-trigger-1",
       "source": "json_parser-2",
-      "target": "workflow_trigger-1",
+      "target": "embed_other_workflow-1",
       "sourceHandle": "json",
       "targetHandle": "input"
     }
