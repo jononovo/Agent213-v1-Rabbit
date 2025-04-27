@@ -52,7 +52,7 @@ export const execute = async (
   data: WorkflowTriggerNodeData, 
   inputs: NodeExecutionData
 ): Promise<NodeExecutionData> => {
-  console.log('Executing workflow trigger node with data:', data);
+  console.log('Executing embed_other_workflow node with data:', data);
   
   // Validate required workflow ID
   if (!data.workflowId) {
@@ -121,8 +121,8 @@ export const execute = async (
       }
     };
   } catch (error: any) {
-    console.error('Error executing workflow trigger:', error);
+    console.error('Error executing embed_other_workflow node:', error);
     const errorMessage = error.message || 'Unknown error occurred';
-    throw new Error(`Workflow trigger error: ${errorMessage}`);
+    throw new Error(`Embed Other Workflow error: ${errorMessage}`);
   }
 };

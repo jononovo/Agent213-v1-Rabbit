@@ -90,7 +90,7 @@ function linkWorkflows(masterWorkflow: any, workflowIds: Record<string, number>)
   
   // Update workflow trigger nodes with their target workflow IDs
   workflow.nodes.forEach((node: any) => {
-    if (node.type === 'workflow_trigger') {
+    if (node.type === 'embed_other_workflow') {
       if (node.data.label?.includes('Company Search')) {
         node.data.workflowId = workflowIds.companySearch;
       } else if (node.data.label?.includes('Contact Finder')) {

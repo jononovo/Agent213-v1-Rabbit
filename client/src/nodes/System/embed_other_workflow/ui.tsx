@@ -11,7 +11,7 @@ import { GitBranch, Settings, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Define the node data interface
-export interface WorkflowTriggerNodeData {
+export interface EmbedOtherWorkflowNodeData {
   workflowId?: number | string | null;
   inputField?: string;
   timeout?: number;
@@ -20,7 +20,7 @@ export interface WorkflowTriggerNodeData {
 }
 
 // Default data for the node
-export const defaultData: WorkflowTriggerNodeData = {
+export const defaultData: EmbedOtherWorkflowNodeData = {
   workflowId: null,
   inputField: 'json',
   timeout: 30000,
@@ -28,7 +28,7 @@ export const defaultData: WorkflowTriggerNodeData = {
 };
 
 // Validator function for node data
-export const validator = (data: WorkflowTriggerNodeData) => {
+export const validator = (data: EmbedOtherWorkflowNodeData) => {
   const errors: string[] = [];
   
   if (!data.workflowId) {
@@ -47,7 +47,7 @@ export const component = React.memo(function EmbedOtherWorkflowNode({
   data,
   selected,
   isConnectable = true 
-}: NodeProps<WorkflowTriggerNodeData>) {
+}: NodeProps<EmbedOtherWorkflowNodeData>) {
   const [availableWorkflows, setAvailableWorkflows] = useState<any[]>([]);
   
   // Combine default data with provided data for local rendering

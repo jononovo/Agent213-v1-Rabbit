@@ -105,7 +105,7 @@ function getCategoryForNodeType(type: string): string {
   }
   
   // Action/integration nodes, including former trigger nodes
-  if (['http_request', 'decision', 'webhook_trigger', 'agent_trigger', 'workflow_trigger'].includes(type)) {
+  if (['http_request', 'decision', 'webhook_trigger', 'agent_trigger', 'embed_other_workflow'].includes(type)) {
     return 'actions';
   }
   
