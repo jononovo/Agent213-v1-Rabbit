@@ -3,7 +3,7 @@
  * 
  * This node allows users to define custom JavaScript functions
  * that transform input data and produce output.
- * It provides both DefaultNode-wrapped and standalone implementations.
+ * It provides both BaseNode-wrapped and standalone implementations.
  */
 
 import FunctionNode, { StandaloneFunctionNode, defaultData as uiDefaultData } from './ui';
@@ -16,7 +16,7 @@ export const defaultData = {
   category: 'code',
   code: 'function process(input) {\n  // Your code here\n  return input;\n}',
   settingsData: {},
-  // By default, use the DefaultNode wrapper for consistent UI
+  // By default, use the BaseNode wrapper for consistent UI
   useDefaultNodeWrapper: true
 };
 

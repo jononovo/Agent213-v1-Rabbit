@@ -178,14 +178,27 @@ const EmailDiscoveryUI: React.FC<{
     </div>
   );
   
-  // Wrap in the DefaultNode
+  // Wrap in the BaseNode
   return (
-    <DefaultNode
-      inputs={[{ name: 'contact', type: 'object' }, { name: 'domain', type: 'string' }]}
-      outputs={[{ name: 'contact', type: 'object' }, { name: 'metadata', type: 'object' }]}
-    >
-      {nodeContent}
-    </DefaultNode>
+    <BaseNode
+      id="email_discovery"
+      data={{
+        label: "Email Discovery",
+        description: "Discover email addresses for contacts",
+        type: "email_discovery",
+        category: "lead_generation",
+        childrenContent: nodeContent, // Use childrenContent prop instead of children
+        // Define input/output points as needed
+        inputPoints: [
+          { id: 'contact', type: 'object' }, 
+          { id: 'domain', type: 'string' }
+        ],
+        outputPoints: [
+          { id: 'contact', type: 'object' }, 
+          { id: 'metadata', type: 'object' }
+        ]
+      }}
+    />
   );
 };
 
