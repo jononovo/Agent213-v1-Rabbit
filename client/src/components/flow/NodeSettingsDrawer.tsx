@@ -70,7 +70,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       };
       
       // Check for direct properties that should be in settings (like workflowId)
-      if ((node.type === 'workflow_trigger' || node.type === 'embed_other_workflow') && node.data.workflowId) {
+      if (node.type === 'embed_other_workflow' && node.data.workflowId) {
         initialSettings.workflowId = node.data.workflowId.toString();
       }
       
@@ -102,7 +102,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     enabled: isOpen && node?.type === 'agent_trigger'
   });
   
-  // Fetch available workflows for workflow_trigger node
+  // Fetch available workflows for embed_other_workflow node
   const { data: workflows } = useQuery({
     queryKey: ['/api/workflows'],
     queryFn: async () => {
@@ -110,8 +110,8 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       if (!res.ok) throw new Error('Failed to fetch workflows');
       return res.json();
     },
-    // Only fetch when node is workflow_trigger or embed_other_workflow and drawer is open
-    enabled: isOpen && (node?.type === 'workflow_trigger' || node?.type === 'embed_other_workflow')
+    // Only fetch when node is embed_other_workflow and drawer is open
+    enabled: isOpen && node?.type === 'embed_other_workflow'
   });
   
   // Dynamically update the agent dropdown options when agents are loaded
@@ -143,7 +143,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
         label: `${workflow.name} (ID: ${workflow.id})`
       }));
       
-      // Handle both workflow_trigger and any node with workflowId in its data
+      // Handle embed_other_workflow nodes and any node with workflowId in its data
       if (node) {
         // Always get a fresh copy of the fields based on the node type
         const updatedFields = getFieldsForNodeType(node.type);
@@ -937,7 +937,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       // Create a copy of the current settings
       const updatedSettings = { ...settings };
       
-      // For workflow_trigger and embed_other_workflow nodes, we need to make the workflowId directly accessible
+      // For embed_other_workflow nodes, we need to make the workflowId directly accessible
       // in the node data as well as in settings
       const nodeUpdates: Record<string, any> = {
         ...updatedSettings,
@@ -947,9 +947,9 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
         }
       };
       
-      // For workflow_trigger or embed_other_workflow nodes, add workflowId as a direct property 
+      // For embed_other_workflow nodes, add workflowId as a direct property 
       // This is required for the workflow executor
-      if ((node.type === 'workflow_trigger' || node.type === 'embed_other_workflow') && updatedSettings.workflowId) {
+      if (node.type === 'embed_other_workflow' && updatedSettings.workflowId) {
         nodeUpdates.workflowId = updatedSettings.workflowId;
         console.log(`Saving ${node.type} node with workflowId:`, updatedSettings.workflowId);
       }
