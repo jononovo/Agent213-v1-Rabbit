@@ -6,7 +6,7 @@
  */
 
 import type { NodeExecutionData, WorkflowItem } from '@shared/nodeTypes';
-import { WorkflowTriggerNodeData, defaultData } from './ui';  // Import from UI to maintain a single source of truth
+import { EmbedOtherWorkflowNodeData, defaultData } from './ui';  // Import from UI to maintain a single source of truth
 
 /**
  * Helper function to make API requests
@@ -46,10 +46,10 @@ async function apiRequest(endpoint: string, method: string = 'GET', data?: any):
 }
 
 /**
- * The main executor function for the workflow trigger node
+ * The main executor function for the embed_other_workflow node
  */
 export const execute = async (
-  data: WorkflowTriggerNodeData, 
+  data: EmbedOtherWorkflowNodeData, 
   inputs: NodeExecutionData
 ): Promise<NodeExecutionData> => {
   console.log('Executing embed_other_workflow node with data:', data);
