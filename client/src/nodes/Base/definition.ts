@@ -6,12 +6,12 @@
  * node types in the system.
  */
 
-import { NodeInterfaceDefinition } from '../../../shared/nodeTypes';
+import { NodeSchema } from '../types';
 
 /**
  * Base node interface definition
  */
-export const baseNodeDefinition: NodeInterfaceDefinition = {
+export const baseNodeDefinition: NodeSchema = {
   inputs: {
     input: {
       type: 'any',

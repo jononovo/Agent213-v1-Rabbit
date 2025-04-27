@@ -1,8 +1,9 @@
 /**
- * Default Node
+ * Base Node
  * 
- * This is the default node UI component used for basic node types
- * and as a fallback for node types without specific implementations.
+ * This is the base node UI component that serves as the foundation 
+ * for all other node types and as a fallback for node types without 
+ * specific implementations.
  * 
  * Features:
  * - Settings drawer/sheet functionality
@@ -80,7 +81,7 @@ interface NodeSettings {
   fields?: SettingsField[];
 }
 
-export interface DefaultNodeData {
+export interface BaseNodeData {
   label: string;
   description?: string;
   type?: string;

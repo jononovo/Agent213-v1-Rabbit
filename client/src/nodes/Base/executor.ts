@@ -1,19 +1,19 @@
 /**
- * Default Node Executor
+ * Base Node Executor
  * 
- * This file defines the execution logic for the default node type.
+ * This file defines the execution logic for the base node type.
  * It simply passes through input data to the output.
  */
 
-import { NodeExecutionData, WorkflowItem } from '../../../shared/nodeTypes';
+import { NodeExecutionData, WorkflowItem } from '../types';
 
 /**
- * Execute the default node
+ * Execute the base node
  * @param inputs Node input data
  * @param params Node parameters
  * @returns Node output data
  */
-export async function executeDefaultNode(
+export async function executeBaseNode(
   inputs: Record<string, NodeExecutionData>,
   params: Record<string, any>
 ): Promise<Record<string, NodeExecutionData>> {
@@ -22,7 +22,7 @@ export async function executeDefaultNode(
   // Get the input data
   const inputData = inputs.input?.items || [];
   
-  // For a default node, we just pass through the data
+  // For a base node, we just pass through the data
   const items: WorkflowItem[] = inputData.map((item: WorkflowItem) => ({
     ...item
   }));
@@ -36,7 +36,7 @@ export async function executeDefaultNode(
       meta: {
         startTime,
         endTime,
-        source: 'default'
+        source: 'base'
       }
     }
   };
