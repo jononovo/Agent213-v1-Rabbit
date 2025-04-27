@@ -116,7 +116,7 @@ export const execute = async (
       meta: {
         startTime,
         endTime,
-        source: 'workflow_trigger',
+        source: 'embed_other_workflow',
         details: workflowResult
       }
     };

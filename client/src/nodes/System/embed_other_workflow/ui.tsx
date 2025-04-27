@@ -42,7 +42,7 @@ export const validator = (data: WorkflowTriggerNodeData) => {
 };
 
 // UI component for the Embed Other Workflow node
-export const component = React.memo(function WorkflowTriggerNode({ 
+export const component = React.memo(function EmbedOtherWorkflowNode({ 
   id, 
   data,
   selected,
@@ -57,7 +57,7 @@ export const component = React.memo(function WorkflowTriggerNode({
   };
   
   // Debug info
-  console.log(`Rendering workflow_trigger node with data:`, nodeData);
+  console.log(`Rendering embed_other_workflow node with data:`, nodeData);
   
   // Load available workflows
   useEffect(() => {
@@ -184,7 +184,7 @@ export const component = React.memo(function WorkflowTriggerNode({
 
       {/* Main node container */}
       <div className={cn(
-        "workflow-trigger-node rounded-lg border shadow-sm min-w-[240px] max-w-[320px]",
+        "embed-other-workflow-node rounded-lg border shadow-sm min-w-[240px] max-w-[320px]",
         selected ? "ring-2 ring-primary" : "",
         (data as any)._hasError ? "border-red-300 bg-red-50" : "border-slate-200 bg-white"
       )}>

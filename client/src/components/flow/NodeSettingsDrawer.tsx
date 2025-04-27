@@ -1248,7 +1248,7 @@ return (
                 </div>
               )}
               
-              {(node.type === 'workflow_trigger' || node.type === 'embed_other_workflow') && (
+              {node.type === 'embed_other_workflow' && (
                 <div className="mb-4">
                   <p className="text-sm text-muted-foreground">
                     Configure settings for the Embed Other Workflow node.
