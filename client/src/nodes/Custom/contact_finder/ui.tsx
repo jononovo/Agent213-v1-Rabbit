@@ -11,7 +11,7 @@ import { FormItem, FormLabel } from '@/components/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Slider } from '@/components/ui/slider';
-import DefaultNode from '@/nodes/Default/ui';
+import { BaseNode } from '@/nodes/Base';
 import { Badge } from '@/components/ui/badge';
 import { defaultData } from './definition';
 
@@ -187,14 +187,27 @@ const ContactFinderUI: React.FC<{
     </div>
   );
   
-  // Wrap in the DefaultNode
+  // Wrap in the BaseNode
   return (
-    <DefaultNode
-      inputs={[{ name: 'company', type: 'object' }, { name: 'jobTitles', type: 'array' }]}
-      outputs={[{ name: 'contacts', type: 'array' }, { name: 'metadata', type: 'object' }]}
-    >
-      {nodeContent}
-    </DefaultNode>
+    <BaseNode
+      id="contact_finder"
+      data={{
+        label: "Contact Finder",
+        description: "Find contacts at target companies",
+        type: "contact_finder",
+        category: "lead_generation",
+        childrenContent: nodeContent, // Use childrenContent prop instead of children
+        // Define input/output points as needed
+        inputPoints: [
+          { id: 'company', type: 'object' }, 
+          { id: 'jobTitles', type: 'array' }
+        ],
+        outputPoints: [
+          { id: 'contacts', type: 'array' }, 
+          { id: 'metadata', type: 'object' }
+        ]
+      }}
+    />
   );
 };
 
