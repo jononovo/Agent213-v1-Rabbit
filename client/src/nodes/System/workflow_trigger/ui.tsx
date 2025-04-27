@@ -1,7 +1,8 @@
 /**
- * Workflow Trigger Node UI Component
+ * Embed Other Workflow Node UI Component
  * 
  * UI component for the workflow trigger node with settings drawer integration.
+ * This node allows embedding and running another workflow within the current workflow.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -94,7 +95,7 @@ export const component = React.memo(function WorkflowTriggerNode({
     
     // Define the settings for the global settings drawer
     const settings = {
-      title: 'Workflow Trigger Settings',
+      title: 'Embed Other Workflow Settings',
       fields: [
         {
           key: 'workflowId',
@@ -139,8 +140,8 @@ export const component = React.memo(function WorkflowTriggerNode({
     (data as any).onChange({
       ...data,
       settings,
-      label: "Workflow Trigger",
-      description: "Triggers another workflow from within this workflow"
+      label: "Embed Other Workflow",
+      description: "Runs another workflow from within this workflow"
     });
   }, [id, data, availableWorkflows]);
   
@@ -193,7 +194,7 @@ export const component = React.memo(function WorkflowTriggerNode({
             <div className="flex-shrink-0 p-1.5 rounded-md bg-slate-100 text-slate-700 mr-2">
               <GitBranch className="h-4 w-4" />
             </div>
-            <h3 className="text-sm font-medium truncate text-slate-700">Workflow Trigger</h3>
+            <h3 className="text-sm font-medium truncate text-slate-700">Embed Other Workflow</h3>
           </div>
           <div className="flex items-center gap-2">
             {!isConfigured && (

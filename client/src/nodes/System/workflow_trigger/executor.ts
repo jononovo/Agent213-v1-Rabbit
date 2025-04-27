@@ -1,7 +1,7 @@
 /**
- * Workflow Trigger Node Executor
+ * Embed Other Workflow Node Executor
  * 
- * Handles the execution logic for the Workflow Trigger node,
+ * Handles the execution logic for the Embed Other Workflow node,
  * managing API calls to trigger other workflows and process their results.
  */
 
