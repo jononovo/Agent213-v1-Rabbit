@@ -1235,7 +1235,7 @@ return (
               {node.type === 'agent_trigger' && (
                 <div className="mb-4">
                   <p className="text-sm text-muted-foreground">
-                    Configure settings for the Agent/Workflow Trigger node.
+                    Configure settings for the Agent/Embed Other Workflow node.
                   </p>
                   
                   <Alert className="mt-2">
@@ -1251,7 +1251,7 @@ return (
               {node.type === 'workflow_trigger' && (
                 <div className="mb-4">
                   <p className="text-sm text-muted-foreground">
-                    Configure settings for the Workflow Trigger node.
+                    Configure settings for the Embed Other Workflow node.
                   </p>
                   
                   <Alert className="mt-2">
