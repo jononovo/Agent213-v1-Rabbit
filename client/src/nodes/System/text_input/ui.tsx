@@ -2,7 +2,7 @@
  * Text Input Node UI Component
  * 
  * This file contains the React component used to render the text input node
- * in the workflow editor. This node now uses DefaultNode as a wrapper to ensure
+ * in the workflow editor. This node uses BaseNode as a wrapper to ensure
  * consistent hover menu behavior and UI patterns.
  */
 
@@ -11,7 +11,7 @@ import { Handle, Position, NodeProps } from 'reactflow';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Type } from 'lucide-react';
-import DefaultNode from '@/nodes/Default/ui';
+import { BaseNode } from '@/nodes/Base';
 import { memo } from 'react';
 
 // Node interface
@@ -50,7 +50,7 @@ export const validator = (data: TextInputNodeData) => {
   };
 };
 
-// React component for the node, using DefaultNode as a wrapper
+// React component for the node, using BaseNode as a wrapper
 export const component = memo(({ data, id, isConnectable, selected }: NodeProps<TextInputNodeData>) => {
   // Combine default data with passed data
   const nodeData = { ...defaultData, ...data };
@@ -158,14 +158,14 @@ export const component = memo(({ data, id, isConnectable, selected }: NodeProps<
     ...nodeData,
     icon: iconElement,
     settings,
-    // These properties define custom content to render inside the DefaultNode
+    // These properties define custom content to render inside the BaseNode
     childrenContent: customContent,
     // Don't render the default handles since we're adding our own
     hideDefaultHandles: true
   };
   
-  // Return the default node wrapper with our customizations
-  return <DefaultNode 
+  // Return the base node wrapper with our customizations
+  return <BaseNode 
     data={enhancedData}
     id={id} 
     selected={selected}

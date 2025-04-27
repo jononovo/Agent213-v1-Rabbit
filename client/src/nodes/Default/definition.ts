@@ -11,7 +11,7 @@
 // Log deprecation warning
 console.warn("The Default node definition is deprecated. Please use BaseNode from the Base folder instead.");
 
-import { NodeInterfaceDefinition } from '../../../shared/nodeTypes';
+import { NodeInterfaceDefinition } from '../types';
 
 /**
  * Default node interface definition
