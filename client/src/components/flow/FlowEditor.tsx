@@ -32,8 +32,8 @@ import NodeSettingsDrawer from './NodeSettingsDrawer';
 
 // Import loading placeholder node
 import LoadingNode from '../flow/nodes/LoadingNode';
-// Import default node component as the fallback
-import DefaultNode from '../../nodes/Default';
+// Import base node component as the fallback
+import BaseNode from '../../nodes/Base';
 // Import the nodeRegistry for automatic node discovery
 import { getAllNodeTypes, getNodeUIPath, getNodeInfo, hasNodeType } from '@/lib/nodeRegistry';
 
@@ -50,7 +50,7 @@ const loadNodeComponent = (nodeType: string) => {
         .then(module => module.component || module.default)
         .catch(error => {
           console.warn(`Failed to load component for ${nodeType} from registry path:`, error);
-          return DefaultNode;
+          return BaseNode;
         });
     }
     
@@ -74,13 +74,13 @@ const loadNodeComponent = (nodeType: string) => {
               .then(module => module.component || module.default)
               .catch(rootError => {
                 console.warn(`Failed to load component for node type ${nodeType}:`, rootError);
-                return DefaultNode;
+                return BaseNode;
               });
           });
       });
   } catch (error) {
     console.warn(`Error importing component for node type ${nodeType}:`, error);
-    return Promise.resolve(DefaultNode);
+    return Promise.resolve(BaseNode);
   }
 };
 
@@ -102,7 +102,7 @@ const getNodeComponent = async (nodeType: string) => {
     return component;
   } catch (error) {
     console.warn(`Failed to load component for ${nodeType}:`, error);
-    return DefaultNode;
+    return BaseNode;
   }
 };
 
@@ -113,9 +113,9 @@ const createNodeTypes = () => {
     loading: LoadingNode,
   };
   
-  // Add all nodes from registry with DefaultNode as fallback
+  // Add all nodes from registry with BaseNode as fallback
   getAllNodeTypes().forEach(nodeInfo => {
-    baseNodeTypes[nodeInfo.id] = DefaultNode;
+    baseNodeTypes[nodeInfo.id] = BaseNode;
   });
   
   // Add some additional legacy types for backward compatibility
@@ -133,7 +133,7 @@ const createNodeTypes = () => {
   // Add any legacy types not already in the registry
   legacyTypes.forEach(type => {
     if (!baseNodeTypes[type]) {
-      baseNodeTypes[type] = DefaultNode;
+      baseNodeTypes[type] = BaseNode;
     }
   });
   

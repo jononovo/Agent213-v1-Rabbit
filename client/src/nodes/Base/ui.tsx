@@ -98,24 +98,24 @@ export interface BaseNodeData {
 }
 
 /**
- * Default Node - A generic node type with settings functionality
+ * Base Node - The foundation node with settings functionality
  * 
- * This node type serves as a fallback for nodes that don't have
- * specific UI implementations, or for simple node types that don't
- * need custom rendering. It includes a settings drawer.
+ * This node type serves as the foundation for all other node types and
+ * as a fallback for nodes that don't have specific UI implementations.
+ * It provides core features like the settings drawer, hover menu, and status indicators.
  */
-function DefaultNode({ 
+function BaseNode({ 
   data, 
   id, 
   selected = false, 
   isConnectable = true, 
-  type = "default", 
+  type = "base", 
   zIndex = undefined, 
   xPos = undefined, 
   yPos = undefined, 
   dragHandle = undefined, 
   ...rest 
-}: Partial<NodeProps<DefaultNodeData>> & { id: string; data: DefaultNodeData }) {
+}: Partial<NodeProps<BaseNodeData>> & { id: string; data: BaseNodeData }) {
   const [showSettings, setShowSettings] = useState(false);
   const [showContextActions, setShowContextActions] = useState(false);
   const [showHoverMenu, setShowHoverMenu] = useState(false);
@@ -832,4 +832,4 @@ function DefaultNode({
   );
 }
 
-export default memo(DefaultNode);
+export default memo(BaseNode);
