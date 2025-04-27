@@ -23,6 +23,7 @@ function Router() {
       <Route path="/workflow-editor/:id" component={WorkflowEditor} />
       <Route path="/workflow-test" component={WorkflowTestBench} />
       <Route path="/workflow-test/:id" component={WorkflowTestBench} />
+      <Route path="/workflow-logs/:id" component={WorkflowLogs} />
       {/* Removed workflow-chat-generator route as it's now integrated into the main editor */}
       <Route path="/agent/:id" component={AgentPage} />
       {/* Removed agent-test route */}

@@ -20,7 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Separator } from "@/components/ui/separator";
 
 import type { Log as BaseLog, Workflow } from '@shared/schema';
-import { apiRequest } from '@/lib/queryClient';
+import { queryClient, apiRequest } from '@/lib/queryClient';
 
 // Extended Log type with proper typing for executionPath
 interface ExecutionPath {
@@ -44,14 +44,18 @@ const WorkflowLogs = () => {
   // Fetch workflow details
   const { data: workflow, isLoading: isLoadingWorkflow } = useQuery({
     queryKey: ['/api/workflows', workflowId],
-    queryFn: () => apiRequest(`/api/workflows/${workflowId}`),
+    queryFn: async () => {
+      return apiRequest('GET', `/api/workflows/${workflowId}`);
+    },
     enabled: !isNaN(workflowId)
   });
 
   // Fetch logs for this workflow
   const { data: logs, isLoading: isLoadingLogs } = useQuery({
     queryKey: ['/api/logs', { workflowId }],
-    queryFn: () => apiRequest(`/api/logs?workflowId=${workflowId}`),
+    queryFn: async () => {
+      return apiRequest('GET', `/api/logs?workflowId=${workflowId}`);
+    },
     enabled: !isNaN(workflowId)
   });
 
@@ -112,7 +116,7 @@ const WorkflowLogs = () => {
               <Loader2 className="h-6 w-6 animate-spin" />
               <span className="ml-2">Loading logs...</span>
             </div>
-          ) : logs?.length > 0 ? (
+          ) : logs && logs.length > 0 ? (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -125,7 +129,7 @@ const WorkflowLogs = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {logs.map((log: Log) => (
+                  {logs && logs.map((log: Log) => (
                     <TableRow key={log.id}>
                       <TableCell className="font-mono">#{log.id}</TableCell>
                       <TableCell>
