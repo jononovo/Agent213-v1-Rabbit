@@ -3,7 +3,7 @@
  * 
  * This node allows users to define custom JavaScript functions
  * that transform input data and produce output.
- * It uses DefaultNode as a wrapper to ensure consistent hover menu behavior,
+ * It uses BaseNode as a wrapper to ensure consistent hover menu behavior,
  * while preserving custom functionality.
  */
 
@@ -44,7 +44,7 @@ import NodeHoverMenu, {
   NodeHoverMenuAction
 } from '@/components/nodes/common/NodeHoverMenu';
 
-import DefaultNode from '@/nodes/Default/ui';
+import { BaseNode } from '@/nodes/Base';
 
 // Node interface
 interface FunctionNodeData {
@@ -621,7 +621,7 @@ export function StandaloneFunctionNode({ data, id, selected, isConnectable }: No
 }
 
 /**
- * Function Node Component - Using DefaultNode as a wrapper for consistent behavior
+ * Function Node Component - Using BaseNode as a wrapper for consistent behavior
  * This is the main component that will be used by the application
  */
 function FunctionNode(props: NodeProps<FunctionNodeData>) {
@@ -870,7 +870,7 @@ function FunctionNode(props: NodeProps<FunctionNodeData>) {
     ]
   };
 
-  // Use the DefaultNode approach if needed for consistency
+  // Use the BaseNode approach if needed for consistency
   if (data.useDefaultNodeWrapper === true) {
     // Enhanced data with settings and icon
     const enhancedData = {
@@ -878,14 +878,14 @@ function FunctionNode(props: NodeProps<FunctionNodeData>) {
       icon: iconElement,
       settings,
       settingsSummary: getSettingsSummary(),
-      // These properties define custom content to render inside the DefaultNode
+      // These properties define custom content to render inside the BaseNode
       customContent: customContent,
       // Don't render the default handles since we're adding our own
       hideDefaultHandles: true
     };
     
-    // Return the default node wrapper with our customizations
-    return <DefaultNode 
+    // Return the base node wrapper with our customizations
+    return <BaseNode 
       data={enhancedData}
       id={id}
       selected={selected}

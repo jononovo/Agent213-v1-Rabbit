@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { Send, ExternalLink } from 'lucide-react';
-import DefaultNode from '../../Default/ui';
+import { BaseNode } from '@/nodes/Base';
 import { Badge } from '@/components/ui/badge';
 
 export default function SendToWebhookNode({ id, data }: { id: string, data: any }) {
@@ -40,7 +40,7 @@ export default function SendToWebhookNode({ id, data }: { id: string, data: any 
   // Node content
   const nodeContent = (
     <div className="p-4 flex flex-col gap-2">
-      {/* Title moved to the header in DefaultNode */}
+      {/* Title moved to the header in BaseNode */}
       
       <div className="bg-muted/80 p-2 rounded-md flex flex-col">
         <div className="flex items-center justify-between">
