@@ -40,8 +40,8 @@
       }
     },
     {
-      "id": "workflow_trigger-1",
-      "type": "workflow_trigger",
+      "id": "embed_other_workflow-1",
+      "type": "embed_other_workflow",
       "position": {
         "x": 600,
         "y": 100
@@ -77,8 +77,8 @@
       }
     },
     {
-      "id": "workflow_trigger-2",
-      "type": "workflow_trigger",
+      "id": "embed_other_workflow-2",
+      "type": "embed_other_workflow",
       "position": {
         "x": 1000,
         "y": 200
@@ -114,8 +114,8 @@
       }
     },
     {
-      "id": "workflow_trigger-3",
-      "type": "workflow_trigger",
+      "id": "embed_other_workflow-3",
+      "type": "embed_other_workflow",
       "position": {
         "x": 1600,
         "y": 200
@@ -176,13 +176,13 @@
     {
       "id": "edge-function2-workflow1-1",
       "source": "function_node-2",
-      "target": "workflow_trigger-1",
+      "target": "embed_other_workflow-1",
       "sourceHandle": "output",
       "targetHandle": "input"
     },
     {
       "id": "edge-trigger1-function4-1",
-      "source": "workflow_trigger-1",
+      "source": "embed_other_workflow-1",
       "target": "function_node-4",
       "sourceHandle": "output",
       "targetHandle": "input"
@@ -197,13 +197,13 @@
     {
       "id": "edge-decision1-trigger2-1",
       "source": "decision-1",
-      "target": "workflow_trigger-2",
+      "target": "embed_other_workflow-2",
       "sourceHandle": "true",
       "targetHandle": "input"
     },
     {
       "id": "edge-trigger2-function5-1",
-      "source": "workflow_trigger-2",
+      "source": "embed_other_workflow-2",
       "target": "function_node-5",
       "sourceHandle": "output",
       "targetHandle": "input"
@@ -218,13 +218,13 @@
     {
       "id": "edge-decision2-trigger3-1",
       "source": "decision-2",
-      "target": "workflow_trigger-3",
+      "target": "embed_other_workflow-3",
       "sourceHandle": "true",
       "targetHandle": "input"
     },
     {
       "id": "edge-trigger3-function3-1",
-      "source": "workflow_trigger-3",
+      "source": "embed_other_workflow-3",
       "target": "function_node-3",
       "sourceHandle": "output",
       "targetHandle": "input"
