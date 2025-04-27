@@ -1,5 +1,8 @@
 /**
- * Default Node
+ * Default Node - DEPRECATED
+ * 
+ * ⚠️ DEPRECATED: This node has been renamed to "BaseNode" and moved to the "Base" folder.
+ * Please use BaseNode instead as this Default implementation will be removed in the future.
  * 
  * This is the default node UI component used for basic node types
  * and as a fallback for node types without specific implementations.
@@ -11,6 +14,11 @@
  * - Error message display
  * - Hover menu for quick actions
  */
+
+// Log a warning when this component is used
+console.warn(
+  "The DefaultNode component is deprecated. Please use BaseNode from the Base folder instead."
+);
 
 import React, { useState, memo, useCallback, useRef, useEffect } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';

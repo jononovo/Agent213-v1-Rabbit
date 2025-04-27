@@ -1,9 +1,15 @@
 /**
- * Default Node Definition
+ * Default Node Definition - DEPRECATED
+ * 
+ * ⚠️ DEPRECATED: This node has been renamed to "BaseNode" and moved to the "Base" folder.
+ * Please use BaseNode instead as this Default implementation will be removed in the future.
  * 
  * This file defines the default node type, with its inputs, outputs,
  * and basic functionality.
  */
+
+// Log deprecation warning
+console.warn("The Default node definition is deprecated. Please use BaseNode from the Base folder instead.");
 
 import { NodeInterfaceDefinition } from '../../../shared/nodeTypes';
 
