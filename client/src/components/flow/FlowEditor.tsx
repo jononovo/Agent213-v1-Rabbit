@@ -25,7 +25,7 @@ import NodesPanel from './NodesPanel';
 import { useMutation } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { apiRequest } from '@/lib/queryClient';
-import { ArrowLeft, Save, Play, Settings, TestTube } from 'lucide-react';
+import { ArrowLeft, Save, Play, Settings, TestTube, ListFilter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import MonkeyAgentChatOverlay from '@/components/workflows/MonkeyAgentChatOverlay';
 import NodeSettingsDrawer from './NodeSettingsDrawer';
@@ -1232,6 +1232,15 @@ const FlowEditor = ({
               >
                 <TestTube className="h-4 w-4 mr-2" />
                 Test
+              </Button>
+            )}
+            {workflow?.id && (
+              <Button
+                onClick={() => navigate(`/workflow-logs/${workflow.id}`)}
+                variant="outline"
+              >
+                <ListFilter className="h-4 w-4 mr-2" />
+                Logs
               </Button>
             )}
             <Button 

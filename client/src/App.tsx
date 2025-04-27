@@ -7,6 +7,7 @@ import { ChatProvider, ChatToggle } from "@/components/chat";
 import Builder from "@/pages/builder";
 import WorkflowEditor from "@/pages/workflow-editor";
 import WorkflowTestBench from "@/pages/workflow-test";
+import WorkflowLogs from "@/pages/workflow-logs";
 // Removed workflow-chat-generator import as it's now integrated into the main editor
 import AgentPage from "@/pages/agent-page";
 import ApiRegistry from "@/pages/api-registry";
