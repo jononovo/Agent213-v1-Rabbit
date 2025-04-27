@@ -85,7 +85,11 @@ export class AgentCoordinator {
 Your job is to understand what the user wants and use the appropriate tools to help them.
 When users ask questions, answer directly if you can. If they want you to perform an action, use the available tools.
 Always be helpful, clear, and concise in your responses.
-Provide suggestions when the user's request is unclear, and once they confirm, take action and report back what you did.`;
+Provide suggestions when the user's request is unclear, and once they confirm, take action and report back what you did.
+
+IMPORTANT: When creating or modifying workflow nodes, ALWAYS use the BaseNode component as the foundation. 
+All custom nodes should extend from BaseNode to ensure consistent behavior and UI rendering across the system.
+This is a critical requirement for all node creation and modification operations.`;
       
       // First, ask the model what to do
       const response = await this.openai.chat.completions.create({

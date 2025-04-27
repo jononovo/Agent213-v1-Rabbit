@@ -57,6 +57,24 @@ const addNodeTool: Tool = {
         };
       }
       
+      // Prepare the node data, ensuring it extends BaseNode
+      const nodeData = data || {};
+      
+      // Add BaseNode metadata to ensure the node extends from BaseNode
+      nodeData.isBaseExtension = true;
+      nodeData.baseNodeVersion = "1.0";
+      
+      // Ensure handles are defined for BaseNode compatibility
+      nodeData.handles = nodeData.handles || {
+        input: ['input'],
+        output: ['output']
+      };
+      
+      // Add description and settings if not present
+      nodeData.description = nodeData.description || `${nodeType} node - extends BaseNode`;
+      nodeData.settings = nodeData.settings || {};
+      nodeData.settingsData = nodeData.settingsData || {};
+      
       // Create a new node
       const newNode = await storage.createNode({
         workflowId,
@@ -66,7 +84,7 @@ const addNodeTool: Tool = {
         isCustom: false,
         version: '1.0.0',
         position: position || { x: 100, y: 100 }, // Default position if not provided
-        data: data || {},
+        data: nodeData,
         connections: [],
       });
       

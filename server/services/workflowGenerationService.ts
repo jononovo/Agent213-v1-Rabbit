@@ -204,6 +204,8 @@ Complexity level: ${complexity}
 Domain focus: ${domain}
 Maximum nodes: ${maxNodes}
 
+IMPORTANT: All custom nodes should extend from the BaseNode component. Always use the BaseNode as the foundation for any new node types you create. This ensures consistent UI behavior across the system.
+
 Your task is to:
 1. Analyze the user's natural language description of a workflow
 2. Identify the appropriate node types, ALWAYS using ONLY from the "Supported Node Types" list above
@@ -416,6 +418,9 @@ Ensure that:
             if (!node.data.category) {
               node.data.category = this.getCategoryForNodeType(node.type);
             }
+            
+            // Ensure node extends from BaseNode by adding the appropriate metadata
+            this.ensureNodeExtendsBaseNode(node);
 
             return node;
           },
@@ -452,6 +457,46 @@ Ensure that:
     };
     
     return defaultCategories[type] || "default";
+  }
+  
+  /**
+   * Ensure that a node extends the BaseNode component by adding required metadata
+   * This helps with consistency and ensures that all nodes have the necessary properties
+   * to work with the BaseNode wrapper component
+   */
+  private ensureNodeExtendsBaseNode(node: any): void {
+    if (!node.data) {
+      node.data = {};
+    }
+    
+    // Ensure the node has basic properties to work with BaseNode
+    node.data.baseNodeVersion = "1.0"; // Add a version to track BaseNode compatibility
+    
+    // Add standard BaseNode properties if they don't exist
+    if (!node.data.description) {
+      node.data.description = `${node.data.label || 'Node'} - extends BaseNode`;
+    }
+    
+    // Ensure settings object exists
+    if (!node.data.settings) {
+      node.data.settings = {};
+    }
+    
+    // Initialize settingsData if missing (used by BaseNode UI)
+    if (!node.data.settingsData) {
+      node.data.settingsData = {};
+    }
+    
+    // Add isBaseExtension flag to indicate this node uses BaseNode
+    node.data.isBaseExtension = true;
+    
+    // Add standard handles for input/output that BaseNode expects
+    node.data.handles = node.data.handles || {
+      input: ['input'],
+      output: ['output']
+    };
+    
+    console.log(`Ensured node ${node.id} extends BaseNode`);
   }
 
   /**
