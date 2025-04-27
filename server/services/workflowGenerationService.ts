@@ -187,7 +187,7 @@ Supported Node Types (use ONLY these types):
 - filter: For filtering data based on conditions
 - response_message: For formatting response messages
 - api_response_message: For formatting API responses
-- workflow_trigger: For triggering other workflows
+- embed_other_workflow: For triggering other workflows
 - agent_trigger: For triggering agents
 `;
 
