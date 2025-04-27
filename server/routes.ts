@@ -2177,12 +2177,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Parse optional query parameters
       const agentId = req.query.agentId ? parseInt(req.query.agentId as string, 10) : undefined;
+      const workflowId = req.query.workflowId ? parseInt(req.query.workflowId as string, 10) : undefined;
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
       
-      const logs = await storage.getLogs(agentId, limit);
+      const logs = await storage.getLogs(agentId, workflowId, limit);
       res.json(logs);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching logs" });
+      res.status(500).json({ 
+        message: "Error fetching logs", 
+        details: error instanceof Error ? error.message : String(error) 
+      });
     }
   });
   
