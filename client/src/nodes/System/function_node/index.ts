@@ -17,7 +17,7 @@ export const defaultData = {
   code: 'function process(input) {\n  // Your code here\n  return input;\n}',
   settingsData: {},
   // By default, use the BaseNode wrapper for consistent UI
-  useDefaultNodeWrapper: true
+  useBaseNodeWrapper: true
 };
 
 // Validator function to ensure the node is properly configured

@@ -1,7 +1,7 @@
 /**
  * Enhanced Node - DEPRECATED
  * 
- * @deprecated This component is deprecated. Use DefaultNode from /nodes/Default/ui.tsx instead.
+ * @deprecated This component is deprecated. Use BaseNode from /nodes/Base/ui.tsx instead.
  * 
  * This component wraps our EnhancedBaseNode to make it compatible with ReactFlow
  * by passing through the necessary props.

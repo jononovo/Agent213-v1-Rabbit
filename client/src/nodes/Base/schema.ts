@@ -32,8 +32,6 @@ export const baseNodeSchema = z.object({
 });
 
 export type BaseNodeType = z.infer<typeof baseNodeSchema>;
-// Keep the DefaultNodeType for backward compatibility
-export type DefaultNodeType = BaseNodeType;
 
 /**
  * Base node metadata
@@ -57,5 +55,3 @@ export const baseNodeInfo = {
   }
 };
 
-// Export the defaultNodeInfo for backward compatibility
-export const defaultNodeInfo = baseNodeInfo;
