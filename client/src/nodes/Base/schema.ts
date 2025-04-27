@@ -7,9 +7,9 @@
 import { z } from 'zod';
 
 /**
- * Schema for default node settings
+ * Schema for base node settings
  */
-export const defaultNodeSchema = z.object({
+export const baseNodeSchema = z.object({
   // Basic node information
   label: z.string().optional().default('Node'),
   description: z.string().optional().default('Generic node'),
@@ -31,15 +31,17 @@ export const defaultNodeSchema = z.object({
   settings: z.record(z.any()).optional().default({}),
 });
 
-export type DefaultNodeType = z.infer<typeof defaultNodeSchema>;
+export type BaseNodeType = z.infer<typeof baseNodeSchema>;
+// Keep the DefaultNodeType for backward compatibility
+export type DefaultNodeType = BaseNodeType;
 
 /**
- * Default node metadata
+ * Base node metadata
  */
-export const defaultNodeInfo = {
-  type: 'default',
-  name: 'Default Node',
-  description: 'A generic node that can be used for any purpose.',
+export const baseNodeInfo = {
+  type: 'base',
+  name: 'Base Node',
+  description: 'A foundation node that can be used as a base for all node types.',
   category: 'general',
   inputs: {
     input: {
@@ -54,3 +56,6 @@ export const defaultNodeInfo = {
     }
   }
 };
+
+// Export the defaultNodeInfo for backward compatibility
+export const defaultNodeInfo = baseNodeInfo;
