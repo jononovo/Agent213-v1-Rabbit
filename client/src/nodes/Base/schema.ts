@@ -1,7 +1,7 @@
 /**
- * Default Node Schema
+ * Base Node Schema
  * 
- * This defines the schema and interface for the default node type.
+ * This defines the schema and interface for the base node type.
  */
 
 import { z } from 'zod';
