@@ -42,25 +42,25 @@ const WorkflowLogs = () => {
   const [isLogDetailsOpen, setIsLogDetailsOpen] = useState(false);
 
   // Fetch workflow details
-  const { data: workflow, isLoading: isLoadingWorkflow } = useQuery({
+  const { data: workflow, isLoading: isLoadingWorkflow } = useQuery<Workflow>({
     queryKey: ['/api/workflows', workflowId],
     queryFn: async () => {
-      return apiRequest('GET', `/api/workflows/${workflowId}`);
+      return apiRequest<Workflow>('GET', `/api/workflows/${workflowId}`);
     },
     enabled: !isNaN(workflowId)
   });
 
   // Fetch logs for this workflow
-  const { data: logs, isLoading: isLoadingLogs } = useQuery({
+  const { data: logs, isLoading: isLoadingLogs } = useQuery<Log[]>({
     queryKey: ['/api/logs', { workflowId }],
     queryFn: async () => {
-      return apiRequest('GET', `/api/logs?workflowId=${workflowId}`);
+      return apiRequest<Log[]>('GET', `/api/logs?workflowId=${workflowId}`);
     },
     enabled: !isNaN(workflowId)
   });
 
   const handleBackClick = () => {
-    navigate(`/workflows/${workflowId}`);
+    navigate(`/workflow-editor/${workflowId}`);
   };
 
   const handleViewLogDetails = (log: Log) => {
