@@ -871,7 +871,7 @@ function FunctionNode(props: NodeProps<FunctionNodeData>) {
   };
 
   // Use the BaseNode approach if needed for consistency
-  if (data.useDefaultNodeWrapper === true) { // keeping the prop name for backward compatibility
+  if (data.useBaseNodeWrapper === true || data.useDefaultNodeWrapper === true) { // Check both new and old prop names
     // Enhanced data with settings and icon
     const enhancedData = {
       ...nodeData,

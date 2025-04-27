@@ -158,7 +158,7 @@ const CompanySearchUI: React.FC<{
     </div>
   );
   
-  // Wrap in the BaseNode - BaseNode expects different props than DefaultNode
+  // Wrap in the BaseNode with the right props
   return (
     <BaseNode
       id="company_search"
