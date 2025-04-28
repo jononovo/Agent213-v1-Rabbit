@@ -23,6 +23,7 @@ import { Save, X, BookOpen, HelpCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Agent } from '@shared/schema';
 import NodeReadmeModal from '@/components/nodes/common/NodeReadmeModal';
+import { getNodeDefinitionPath } from '@/lib/nodeRegistry';
 
 interface NodeSettingsDrawerProps {
   isOpen: boolean;
@@ -215,87 +216,16 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       return nodeSettings;
     }
     
-    // Attempt to dynamically import node settings from the node definition
-    try {
-      // If the node has settings defined in its metadata, import them here
-      // This approach preserves the drawer as a generic component
-      // and leaves node-specific settings in the node's own definition
-    } catch (error) {
-      console.error(`Error loading settings for node type ${type}:`, error);
-    }
+    // For future implementation: 
+    // We should load settings defined directly in node definition files
+    // This would require modifying this drawer component to be async
+    // or loading and caching the settings ahead of time
+    
+    // Current solution: Continue using the standard approach of having settings
+    // defined in the node's data object or in the fallback switch cases below
     
     // Fall back to type-specific settings for special cases
     switch (type) {
-      case 'send_to_webhook':
-        return [
-          {
-            id: 'respondToOriginal',
-            label: 'Response Mode',
-            type: 'select',
-            description: 'Choose whether to send data to a new webhook or respond to the original request',
-            options: [
-              { value: 'false', label: 'Send to a new webhook URL' },
-              { value: 'true', label: 'Respond to the original webhook request' }
-            ],
-            default: 'false'
-          },
-          {
-            id: 'url',
-            label: 'Webhook URL',
-            type: 'text',
-            description: 'URL of the external webhook endpoint',
-            placeholder: 'https://example.com/webhook',
-            required: false
-          },
-          {
-            id: 'method',
-            label: 'HTTP Method',
-            type: 'select',
-            description: 'HTTP method to use for the webhook request',
-            options: [
-              { value: 'POST', label: 'POST' },
-              { value: 'PUT', label: 'PUT' },
-              { value: 'PATCH', label: 'PATCH' }
-            ],
-            default: 'POST'
-          },
-          {
-            id: 'headers',
-            label: 'Custom Headers',
-            type: 'textarea',
-            description: 'Custom HTTP headers to include in the request (JSON format)',
-            placeholder: '{"Content-Type": "application/json", "Authorization": "Bearer your-token"}',
-            required: false
-          },
-          {
-            id: 'retryCount',
-            label: 'Retry Count',
-            type: 'number',
-            description: 'Number of times to retry if the request fails',
-            min: 0,
-            max: 10,
-            default: 3
-          },
-          {
-            id: 'retryDelay',
-            label: 'Retry Delay (ms)',
-            type: 'number',
-            description: 'Delay between retry attempts in milliseconds',
-            min: 100,
-            max: 10000,
-            default: 1000
-          },
-          {
-            id: 'timeout',
-            label: 'Timeout (ms)',
-            type: 'number',
-            description: 'Request timeout in milliseconds',
-            min: 100,
-            max: 30000,
-            default: 5000
-          }
-        ];
-      
       case 'webhook_trigger':
         return [
           {
@@ -338,6 +268,78 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           }
         ];
       
+      case 'send_to_webhook':
+        // This is a temporary solution until we have the async dynamic loading working
+        // Ideally, we would pull these settings directly from the node definition file
+        return [
+          {
+            id: 'respondToOriginal',
+            label: 'Response Mode',
+            type: 'select',
+            description: 'Choose whether to send data to a new webhook or respond to the original request',
+            options: [
+              { value: 'false', label: 'Send to a new webhook URL' },
+              { value: 'true', label: 'Respond to the original webhook request' }
+            ],
+            defaultValue: 'false'
+          },
+          {
+            id: 'url',
+            label: 'Webhook URL',
+            type: 'text',
+            description: 'URL of the external webhook endpoint',
+            placeholder: 'https://example.com/webhook',
+            required: false
+          },
+          {
+            id: 'method',
+            label: 'HTTP Method',
+            type: 'select',
+            description: 'HTTP method to use for the webhook request',
+            options: [
+              { value: 'POST', label: 'POST' },
+              { value: 'PUT', label: 'PUT' },
+              { value: 'PATCH', label: 'PATCH' }
+            ],
+            defaultValue: 'POST'
+          },
+          {
+            id: 'headers',
+            label: 'Custom Headers',
+            type: 'textarea',
+            description: 'Custom HTTP headers to include in the request (JSON format)',
+            placeholder: '{"Content-Type": "application/json", "Authorization": "Bearer your-token"}',
+            required: false
+          },
+          {
+            id: 'retryCount',
+            label: 'Retry Count',
+            type: 'number',
+            description: 'Number of times to retry if the request fails',
+            min: 0,
+            max: 10,
+            defaultValue: 3
+          },
+          {
+            id: 'retryDelay',
+            label: 'Retry Delay (ms)',
+            type: 'number',
+            description: 'Delay between retry attempts in milliseconds',
+            min: 100,
+            max: 10000,
+            defaultValue: 1000
+          },
+          {
+            id: 'timeout',
+            label: 'Timeout (ms)',
+            type: 'number',
+            description: 'Request timeout in milliseconds',
+            min: 100,
+            max: 30000,
+            defaultValue: 5000
+          }
+        ];
+        
       case 'webhook_response':
         return [
           {
