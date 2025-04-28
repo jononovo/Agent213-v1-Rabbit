@@ -115,6 +115,11 @@ interface NodeFolderTest {
   iterationCount?: number; // For AI agent improvement iterations
 }
 
+// Type guard for NodeFolderTest status
+function isValidNodeTestStatus(status: string): status is 'queued' | 'running' | 'completed' | 'failed' {
+  return ['queued', 'running', 'completed', 'failed'].includes(status);
+}
+
 const NodeDebugPanel: React.FC = () => {
   const { toast } = useToast();
   const [selectedNode, setSelectedNode] = useState<NodeType | null>(null);
@@ -355,7 +360,7 @@ const NodeDebugPanel: React.FC = () => {
     const newTest: NodeFolderTest = {
       path: nodeFolderPath,
       nodeType: nodeTypeFromFolder,
-      status: 'running',
+      status: 'running' as const,
       startTime: new Date(),
       results: [],
       iterationCount: 1
@@ -404,11 +409,11 @@ const NodeDebugPanel: React.FC = () => {
           const hasPending = newTest.results.some(r => r.status === 'pending');
           
           if (hasFailures) {
-            newTest.status = 'failed';
+            newTest.status = 'failed' as const;
           } else if (hasPending) {
-            newTest.status = 'running';
+            newTest.status = 'running' as const;
           } else if (index === testsToRun - 1) {
-            newTest.status = 'completed';
+            newTest.status = 'completed' as const;
             newTest.endTime = new Date();
           }
           
@@ -455,7 +460,7 @@ const NodeDebugPanel: React.FC = () => {
                   Node Folder Test
                 </CardTitle>
                 <CardDescription>
-                  Testing node in folder: <code className="bg-slate-100 px-1 py-0.5 rounded">{nodeFolderPath}</code>
+                  Testing node in folder: <span className="bg-slate-100 px-1 py-0.5 rounded font-mono text-sm">{nodeFolderPath}</span>
                 </CardDescription>
               </div>
               
@@ -574,7 +579,7 @@ const NodeDebugPanel: React.FC = () => {
                   
                   // Re-run the tests but with higher success probability
                   if (folderTestResults) {
-                    const newTest = {...folderTestResults, status: 'running'};
+                    const newTest = {...folderTestResults, status: 'running' as const};
                     newTest.iterationCount = (newTest.iterationCount || 1) + 1;
                     
                     // Reset results
@@ -587,7 +592,10 @@ const NodeDebugPanel: React.FC = () => {
                       });
                     });
                     
-                    setFolderTestResults(newTest);
+                    // Ensure status is a valid enum value before setting state
+                    if(isValidNodeTestStatus(newTest.status)) {
+                      setFolderTestResults(newTest);
+                    }
                     
                     // Simulate AI agent improving the node
                     toast({
@@ -627,16 +635,18 @@ const NodeDebugPanel: React.FC = () => {
                           const hasPending = newTest.results.some(r => r.status === 'pending');
                           
                           if (hasFailures) {
-                            newTest.status = 'failed';
+                            newTest.status = 'failed' as const;
                           } else if (hasPending) {
-                            newTest.status = 'running';
+                            newTest.status = 'running' as const;
                           } else if (index === testsToRun - 1) {
-                            newTest.status = 'completed';
+                            newTest.status = 'completed' as const;
                             newTest.endTime = new Date();
                           }
                           
-                          // Update the state
-                          setFolderTestResults({...newTest});
+                          // Update the state if status is valid
+                          if(isValidNodeTestStatus(newTest.status)) {
+                            setFolderTestResults({...newTest});
+                          }
                         }
                         
                         // When all tests are completed
