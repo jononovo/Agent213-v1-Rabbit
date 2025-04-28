@@ -23,7 +23,7 @@ The node system is built around a folder-based architecture where each node type
 2. **UI Component**: Renders the node in the workflow editor
 3. **Executor**: Handles the runtime logic when the node executes
 
-The system uses a central registry (`nodeRegistry.ts`) that discovers and loads node definitions dynamically, making them available throughout the application.
+The system uses a central registry (`nodeRegistry.ts`) that discovers and loads node definitions dynamically, making them available throughout the application. This registry is the single source of truth for node information, ensuring consistency across the application.
 
 ## File Structure
 
@@ -69,37 +69,23 @@ Here's a comprehensive template:
  * [Brief description of what the node does]
  */
 
+import { NodeDefinition } from '../../types';
 import { z } from 'zod';
-import { [IconName] } from 'lucide-react';
 
-// Default configuration for the node
-const defaultData = {
-  // Default values for all configurable properties
-  propertyOne: '',
-  propertyTwo: 'default-value',
-  propertyThree: 0,
-  // ...additional properties
-};
-
-const definition = {
+const definition: NodeDefinition = {
   // Core node metadata
   type: 'unique_node_type_id',          // Unique identifier, no spaces
   name: 'Human-Readable Node Name',      // Display name
   description: 'Detailed description of what this node does',
   category: 'category_name',             // One of: actions, logic, data, ai, integration, etc.
-  icon: IconName,                        // Lucide icon or custom component
   version: '1.0.0',                      // Semantic version
-  
-  // Default data for initialization
-  defaultData: defaultData,
   
   // Input ports definition
   inputs: {
     // Each input has a unique key and definition
     input1: {
       type: 'string',                    // Data type: string, number, boolean, object, any
-      description: 'Description of input',
-      required: true                     // Is this input required?
+      description: 'Description of input'
     },
     // Additional inputs...
   },
@@ -118,7 +104,7 @@ const definition = {
   settings: [
     {
       key: 'propertyOne',                // Must match a property in defaultData
-      type: 'string',                    // Field type: string, number, select, multiselect, textarea
+      type: 'text',                      // Field type: text, number, select, multiselect, textarea, password, json, radio
       label: 'User-friendly label',
       description: 'Help text explaining this setting',
       placeholder: 'Example placeholder',
@@ -145,15 +131,7 @@ const definition = {
       default: 50
     },
     // Additional settings...
-  ],
-  
-  // Validation schema using Zod
-  validation: z.object({
-    propertyOne: z.string().optional(),
-    propertyTwo: z.enum(['option-a', 'option-b']).default('option-a'),
-    propertyThree: z.number().min(0).max(100).default(50),
-    // Additional property validations...
-  })
+  ]
 };
 
 export default definition;
@@ -161,15 +139,27 @@ export default definition;
 
 ### Key Considerations for Definition File
 
-1. **Settings Array**: This is crucial for the `NodeSettingsDrawer` integration. Each setting must include:
-   - `key`: Must match a property in `defaultData`
-   - `type`: Determines the input control rendered
+1. **NodeDefinition Interface**: Always implement the correct interface from `../../types.ts` to ensure all required properties are included.
+
+2. **Settings Array**: This is crucial for the `NodeSettingsDrawer` integration. Each setting must include:
+   - `key`: Unique identifier for the setting
+   - `type`: Determines the input control rendered (text, number, select, etc.)
    - `label` and `description`: User-friendly text
    - Appropriate additional properties based on type (options for select, min/max for number, etc.)
 
-2. **Type vs Key**: The `settings` array must use `key` rather than `id` for property identifiers, as the system now standardizes on `key`.
+3. **Type Consistency**: Use the approved types for settings:
+   - `text`: Text input field
+   - `password`: Password input (masked)
+   - `number`: Numeric input with optional min/max
+   - `select`: Dropdown selection
+   - `radio`: Radio button group
+   - `textarea`: Multi-line text input
+   - `multiselect`: Multiple selection
+   - `json`: JSON editor
 
-3. **Category**: Choose from existing categories to properly group your node:
+4. **Inputs and Outputs**: Always define the inputs and outputs with appropriate types and descriptions to generate proper connection points on the node.
+
+5. **Category**: Choose from existing categories to properly group your node:
    - `actions`: Nodes that perform operations or trigger events
    - `logic`: Flow control nodes (if/else, switch, etc.)
    - `data`: Data transformation and processing
@@ -192,11 +182,17 @@ Here's a comprehensive template:
  */
 
 import React from 'react';
-import { [IconName] } from 'lucide-react';
 import { BaseNode } from '@/nodes/Base';
 import { Badge } from '@/components/ui/badge';
 
-export default function CustomNodeUI({ id, data }: { id: string, data: any }) {
+// Define default data for this node type
+export const defaultData = {
+  propertyOne: '',
+  propertyTwo: 'default-value',
+  propertyThree: 0
+};
+
+export default function CustomNodeUI({ id, data, isConnectable }: { id: string, data: any, isConnectable?: boolean }) {
   // Extract node settings
   const settings = data?.settings || {};
   const propertyOne = settings.propertyOne || '';
@@ -253,6 +249,7 @@ export default function CustomNodeUI({ id, data }: { id: string, data: any }) {
         showNote: data.showNote,
         useGlobalSettingsOnly: true              // Use global settings drawer only
       }}
+      isConnectable={isConnectable}
     />
   );
 }
@@ -260,13 +257,17 @@ export default function CustomNodeUI({ id, data }: { id: string, data: any }) {
 
 ### Key Considerations for UI Component
 
-1. **Settings Extraction**: Access settings via `data?.settings` to display current configuration.
+1. **Default Data Export**: Export a `defaultData` object that defines default values for all node settings.
 
-2. **Status Display**: Use the `isProcessing`, `isComplete`, and `hasError` flags to show execution status.
+2. **Settings Extraction**: Access settings via `data?.settings` to display current configuration.
 
-3. **BaseNode Integration**: Always use the `BaseNode` wrapper for consistency across all nodes.
+3. **Status Display**: Use the `isProcessing`, `isComplete`, and `hasError` flags to show execution status.
 
-4. **Type Consistency**: Ensure the `type` property in `BaseNode` matches your node's unique identifier.
+4. **BaseNode Integration**: Always use the `BaseNode` wrapper for consistency across all nodes.
+
+5. **Type Consistency**: Ensure the `type` property in `BaseNode` matches your node's unique identifier.
+
+6. **isConnectable Prop**: Always pass the `isConnectable` prop to the `BaseNode` component.
 
 ## Step 3: Create Executor
 
@@ -279,7 +280,6 @@ The executor (`executor.ts`) contains the logic that runs when the node is execu
  * This file handles the execution logic for the [node type] node.
  */
 
-import { createNodeOutput, createErrorOutput } from '../../nodeOutputUtils';
 import { NodeExecutionData } from '@shared/nodeTypes';
 
 // Define the node data interface
@@ -296,13 +296,13 @@ interface CustomNodeData {
  */
 export const execute = async (
   nodeData: CustomNodeData,
-  inputs: Record<string, NodeExecutionData>
-): Promise<NodeExecutionData> => {
+  inputs?: Record<string, NodeExecutionData>
+): Promise<Record<string, NodeExecutionData>> => {
   const startTime = new Date();
   
   try {
     // 1. Extract input data
-    const inputData = inputs.input1?.items?.[0]?.json || {};
+    const inputData = inputs?.input1?.items?.[0]?.json || {};
     
     // 2. Extract settings from nodeData
     const { propertyOne, propertyTwo, propertyThree } = nodeData;
@@ -319,37 +319,48 @@ export const execute = async (
       settings: {
         propertyTwo,
         propertyThree
-      },
-      // Additional result properties...
+      }
     };
     
     // 5. Return the result
-    return createNodeOutput(
-      result,
-      {
-        startTime,
-        additionalMeta: {
-          // Additional metadata about execution
-          propertyUsed: propertyOne,
-          success: true
+    return {
+      output1: {
+        items: [
+          {
+            json: result
+          }
+        ],
+        meta: {
+          startTime,
+          endTime: new Date(),
+          successCount: 1,
+          errorCount: 0
         }
       }
-    );
+    };
   } catch (error: any) {
     console.error('Error in custom node executor:', error);
     
     // Return standardized error output
-    return createErrorOutput(
-      error.message || 'Error processing data',
-      'unique_node_type_id'
-    );
+    return {
+      output1: {
+        items: [],
+        meta: {
+          startTime,
+          endTime: new Date(),
+          successCount: 0,
+          errorCount: 1,
+          error: error.message || 'Error processing data'
+        }
+      }
+    };
   }
 };
 ```
 
 ### Key Considerations for Executor
 
-1. **Error Handling**: Always wrap execution in a try/catch block and use `createErrorOutput` for errors.
+1. **Error Handling**: Always wrap execution in a try/catch block and return a properly formatted error output.
 
 2. **Input Extraction**: Handle cases where inputs might be missing or malformed.
 
@@ -358,6 +369,8 @@ export const execute = async (
 4. **Async Support**: The executor should return a Promise for both synchronous and asynchronous operations.
 
 5. **Proper Types**: Define an interface for your node's data to ensure type safety.
+
+6. **Output Format**: Return a record with keys matching the output names defined in the node definition.
 
 ## Node Settings Implementation
 
@@ -370,9 +383,9 @@ The settings UI is now handled by the global `NodeSettingsDrawer` component, whi
 For your node's settings to appear correctly:
 
 1. Define `settings` in the definition file with all required properties
-2. Ensure each setting has a matching property in `defaultData`
-3. Use `key` (not `id`) for property identifiers
-4. Include appropriate validation in the `validation` schema
+2. Ensure each setting has a corresponding key
+3. Use `key` for property identifiers
+4. Use the correct `type` values from the supported list
 
 Example settings array with best practices:
 
@@ -380,7 +393,7 @@ Example settings array with best practices:
 settings: [
   {
     key: 'apiEndpoint',
-    type: 'string',
+    type: 'text',
     label: 'API Endpoint',
     description: 'Enter the API endpoint URL',
     placeholder: 'https://api.example.com/v1/data',
@@ -401,10 +414,14 @@ settings: [
   },
   {
     key: 'showAdvanced',
-    type: 'checkbox',
+    type: 'select',
     label: 'Show Advanced Options',
     description: 'Enable to configure advanced settings',
-    default: false
+    options: [
+      { label: 'Yes', value: 'true' },
+      { label: 'No', value: 'false' }
+    ],
+    default: 'false'
   },
   {
     key: 'timeout',
@@ -414,7 +431,7 @@ settings: [
     min: 100,
     max: 30000,
     default: 5000,
-    showWhen: (settings) => settings.showAdvanced === true // Conditional display
+    showWhen: (settings) => settings.showAdvanced === 'true' // Conditional display
   }
 ]
 ```
@@ -454,41 +471,11 @@ You can make settings appear conditionally based on other settings:
 ```typescript
 {
   key: 'advancedSetting',
-  type: 'string',
+  type: 'text',
   label: 'Advanced Setting',
   description: 'Only shown when advanced mode is enabled',
   showWhen: (settings) => settings.mode === 'advanced'
 }
-```
-
-### Custom Validation Messages
-
-Use Zod to provide custom validation messages:
-
-```typescript
-validation: z.object({
-  apiKey: z.string()
-    .min(10, { message: "API key must be at least 10 characters long" })
-    .optional()
-    .or(z.literal(''))
-})
-```
-
-### Dependent Validations
-
-Implement complex validation logic with dependencies between fields:
-
-```typescript
-validation: z.object({
-  authType: z.enum(['none', 'apiKey', 'oauth']),
-  apiKey: z.string().optional()
-}).refine(data => {
-  // Require API key when auth type is 'apiKey'
-  return data.authType !== 'apiKey' || (data.apiKey && data.apiKey.length > 0);
-}, {
-  message: "API Key is required when using API Key authentication",
-  path: ['apiKey']
-})
 ```
 
 ### Multi-Output Nodes
@@ -496,13 +483,18 @@ validation: z.object({
 For nodes with multiple outputs:
 
 1. Define each output in the `outputs` object
-2. In the executor, return an object with items for each output port:
+2. In the executor, return an object with keys matching the output names:
 
 ```typescript
 return {
-  success: createNodeOutput(successResult),
-  error: createNodeOutput(errorResult),
-  // Additional outputs...
+  success: {
+    items: [{ json: successResult }],
+    meta: { /* meta data */ }
+  },
+  error: {
+    items: [{ json: errorResult }],
+    meta: { /* meta data */ }
+  }
 };
 ```
 
