@@ -104,20 +104,18 @@ const TESTS: TestDefinition[] = [
   }
 ];
 
+// Status type for folder tests
+type NodeTestStatus = 'queued' | 'running' | 'completed' | 'failed';
+
 // Interface for a node folder test request
 interface NodeFolderTest {
   path: string;
   nodeType: string;
-  status: 'queued' | 'running' | 'completed' | 'failed';
+  status: NodeTestStatus;
   startTime?: Date;
   endTime?: Date;
   results?: TestResult[];
   iterationCount?: number; // For AI agent improvement iterations
-}
-
-// Type guard for NodeFolderTest status
-function isValidNodeTestStatus(status: string): status is 'queued' | 'running' | 'completed' | 'failed' {
-  return ['queued', 'running', 'completed', 'failed'].includes(status);
 }
 
 const NodeDebugPanel: React.FC = () => {
@@ -356,95 +354,94 @@ const NodeDebugPanel: React.FC = () => {
     setFolderTestRunning(true);
     setFolderTestProgress(0);
     
+    // Create initial results array
+    const initialResults: TestResult[] = TESTS.map(test => ({
+      name: test.name,
+      test: test.id,
+      status: 'running'
+    }));
+    
     // Create a new test result object
-    const newTest: NodeFolderTest = {
+    const testData: NodeFolderTest = {
       path: nodeFolderPath,
       nodeType: nodeTypeFromFolder,
-      status: 'running' as const,
+      status: 'running',
       startTime: new Date(),
-      results: [],
+      results: initialResults,
       iterationCount: 1
     };
     
-    // Initialize test results
-    TESTS.forEach(test => {
-      newTest.results?.push({
-        name: test.name,
-        test: test.id,
-        status: 'running'
-      });
-    });
-    
-    setFolderTestResults(newTest);
+    // Set initial state
+    setFolderTestResults(testData);
     
     // Run the test suite with artificial delays
     const testDelay = 800; // ms per test
     const testsToRun = TESTS.length;
     
-    // Simulate running each test with a delay
-    TESTS.forEach((test, index) => {
+    // Run tests sequentially with timeouts
+    const runTestAtIndex = (index: number) => {
       setTimeout(() => {
         // Update progress
         const progress = Math.round(((index + 1) / testsToRun) * 100);
         setFolderTestProgress(progress);
         
-        if (newTest.results) {
-          // Simulate a test result (random for demo)
-          const result: TestResult = {
-            name: test.name,
-            test: test.id,
-            status: Math.random() > 0.2 ? 'passed' : 'failed',
-            duration: Math.floor(Math.random() * 300) + 50
-          };
-          
-          if (result.status === 'failed') {
-            result.message = `Test failed in ${nodeFolderPath}: ${test.name} validation error`;
-          }
-          
-          // Update the test results
-          newTest.results[index] = result;
-          
-          // Determine overall status based on test results
-          const hasFailures = newTest.results.some(r => r.status === 'failed');
-          const hasPending = newTest.results.some(r => r.status === 'pending');
-          
-          if (hasFailures) {
-            newTest.status = 'failed' as const;
-          } else if (hasPending) {
-            newTest.status = 'running' as const;
-          } else if (index === testsToRun - 1) {
-            newTest.status = 'completed' as const;
-            newTest.endTime = new Date();
-          }
-          
-          // Update the state
-          setFolderTestResults({...newTest});
+        // Generate a result (random for demo)
+        const result: TestResult = {
+          name: TESTS[index].name,
+          test: TESTS[index].id,
+          status: Math.random() > 0.2 ? 'passed' : 'failed',
+          duration: Math.floor(Math.random() * 300) + 50
+        };
+        
+        if (result.status === 'failed') {
+          result.message = `Test failed in ${nodeFolderPath}: ${TESTS[index].name} validation error`;
         }
         
-        // When all tests are completed
+        // Update the test results by creating a new state object
+        setFolderTestResults(prevState => {
+          if (!prevState) return null;
+          
+          // Create a copy of results and update the specific test
+          const updatedResults = [...prevState.results || []];
+          updatedResults[index] = result;
+          
+          // Determine overall status based on test results
+          const hasFailures = updatedResults.some(r => r.status === 'failed');
+          const hasPending = updatedResults.some(r => r.status === 'pending' || r.status === 'running');
+          
+          // Set the appropriate status
+          let newStatus: NodeTestStatus = prevState.status;
+          if (hasFailures) {
+            newStatus = 'failed';
+          } else if (hasPending) {
+            newStatus = 'running';
+          } else if (index === testsToRun - 1) {
+            newStatus = 'completed';
+          }
+          
+          return {
+            ...prevState,
+            results: updatedResults,
+            status: newStatus,
+            endTime: index === testsToRun - 1 ? new Date() : prevState.endTime
+          };
+        });
+        
+        // If this is the last test
         if (index === testsToRun - 1) {
           setFolderTestRunning(false);
           toast({
             title: "Folder testing completed",
             description: `Test suite for ${nodeTypeFromFolder} has finished`,
           });
-          
-          // For demo, add the newly tested node to the list if it's not there already
-          if (!nodeTypes.some(n => n.type === nodeTypeFromFolder)) {
-            const newNode: NodeType = {
-              type: nodeTypeFromFolder,
-              name: nodeTypeFromFolder.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' '),
-              category: 'custom',
-              status: newTest.status === 'completed' ? 'validated' : 'failed',
-              testResults: newTest.results
-            };
-            // This would normally be done with an API call to save the node
-            // mockNodeTypes.push(newNode);
-            // refetch();
-          }
         }
       }, testDelay * (index + 1));
-    });
+    };
+    
+    // Start running tests one by one
+    for (let i = 0; i < testsToRun; i++) {
+      runTestAtIndex(i);
+    }
   };
 
   return (
@@ -574,92 +571,109 @@ const NodeDebugPanel: React.FC = () => {
               <Button 
                 variant="default"
                 onClick={() => {
-                  setFolderTestRunning(true);
-                  setFolderTestProgress(0);
-                  
-                  // Re-run the tests but with higher success probability
-                  if (folderTestResults) {
-                    const newTest = {...folderTestResults, status: 'running' as const};
-                    newTest.iterationCount = (newTest.iterationCount || 1) + 1;
+                  // Start a new iteration
+                  const handleAutoFix = () => {
+                    if (!folderTestResults) return;
                     
-                    // Reset results
-                    newTest.results = [];
-                    TESTS.forEach(test => {
-                      newTest.results?.push({
-                        name: test.name,
-                        test: test.id,
-                        status: 'running'
-                      });
-                    });
+                    setFolderTestRunning(true);
+                    setFolderTestProgress(0);
                     
-                    // Ensure status is a valid enum value before setting state
-                    if(isValidNodeTestStatus(newTest.status)) {
-                      setFolderTestResults(newTest);
-                    }
+                    // Create a new iteration with incremented counter
+                    const iterationCount = (folderTestResults.iterationCount || 1) + 1;
                     
-                    // Simulate AI agent improving the node
+                    // Create initial results array
+                    const initialResults: TestResult[] = TESTS.map(test => ({
+                      name: test.name,
+                      test: test.id,
+                      status: 'running'
+                    }));
+                    
+                    // Create a new test result object
+                    const testData: NodeFolderTest = {
+                      path: folderTestResults.path,
+                      nodeType: folderTestResults.nodeType,
+                      status: 'running',
+                      startTime: new Date(),
+                      results: initialResults,
+                      iterationCount: iterationCount
+                    };
+                    
+                    // Set initial state
+                    setFolderTestResults(testData);
+                    
+                    // Notify user
                     toast({
                       title: "AI Agent Iteration",
-                      description: `AI is fixing issues in iteration #${newTest.iterationCount}`,
+                      description: `AI is fixing issues in iteration #${iterationCount}`,
                     });
                     
                     // Run the test suite with artificial delays
                     const testDelay = 800; // ms per test
                     const testsToRun = TESTS.length;
                     
-                    // Simulate running each test with a delay and higher success rate
-                    TESTS.forEach((test, index) => {
+                    // Run tests sequentially with timeouts
+                    for (let i = 0; i < testsToRun; i++) {
                       setTimeout(() => {
                         // Update progress
-                        const progress = Math.round(((index + 1) / testsToRun) * 100);
+                        const progress = Math.round(((i + 1) / testsToRun) * 100);
                         setFolderTestProgress(progress);
                         
-                        if (newTest.results) {
-                          // Higher success rate than the first run
-                          const result: TestResult = {
-                            name: test.name,
-                            test: test.id,
-                            status: Math.random() > 0.1 ? 'passed' : 'failed',
-                            duration: Math.floor(Math.random() * 300) + 50
-                          };
-                          
-                          if (result.status === 'failed') {
-                            result.message = `Test failed after improvements: ${test.name} validation error`;
-                          }
-                          
-                          // Update the test results
-                          newTest.results[index] = result;
-                          
-                          // Determine overall status based on test results
-                          const hasFailures = newTest.results.some(r => r.status === 'failed');
-                          const hasPending = newTest.results.some(r => r.status === 'pending');
-                          
-                          if (hasFailures) {
-                            newTest.status = 'failed' as const;
-                          } else if (hasPending) {
-                            newTest.status = 'running' as const;
-                          } else if (index === testsToRun - 1) {
-                            newTest.status = 'completed' as const;
-                            newTest.endTime = new Date();
-                          }
-                          
-                          // Update the state if status is valid
-                          if(isValidNodeTestStatus(newTest.status)) {
-                            setFolderTestResults({...newTest});
-                          }
+                        // Generate a result with higher success probability
+                        const result: TestResult = {
+                          name: TESTS[i].name,
+                          test: TESTS[i].id,
+                          status: Math.random() > 0.1 ? 'passed' : 'failed',
+                          duration: Math.floor(Math.random() * 300) + 50
+                        };
+                        
+                        if (result.status === 'failed') {
+                          result.message = `Test failed after improvements: ${TESTS[i].name} validation error`;
                         }
                         
-                        // When all tests are completed
-                        if (index === testsToRun - 1) {
+                        // Update the state using function form to ensure latest state
+                        setFolderTestResults(prev => {
+                          if (!prev) return null;
+                          
+                          // Create a copy of results
+                          const updatedResults = [...prev.results || []];
+                          updatedResults[i] = result;
+                          
+                          // Determine status
+                          let newStatus: NodeTestStatus = prev.status;
+                          const hasFailures = updatedResults.some(r => r.status === 'failed');
+                          const hasPending = updatedResults.some(r => r.status === 'pending' || r.status === 'running');
+                          
+                          if (hasFailures) {
+                            newStatus = 'failed';
+                          } else if (hasPending) {
+                            newStatus = 'running';
+                          } else if (i === testsToRun - 1) {
+                            newStatus = 'completed';
+                          }
+                          
+                          // Return updated state
+                          return {
+                            ...prev,
+                            results: updatedResults,
+                            status: newStatus,
+                            endTime: i === testsToRun - 1 ? new Date() : prev.endTime
+                          };
+                        });
+                        
+                        // If this is the last test
+                        if (i === testsToRun - 1) {
                           setFolderTestRunning(false);
                           toast({
                             title: "Iteration completed",
-                            description: `Iteration #${newTest.iterationCount} for ${nodeTypeFromFolder} has finished`,
+                            description: `Iteration #${iterationCount} has finished`,
                           });
                         }
-                      }, testDelay * (index + 1));
-                    });
-                  }
+                      }, testDelay * (i + 1));
+                    }
+                  };
+                  
+                  // Execute the auto-fix handling
+                  handleAutoFix();
                 }}
               >
                 <Bot className="h-4 w-4 mr-2" />
