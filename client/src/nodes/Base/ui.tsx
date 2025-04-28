@@ -21,12 +21,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import DynamicIcon from '@/components/ui/dynamic-icon';
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
-  SheetTitle 
-} from '@/components/ui/sheet';
+// No longer need local sheet components
 import {
   Dialog,
   DialogContent,
@@ -222,24 +217,15 @@ function BaseNode({
     onChange
   } = data;
   
-  // Settings icon click handler
+  // Settings icon click handler - always uses global drawer
   const handleSettingsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     
     // If we have an onSettingsClick function from FlowEditor, use it
     if (data.onSettingsClick) {
       data.onSettingsClick();
-    } else if (data.useGlobalSettingsOnly) {
-      // Only emit the event for nodes that should use the global settings drawer
-      const event = new CustomEvent('node-settings-open', { 
-        detail: { nodeId: id }
-      });
-      window.dispatchEvent(event);
     } else {
-      // Otherwise, fall back to local settings drawer
-      setShowSettings(true);
-      
-      // Also emit the node-settings-open event for FlowEditor to catch
+      // Always use the global settings drawer
       const event = new CustomEvent('node-settings-open', { 
         detail: { nodeId: id }
       });
@@ -408,24 +394,15 @@ function BaseNode({
     }
   };
   
-  // Settings click handler for the menu 
+  // Settings click handler for the menu - always uses global drawer
   const handleSettingsClickForMenu = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     
     // If we have an onSettingsClick function from FlowEditor, use it
     if (data.onSettingsClick) {
       data.onSettingsClick();
-    } else if (data.useGlobalSettingsOnly) {
-      // Only emit the event for nodes that should use the global settings drawer
-      const event = new CustomEvent('node-settings-open', { 
-        detail: { nodeId: id }
-      });
-      window.dispatchEvent(event);
     } else {
-      // Otherwise, fall back to local settings drawer
-      setShowSettings(true);
-      
-      // Also emit the node-settings-open event for FlowEditor to catch
+      // Always use the global settings drawer
       const event = new CustomEvent('node-settings-open', { 
         detail: { nodeId: id }
       });
