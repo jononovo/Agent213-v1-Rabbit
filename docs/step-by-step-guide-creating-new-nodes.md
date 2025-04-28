@@ -454,13 +454,215 @@ When implementing a node, consider these edge cases:
 
 ## Testing Your Node
 
-To test your node:
+The system now includes a comprehensive testing framework for nodes. There are two primary ways to test your node:
 
-1. Place your node files in the correct directory structure
-2. Restart the application to allow the registry to discover your node
-3. Add your node to a workflow from the node palette
-4. Configure the node's settings
-5. Connect it to other nodes and test execution
+### Using the Node Debug Panel
+
+The Node Debug Panel provides a dedicated interface for testing and validating nodes:
+
+1. Navigate to the Node Debug Panel in the application
+2. Select your node from the list of available nodes
+3. Run the standard tests to verify basic functionality 
+4. View detailed test results for each test case
+
+The standard tests check:
+- Definition validation
+- Input/output interface
+- Execution testing
+- Error handling
+- UI rendering
+- Performance testing
+- Integration testing
+
+### Creating Custom Tests
+
+For more thorough validation, you can create custom tests specific to your node:
+
+1. Create a `tests.ts` file in your node's directory:
+
+```
+client/src/nodes/[Category]/[node_type]/
+├── definition.ts
+├── ui.tsx
+├── executor.ts
+└── tests.ts    // Custom tests for your node
+```
+
+2. Implement test cases in the `tests.ts` file following this structure:
+
+```typescript
+/**
+ * Custom tests for [Node Name]
+ */
+import { NodeTest } from '@/nodes/types/nodeTestsStandard';
+
+const tests: NodeTest[] = [
+  {
+    name: 'Test Name',
+    description: 'Description of what this test validates',
+    category: 'functionality', // Optional grouping for similar tests
+    run: async () => {
+      try {
+        // Test implementation
+        
+        // Return success result
+        return {
+          passed: true,
+          message: 'Test passed successfully'
+        };
+      } catch (error) {
+        // Return failure result
+        return {
+          passed: false,
+          message: `Test failed: ${error.message}`
+        };
+      }
+    }
+  },
+  // Additional test cases...
+];
+
+export default tests;
+```
+
+3. Test categories might include:
+   - `validation`: Tests for input validation
+   - `functionality`: Tests core node features
+   - `edge-cases`: Tests boundary conditions
+   - `performance`: Tests execution speed and resource usage
+   - `integration`: Tests interaction with other components
+
+### Test Discovery System
+
+The application uses a dynamic test discovery system that:
+
+1. Automatically detects and loads tests for each node type
+2. Displays available tests in the Node Debug Panel
+3. Provides a consistent interface for running tests
+4. Reports results in a standardized format
+
+This approach eliminates the need for hardcoded relationships between nodes and their tests, making the system more maintainable and extensible.
+
+### Node Debug Panel Architecture
+
+The Node Debug Panel is organized using a modular architecture:
+
+```
+client/src/pages/node-debug/
+├── index.tsx                 // Main container component
+├── components/               // UI components
+│   ├── TestResultsPanel.tsx  // Test results display
+│   └── ...
+└── utils/                    // Utilities
+    ├── testRunner.ts         // Test execution logic
+    └── ...
+```
+
+The system includes:
+
+1. **nodeTestLoader.ts**: A utility that dynamically loads test modules for different node types
+   - Provides methods like `loadNodeTests()` to find tests for any node
+   - Supports discovering node types with available tests
+   - Counts available tests for statistical reporting
+
+2. **testRunner.ts**: Contains utilities for running both standard and custom tests
+   - Defines test result interfaces and status types
+   - Provides functions for test initialization and execution
+   - Calculates overall test status based on results
+
+3. **TestResultsPanel**: A reusable component for displaying test results
+   - Shows standard and custom test results
+   - Provides visual indicators for test status
+   - Displays detailed test information like duration and error messages
+
+### Example: Custom Tests for a Send to Webhook Node
+
+Here's an example of custom tests for a send_to_webhook node:
+
+```typescript
+/**
+ * Custom tests for Send to Webhook Node
+ * 
+ * These tests validate the webhook functionality.
+ */
+import { NodeTest } from '@/nodes/types/nodeTestsStandard';
+
+const tests: NodeTest[] = [
+  {
+    name: 'URL Validation',
+    description: 'Tests URL format validation for the webhook endpoint',
+    category: 'validation',
+    run: async () => {
+      try {
+        // Test implementation - validate URL format logic
+        const invalidUrls = ['not-a-url', 'http:/missingslash', 'ftp://wrong-protocol.com'];
+        const errors = [];
+        
+        for (const url of invalidUrls) {
+          // Call validation function from the node
+          try {
+            // validateWebhookUrl(url);
+            errors.push(`URL ${url} should have failed validation but passed`);
+          } catch (e) {
+            // This is expected
+          }
+        }
+        
+        if (errors.length > 0) {
+          return {
+            passed: false,
+            message: `URL validation failed: ${errors.join(', ')}`
+          };
+        }
+        
+        return {
+          passed: true,
+          message: 'URL validation correctly identifies invalid URLs'
+        };
+      } catch (error) {
+        return {
+          passed: false,
+          message: `Test failed: ${error.message}`
+        };
+      }
+    }
+  },
+  {
+    name: 'Payload Formatting',
+    description: 'Verifies that JSON payloads are properly formatted',
+    category: 'functionality',
+    run: async () => {
+      // Test implementation for payload formatting
+      // ...
+      return { passed: true, message: 'Payload formatting works correctly' };
+    }
+  },
+  {
+    name: 'HTTP Headers Configuration',
+    description: 'Tests custom header configuration',
+    category: 'functionality',
+    run: async () => {
+      // Test implementation for headers
+      // ...
+      return { passed: true, message: 'Header configuration works as expected' };
+    }
+  },
+  {
+    name: 'Error Response Handling',
+    description: 'Verifies proper handling of error responses',
+    category: 'edge-cases',
+    run: async () => {
+      // Test implementation for error handling
+      // ...
+      return { passed: true, message: 'Error responses are handled properly' };
+    }
+  }
+];
+
+export default tests;
+```
+
+These tests demonstrate how to validate different aspects of a node's functionality, from input validation to error handling.
 
 ## Advanced Node Features
 
