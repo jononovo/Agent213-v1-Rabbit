@@ -1096,16 +1096,23 @@ return (
                 </div>
               )}
               
-              {node.type === 'webhook_response' && (
+              {(node.type === 'webhook_response' || node.type === 'send_to_webhook') && (
                 <div className="mb-4">
                   <p className="text-sm text-muted-foreground">
-                    Configure settings for the Webhook Response node.
+                    Configure settings for the {node.type === 'send_to_webhook' ? 'Send to Webhook' : 'Webhook Response'} node.
                   </p>
                   
                   <Alert className="mt-2">
                     <AlertDescription>
                       This node sends data to an external webhook endpoint when the workflow reaches this point.
                       Configure the destination URL, HTTP method, custom headers, and retry settings.
+                      
+                      {node.type === 'send_to_webhook' && (
+                        <div className="mt-2">
+                          <strong>Respond to Original Webhook:</strong> Enable this option to directly respond to the original webhook request 
+                          that triggered this workflow, rather than making a new outbound request.
+                        </div>
+                      )}
                     </AlertDescription>
                   </Alert>
                 </div>
