@@ -111,7 +111,7 @@ function BaseNode({
   dragHandle = undefined, 
   ...rest 
 }: Partial<NodeProps<BaseNodeData>> & { id: string; data: BaseNodeData }) {
-  const [showSettings, setShowSettings] = useState(false);
+  // Settings state is now managed by the global drawer
   const [showContextActions, setShowContextActions] = useState(false);
   const [showHoverMenu, setShowHoverMenu] = useState(false);
   const [hoverTimer, setHoverTimer] = useState<NodeJS.Timeout | null>(null);
@@ -233,7 +233,8 @@ function BaseNode({
     }
   };
   
-  // Settings submission handler
+  // Settings submission is now handled by the global drawer
+  // This method remains for compatibility with existing code that might call it
   const handleSubmitSettings = (updatedData: any) => {
     // Update node data when settings are changed
     if (onChange) {
@@ -255,7 +256,7 @@ function BaseNode({
       }
     }
     
-    setShowSettings(false);
+    // No need to close a drawer - global drawer handles this
   };
   
   // Get the status badge based on execution state
@@ -570,23 +571,7 @@ function BaseNode({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Settings Sheet */}
-      <Sheet open={showSettings} onOpenChange={setShowSettings}>
-        <SheetContent className="w-[400px] sm:w-[540px] overflow-y-scroll">
-          <SheetHeader>
-            <SheetTitle>
-              {settings.title || `${label} Settings`}
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-4 pt-4">
-            <NodeSettingsForm 
-              nodeData={data} 
-              settingsFields={settings.fields || []} 
-              onChange={handleSubmitSettings} 
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Settings drawer is now handled globally */}
       
       {/* Note editing dialog */}
       <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
