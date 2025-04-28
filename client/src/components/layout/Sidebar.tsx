@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { User, Settings, HelpCircle, Bot, Home, GitBranch, Puzzle, Link2, Braces, TestTube, Code, Library, Wand2 } from "lucide-react";
+import { User, Settings, HelpCircle, Bot, Home, GitBranch, Puzzle, Link2, Braces, TestTube, Code, Library, Wand2, Bug } from "lucide-react";
 
 export interface SidebarProps {
   collapsed?: boolean;
@@ -22,7 +22,8 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
   
   const advancedItems = [
     { path: "/workflow-test", icon: TestTube, label: "Test Bench" },
-    { path: "/api-registry", icon: Code, label: "API Registry" }
+    { path: "/api-registry", icon: Code, label: "API Registry" },
+    { path: "/node-debug", icon: Bug, label: "Node Debug Panel" }
   ];
 
   // Helper function to render navigation items

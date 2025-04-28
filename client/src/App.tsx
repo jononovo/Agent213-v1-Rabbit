@@ -13,6 +13,7 @@ import AgentPage from "@/pages/agent-page";
 import ApiRegistry from "@/pages/api-registry";
 import Settings from "@/pages/settings";
 import Library from "@/pages/library";
+import NodeDebugPanel from "@/pages/node-debug";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/workflows" component={Library} />
       <Route path="/agents" component={Library} />
       <Route path="/nodes" component={Library} />
+      <Route path="/node-debug" component={NodeDebugPanel} />
       {/* Removed node-system-demo route */}
       <Route component={NotFound} />
     </Switch>
