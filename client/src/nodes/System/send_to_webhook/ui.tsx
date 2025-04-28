@@ -2,6 +2,10 @@
  * Send to Webhook Node UI Component
  * 
  * This component renders the send to webhook node in the workflow editor.
+ * 
+ * Updated to support two modes:
+ * 1. Send data to a specific webhook URL (default)
+ * 2. Respond to the original webhook trigger request
  */
 
 import React from 'react';
@@ -12,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 export default function SendToWebhookNode({ id, data }: { id: string, data: any }) {
   // Extract node settings
   const settings = data?.settings || {};
+  const isWebhookResponse = settings.isWebhookResponse === true;
   const url = settings.url || 'No URL configured';
   const method = settings.method || 'POST';
   
@@ -20,8 +25,9 @@ export default function SendToWebhookNode({ id, data }: { id: string, data: any 
   const isComplete = data?.isComplete;
   const hasError = data?.hasError;
   
-  // Function to open URL in new tab
+  // Function to open URL in new tab (only for external webhooks)
   const openUrl = (e: React.MouseEvent) => {
+    if (isWebhookResponse) return;
     e.stopPropagation();
     window.open(url, '_blank', 'noopener,noreferrer');
   };
@@ -34,11 +40,33 @@ export default function SendToWebhookNode({ id, data }: { id: string, data: any 
     return null;
   };
   
-  // Format URL for display (truncate if too long)
-  const displayUrl = url.length > 35 ? url.substring(0, 32) + '...' : url;
+  // Node content - webhookResponse mode
+  const webhookResponseContent = (
+    <div className="p-4 flex flex-col gap-2">
+      <div className="bg-blue-500/10 p-2 rounded-md flex flex-col">
+        <div className="flex items-center justify-between">
+          <Badge variant="outline" className="bg-blue-500/20 text-blue-500">RESPONSE</Badge>
+          <div className="text-xs text-muted-foreground">Original webhook response</div>
+        </div>
+        
+        <div className="text-xs mt-2 text-muted-foreground">
+          This node will respond to the original webhook request that triggered this workflow.
+        </div>
+      </div>
+      
+      {getStatusBadge() && (
+        <div className="mt-1">
+          {getStatusBadge()}
+        </div>
+      )}
+    </div>
+  );
   
-  // Node content
-  const nodeContent = (
+  // Format URL for display (truncate if too long)
+  const displayUrl = url?.length > 35 ? url.substring(0, 32) + '...' : url;
+  
+  // Node content - standard mode (external webhook)
+  const standardContent = (
     <div className="p-4 flex flex-col gap-2">
       {/* Title moved to the header in BaseNode */}
       
@@ -69,8 +97,17 @@ export default function SendToWebhookNode({ id, data }: { id: string, data: any 
           )}
         </div>
       )}
+      
+      {getStatusBadge() && (
+        <div className="mt-1">
+          {getStatusBadge()}
+        </div>
+      )}
     </div>
   );
+  
+  // Choose the appropriate content based on mode
+  const nodeContent = isWebhookResponse ? webhookResponseContent : standardContent;
 
   // Render using the BaseNode wrapper
   return (

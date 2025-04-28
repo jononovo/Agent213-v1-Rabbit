@@ -2,6 +2,10 @@
  * Send to Webhook Node Definition
  * 
  * This node sends workflow data to an external webhook endpoint or API.
+ * 
+ * It can be used in two modes:
+ * 1. Send data to a specific webhook URL
+ * 2. Respond to the original webhook trigger request
  */
 
 import { z } from 'zod';
@@ -15,7 +19,8 @@ const defaultData = {
   headers: '',
   retryCount: 3,
   retryDelay: 1000,
-  timeout: 5000
+  timeout: 5000,
+  isWebhookResponse: false // New option to respond to original webhook
 };
 
 const definition = {
@@ -45,12 +50,20 @@ const definition = {
   },
   settings: [
     {
+      key: 'isWebhookResponse',
+      type: 'boolean',
+      label: 'Respond to Original Webhook',
+      description: 'When enabled, this node will respond to the original webhook request instead of making a new outbound request',
+      default: false
+    },
+    {
       key: 'url',
       type: 'string',
       label: 'Webhook URL',
-      description: 'URL of the external webhook endpoint',
+      description: 'URL of the external webhook endpoint (not required if responding to original webhook)',
       placeholder: 'https://example.com/webhook',
-      required: true
+      required: false,
+      showIf: { key: 'isWebhookResponse', value: false }
     },
     {
       key: 'method',
@@ -62,7 +75,8 @@ const definition = {
         { label: 'PUT', value: 'PUT' },
         { label: 'PATCH', value: 'PATCH' }
       ],
-      default: 'POST'
+      default: 'POST',
+      showIf: { key: 'isWebhookResponse', value: false }
     },
     {
       key: 'headers',
@@ -70,7 +84,8 @@ const definition = {
       label: 'Custom Headers',
       description: 'Custom HTTP headers to include in the request (JSON format)',
       placeholder: '{"Content-Type": "application/json", "Authorization": "Bearer your-token"}',
-      required: false
+      required: false,
+      showIf: { key: 'isWebhookResponse', value: false }
     },
     {
       key: 'retryCount',
@@ -79,7 +94,8 @@ const definition = {
       description: 'Number of times to retry if the request fails',
       min: 0,
       max: 10,
-      default: 3
+      default: 3,
+      showIf: { key: 'isWebhookResponse', value: false }
     },
     {
       key: 'retryDelay',
@@ -88,7 +104,8 @@ const definition = {
       description: 'Delay between retry attempts in milliseconds',
       min: 100,
       max: 10000,
-      default: 1000
+      default: 1000,
+      showIf: { key: 'isWebhookResponse', value: false }
     },
     {
       key: 'timeout',
@@ -97,11 +114,19 @@ const definition = {
       description: 'Request timeout in milliseconds',
       min: 100,
       max: 30000,
-      default: 5000
+      default: 5000,
+      showIf: { key: 'isWebhookResponse', value: false }
     }
   ],
   validation: z.object({
-    url: z.string().url({ message: "Please enter a valid URL" }),
+    isWebhookResponse: z.boolean().default(false),
+    url: z.string()
+      .url({ message: "Please enter a valid URL" })
+      .optional()
+      .refine(url => {
+        // URL is only required if we're not responding to the original webhook
+        return url || z.boolean().parse(z.object({}).isWebhookResponse);
+      }, { message: "URL is required when not responding to original webhook" }),
     method: z.enum(['POST', 'PUT', 'PATCH']).default('POST'),
     headers: z.string().optional().transform(value => {
       try {

@@ -3,6 +3,9 @@
  * 
  * This file handles the execution logic for the send_to_webhook node,
  * which sends data to an external webhook endpoint or API.
+ * 
+ * Updated to support responding to the original webhook request
+ * when used in a webhook-triggered workflow.
  */
 
 import { createNodeOutput, createErrorOutput } from '../../nodeOutputUtils';
@@ -16,6 +19,17 @@ interface SendToWebhookNodeData {
   retryCount: number;
   retryDelay: number;
   timeout: number;
+  isWebhookResponse?: boolean; // New option to indicate this should respond to the original webhook
+}
+
+// Interface for the webhook request context
+interface WebhookResponseContext {
+  isWebhookResponse?: boolean;
+  originalWebhookRequest?: {
+    path: string;
+    method: string;
+  };
+  requestId?: string;
 }
 
 /**
@@ -29,13 +43,52 @@ export const execute = async (
   const startTime = new Date();
   
   try {
-    // Validate required fields
+    // Get input data
+    const inputData = inputs.data?.items?.[0]?.json || {};
+    
+    // Check if this is responding to an original webhook request
+    // This can be specified either in the node settings or detected from the input
+    const isWebhookResponse = nodeData.isWebhookResponse === true || 
+      (inputData.responseContext?.isWebhookResponse === true);
+    
+    // Extract response context from the input if available
+    const responseContext: WebhookResponseContext = inputData.responseContext || {};
+    
+    // Handle webhook response if applicable
+    if (isWebhookResponse) {
+      console.log('Send to webhook node is handling the original webhook response');
+      
+      // Signal that we've handled the webhook response
+      // This will be detected by the runWorkflow function in server/routes.ts
+      const webhookResponseOutput = {
+        webhookResponseHandled: true,
+        response: {
+          success: true,
+          message: "Webhook response handled by send_to_webhook node",
+          data: inputData.payload || inputData,
+          requestId: responseContext.requestId
+        },
+        originalRequest: responseContext.originalWebhookRequest
+      };
+      
+      // Return the result indicating we're handling the webhook response
+      return createNodeOutput(
+        webhookResponseOutput,
+        {
+          startTime,
+          additionalMeta: {
+            isWebhookResponse: true,
+            webhookResponseHandled: true
+          }
+        }
+      );
+    }
+    
+    // Regular webhook sending logic for non-response cases
+    // Validate required fields for external webhook calls
     if (!nodeData.url) {
       throw new Error('Webhook URL is required');
     }
-    
-    // Get input data
-    const inputData = inputs.data?.items?.[0]?.json || {};
     
     // Extract settings
     const {
@@ -109,7 +162,8 @@ export const execute = async (
       {
         response: result.data,
         status: result.status,
-        headers: result.headers
+        headers: result.headers,
+        webhookResponseHandled: false // Indicate this was a regular webhook, not a response
       },
       {
         startTime,
