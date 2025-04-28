@@ -482,8 +482,11 @@ const FlowEditor = ({
         description: "Your workflow has been saved successfully."
       });
       queryClient.invalidateQueries({ queryKey: ['/api/workflows'] });
-      if (isNew) {
-        navigate('/');
+      
+      // For new workflows, navigate to the edit page with the new ID
+      // instead of redirecting to the homepage
+      if (isNew && data.id) {
+        navigate(`/workflow-editor/${data.id}`);
       }
     },
     onError: (error) => {
