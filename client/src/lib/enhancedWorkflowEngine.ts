@@ -9,10 +9,22 @@ import {
   createWorkflowItem
 } from './types/workflow';
 
+// Import the unified node registry
+import { 
+  getNodeExecutor, 
+  initializeRegistry,
+  getAllNodeTypes 
+} from './unifiedNodeRegistry';
+
+// Legacy executor registry - this will be phased out
+// but is maintained for backward compatibility
 const nodeRegistry: Record<string, EnhancedNodeExecutor> = {};
 
 /**
  * Create an enhanced node executor with standard interfaces
+ * 
+ * DEPRECATED: This function is maintained for backward compatibility.
+ * New code should register nodes through the unified registry system.
  */
 export function createEnhancedNodeExecutor(
   definition: {
@@ -45,6 +57,9 @@ export function createEnhancedNodeExecutor(
 
 /**
  * Register a node executor for a specific node type
+ * 
+ * DEPRECATED: This function is maintained for backward compatibility.
+ * New code should register nodes through the unified registry system.
  */
 export function registerEnhancedNodeExecutor(nodeType: string, executor: EnhancedNodeExecutor): void {
   nodeRegistry[nodeType] = executor;
@@ -56,7 +71,11 @@ export function registerEnhancedNodeExecutor(nodeType: string, executor: Enhance
  */
 export async function registerAllEnhancedNodeExecutors(): Promise<void> {
   try {
-    // Import the nodeSystem module for registering folder-based executors
+    // Ensure the unified registry is initialized
+    await initializeRegistry();
+    
+    // For backward compatibility: Import the nodeSystem module for registering folder-based executors
+    // This ensures we catch any nodes that might be using the old system
     await import('./nodeSystem').then(nodeSystem => {
       nodeSystem.registerNodeExecutorsFromRegistry();
     });
@@ -69,9 +88,12 @@ export async function registerAllEnhancedNodeExecutors(): Promise<void> {
       'http_request'
     ];
     
-    // Verify critical node types are registered
+    // Check the unified registry and the legacy registry
     for (const nodeType of criticalNodeTypes) {
-      if (!nodeRegistry[nodeType]) {
+      const unifiedExecutor = getNodeExecutor(nodeType);
+      const legacyExecutor = nodeRegistry[nodeType];
+      
+      if (!unifiedExecutor && !legacyExecutor) {
         console.warn(`Critical node ${nodeType} not found in registry. Make sure it exists in the System folder.`);
       } else {
         console.log(`Verified critical node type ${nodeType} is registered`);
@@ -79,6 +101,7 @@ export async function registerAllEnhancedNodeExecutors(): Promise<void> {
     }
     
     console.log('All enhanced node executors registered successfully');
+    console.log(`Available node types: ${getAllNodeTypes().join(', ')}`);
   } catch (error) {
     console.error('Error registering enhanced node executors:', error);
     throw error;
@@ -250,8 +273,10 @@ export async function executeEnhancedWorkflow(
       const nodeType = node.type;
       const nodeData = node.data || {};
       
-      // Get executor for node type - from either the enhanced registry or the direct executors
-      const executor = nodeRegistry[nodeType];
+      // Get executor for node type - from either the unified registry, enhanced registry or the direct executors
+      const unifiedExecutor = getNodeExecutor(nodeType);
+      const legacyExecutor = nodeRegistry[nodeType];
+      const executor = unifiedExecutor || legacyExecutor;
       
       if (!executor) {
         // Cannot find executor for this node type
