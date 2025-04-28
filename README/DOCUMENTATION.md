@@ -9,14 +9,15 @@ This project implements a flexible, extensible node-based workflow system for cr
 1. [Quick Start Guide](#quick-start-guide)
 2. [Core Architecture](#core-architecture)
 3. [Node System](#node-system)
-4. [Storage System](#storage-system)
-5. [UI Guidelines](#ui-guidelines)
-6. [Technical Reference](#technical-reference)
+4. [Node Testing Framework](#node-testing-framework)
+5. [Storage System](#storage-system)
+6. [UI Guidelines](#ui-guidelines)
+7. [Technical Reference](#technical-reference)
    - [Key Files and Functions](#key-files-and-functions)
    - [Data Structures](#data-structures)
    - [Code Patterns](#code-patterns)
-7. [Development Guide](#development-guide)
-8. [Troubleshooting](#troubleshooting)
+8. [Development Guide](#development-guide)
+9. [Troubleshooting](#troubleshooting)
 
 ## Quick Start Guide
 
@@ -293,6 +294,137 @@ interface NodeExecutionData {
 
 Use the `createNodeOutput` and `createErrorOutput` utility functions from `client/src/nodes/nodeOutputUtils.ts` to ensure consistent output formatting.
 
+## Node Testing Framework
+
+The platform includes a comprehensive testing framework for nodes, featuring both standard and custom test capabilities through a modular, maintainable architecture.
+
+### Node Debug Panel
+
+The Node Debug Panel provides a dedicated interface for testing and validating nodes:
+
+```
+client/src/pages/node-debug/
+├── index.tsx                 // Main container component
+├── components/               // UI components
+│   ├── TestResultsPanel.tsx  // Test results display
+│   └── ...
+└── utils/                    // Utilities
+    ├── testRunner.ts         // Test execution logic
+    └── ...
+```
+
+**Key Features:**
+
+1. **Standard Test Suite**: Runs standard tests for all nodes including:
+   - Definition validation
+   - Input/output interface verification
+   - Execution testing
+   - Error handling
+   - UI rendering
+   - Performance benchmarking
+   - Integration testing
+
+2. **Custom Tests Support**: Automatically discovers and runs node-specific custom tests
+3. **Visual Dashboard**: Comprehensive UI for test results review
+4. **Status Tracking**: Maintains the validation status of each node
+5. **Folder-based Testing**: Supports testing entire node folders at once
+
+### Test Discovery System
+
+The platform features a dynamic test discovery system:
+
+1. **nodeTestLoader.ts**: A utility that automatically loads test modules for any node type
+   ```typescript
+   // Key functions
+   export const loadNodeTests = async (nodeType: string): Promise<NodeTest[] | null>;
+   export const getNodeTypesWithTests = async (): Promise<string[]>;
+   export const getTestCountForNodeType = async (nodeType: string): Promise<number>;
+   ```
+
+2. **Test Module Structure**: Each node can have its own tests file:
+   ```
+   client/src/nodes/[Category]/[node_type]/
+   ├── definition.ts
+   ├── ui.tsx
+   ├── executor.ts
+   └── tests.ts    // Custom tests for the node
+   ```
+
+3. **Standard Test Format**:
+   ```typescript
+   interface NodeTest {
+     name: string;
+     description: string;
+     category?: string;
+     run: () => Promise<NodeTestResult>;
+   }
+   
+   interface NodeTestResult {
+     passed: boolean;
+     message?: string;
+     details?: Record<string, any>;
+   }
+   ```
+
+### Creating Custom Tests
+
+To implement custom tests for a node:
+
+1. Create a `tests.ts` file in the node's folder
+2. Export an array of test objects following the NodeTest interface
+3. Implement test-specific logic in each test's `run()` method
+
+**Example Custom Tests** (for send_to_webhook node):
+
+```typescript
+const tests: NodeTest[] = [
+  {
+    name: 'URL Validation',
+    description: 'Tests URL format validation for webhook endpoints',
+    category: 'validation',
+    run: async () => {
+      try {
+        // Test implementation
+        return {
+          passed: true,
+          message: 'URL validation passed'
+        };
+      } catch (error) {
+        return {
+          passed: false,
+          message: `Test failed: ${error.message}`
+        };
+      }
+    }
+  },
+  // Additional tests...
+];
+
+export default tests;
+```
+
+### Test Execution and Results
+
+The test runner (`testRunner.ts`) provides utilities for:
+
+1. **Test Initialization**: Prepares a node for testing with both standard and custom tests
+2. **Test Execution**: Runs the tests with proper error handling
+3. **Results Calculation**: Determines the overall test status based on results
+4. **Results Display**: The TestResultsPanel component visualizes test outcomes
+
+**Test Status Types**:
+- `validated` - All tests passed
+- `partial` - Some tests passed, some failed or pending
+- `failed` - One or more tests failed
+
+### Benefits of the New Architecture
+
+1. **No Hardcoded Relationships**: Tests are dynamically discovered rather than hardcoded
+2. **Single Responsibility**: Each component has a clear, focused purpose
+3. **Modularity**: Separated test logic from UI components
+4. **Maintainability**: Easier to add new test types and functionality
+5. **Reusable Components**: TestResultsPanel and testRunner can be used in multiple contexts
+
 ## Storage System
 
 The platform uses the Replit Key-Value Database (via @replit/database) for persistent storage of:
@@ -414,6 +546,21 @@ All nodes follow UI design inspired by simple-ai.dev to maintain consistency acr
     - Ensures nodes implement the correct interfaces
     - Uses the node registry to verify node compatibility
 
+11. **client/src/lib/nodeTestLoader.ts**
+    - Dynamically discovers and loads test modules for nodes
+    - Provides methods to find tests for any node type
+    - Enables completely decoupled test discovery
+
+12. **client/src/pages/node-debug/utils/testRunner.ts**
+    - Centralizes test execution logic
+    - Manages test status and result tracking
+    - Calculates overall node validation status
+
+13. **client/src/pages/node-debug/components/TestResultsPanel.tsx**
+    - Visualizes test results in a structured format
+    - Displays both standard and custom test outcomes
+    - Shows detailed information like duration and error messages
+
 ### Core System Functions
 
 | Function | Purpose | File |
@@ -427,6 +574,12 @@ All nodes follow UI design inspired by simple-ai.dev to maintain consistency acr
 | `executeEnhancedWorkflow()` | Runs a workflow with the enhanced node system | `enhancedWorkflowEngine.ts` |
 | `validateNodeDefinition()` | Validates a node definition | `nodeValidator.ts` |
 | `isNodeTypeImplemented()` | Checks if node is available in the system | `nodeValidator.ts` |
+| `loadNodeTests()` | Dynamically loads tests for a specific node type | `nodeTestLoader.ts` |
+| `getNodeTypesWithTests()` | Returns all node types that have tests | `nodeTestLoader.ts` |
+| `getTestCountForNodeType()` | Counts available tests for a node type | `nodeTestLoader.ts` |
+| `initNodeForTesting()` | Prepares a node for test execution | `testRunner.ts` |
+| `calculateTestStatus()` | Determines overall test status from results | `testRunner.ts` |
+| `runCustomTests()` | Executes custom tests for a node | `testRunner.ts` |
 
 ### Storage Functions
 
@@ -559,6 +712,36 @@ interface NodeSettings {
     max?: number;        // For number/slider fields
     step?: number;       // For number/slider fields
   }[];
+}
+```
+
+#### Node Testing Types
+
+```typescript
+// Core testing interfaces
+interface NodeTest {
+  name: string;          // Test name for display
+  description: string;   // Detailed description of what is being tested
+  category?: string;     // Optional grouping category
+  run: () => Promise<NodeTestResult>; // Test execution function
+}
+
+interface NodeTestResult {
+  passed: boolean;       // Whether the test passed
+  message?: string;      // Optional result message
+  details?: Record<string, any>; // Additional test-specific information
+  duration?: number;     // Execution time in milliseconds
+}
+
+// Test status types
+type TestStatus = 'validated' | 'partial' | 'failed' | 'pending';
+
+interface TestSummary {
+  status: TestStatus;    // Overall test status
+  passed: number;        // Count of passed tests
+  failed: number;        // Count of failed tests
+  total: number;         // Total test count
+  details: NodeTestResult[]; // Full test results
 }
 ```
 
@@ -791,7 +974,51 @@ When building nodes that interact with the webhook system:
    - Support note display for documentation
    - Create comprehensive testing strategy for webhook integrations
 
-#### 5. Debugging Workflow Execution
+#### 5. Creating and Running Node Tests
+
+1. **Adding Custom Tests to a Node**:
+   - Create a `tests.ts` file in the node's folder
+   - Export an array of test objects following the NodeTest interface:
+   ```typescript
+   const tests: NodeTest[] = [
+     {
+       name: 'Test Name',
+       description: 'What this test verifies',
+       category: 'validation',
+       run: async () => {
+         try {
+           // Test implementation
+           return {
+             passed: true,
+             message: 'Test passed successfully'
+           };
+         } catch (error) {
+           return {
+             passed: false,
+             message: `Test failed: ${error.message}`
+           };
+         }
+       }
+     }
+   ];
+   
+   export default tests;
+   ```
+
+2. **Running Tests**:
+   - Navigate to the Node Debug Panel
+   - Select a node type from the dropdown
+   - Click "Run Tests" to execute both standard and custom tests
+   - Review results in the TestResultsPanel
+
+3. **Test Best Practices**:
+   - Tests should be isolated and not depend on other tests
+   - Use clear, descriptive names and messages
+   - Group related tests by category
+   - Include detailed error information for failed tests
+   - Focus on testing edge cases and error handling
+
+#### 6. Debugging Workflow Execution
 
 1. Check node execution results in the node state
 2. Review logs saved to the storage system
