@@ -16,6 +16,7 @@ export interface NodeTypeInfo {
   category: string;
   icon: any;
   folderPath: string; // System or Custom
+  settings?: any[]; // Settings configuration from node definition
 }
 
 // Storage for discovered nodes
@@ -69,7 +70,8 @@ async function processNodeDefinitions(modules: Record<string, any>, folderPath: 
         description: definition.description || '',
         category: definition.category || 'custom',
         icon: definition.icon || null,
-        folderPath
+        folderPath,
+        settings: definition.settings || []
       });
     } catch (error) {
       console.error(`Error processing node definition at ${path}:`, error);
