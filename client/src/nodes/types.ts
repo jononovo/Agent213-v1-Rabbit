@@ -42,6 +42,28 @@ export interface NodeSchema {
 }
 
 /**
+ * Node Setting Field
+ * Defines a configurable field for a node's settings drawer
+ */
+export interface NodeSetting {
+  key: string;                // Unique identifier
+  type: 'text' | 'password' | 'select' | 'textarea' | 'radio' | 'multiselect' | 'json' | 'number'; // Type of input
+  label: string;              // Display name for the field
+  description?: string;       // Human-readable description
+  placeholder?: string;       // Placeholder text
+  required?: boolean;         // Whether the field is required
+  options?: Array<{           // For select/radio/multiselect types
+    value: string;
+    label: string;
+  }>;
+  default?: string | string[] | number | boolean; // Default value
+  min?: number;               // For number fields
+  max?: number;               // For number fields
+  step?: number;              // For number fields
+  showWhen?: (settings: Record<string, any>) => boolean; // Conditional display
+}
+
+/**
  * Node Definition
  * Defines the core attributes and behavior of a node
  */
@@ -54,7 +76,9 @@ export interface NodeDefinition {
   icon?: string;                       // Icon identifier
   inputs: Record<string, PortDefinition>;    // Input ports
   outputs: Record<string, PortDefinition>;   // Output ports
-  configOptions?: NodeConfigOption[];  // Configuration options
+  configOptions?: NodeConfigOption[];  // Configuration options (Legacy - being migrated to settings)
+  settings?: NodeSetting[];            // Settings for the NodeSettingsDrawer
+  validation?: any;                    // Zod validation schema for settings
   defaultData?: Record<string, any>;   // Default data for node initialization
 }
 

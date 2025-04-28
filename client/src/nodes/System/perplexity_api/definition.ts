@@ -4,17 +4,9 @@
  * This node provides integration with the Perplexity AI API for text generation.
  */
 
-import { NodeDefinition } from '@/nodes/types';
-import type { NodeSettings } from '@/lib/types';
+import { NodeDefinition, NodeSetting } from '@/nodes/types';
 import { defaultData } from './executor';
 import { z } from 'zod';
-
-
-// Type for settings to fix TypeScript errors
-interface NodeSettings {
-  useSystemPrompt: boolean | string;
-  [key: string]: any;
-}
 
 export const definition: NodeDefinition = {
   type: 'perplexity_api',
@@ -60,7 +52,7 @@ export const definition: NodeDefinition = {
     },
     {
       key: 'model',
-      type: 'string',
+      type: 'text',
       label: 'Model',
       description: 'The Perplexity model to use (e.g., llama-3.1-sonar-small-128k-online)',
       placeholder: 'llama-3.1-sonar-small-128k-online',
