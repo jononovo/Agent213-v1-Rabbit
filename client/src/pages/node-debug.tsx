@@ -28,6 +28,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { loadNodeTests, getNodeTypesWithTests } from '../lib/nodeTestLoader';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import MainContent from '@/components/layout/MainContent';
 import { useToast } from '@/hooks/use-toast';
@@ -250,36 +251,10 @@ const NodeDebugPanel: React.FC = () => {
   const handleViewNode = (node: NodeType) => {
     setSelectedNode(node);
   };
-
-  // Function to try loading custom tests for a node
+  
+  // Function to load custom tests for a node
   const loadCustomTests = async (nodeType: string): Promise<NodeTest[] | null> => {
-    try {
-      // Map of known node types to their test file paths
-      const nodeTestPaths: Record<string, string> = {
-        'text_formatter': '@/nodes/System/text_formatter/tests',
-        'http_request': '@/nodes/System/http_request/tests',
-        'send_to_webhook': '@/nodes/System/send_to_webhook/tests'
-      };
-      
-      // Check if we have a registered test path for this node
-      if (nodeType in nodeTestPaths) {
-        try {
-          const testPath = nodeTestPaths[nodeType];
-          const testsModule = await import(/* @vite-ignore */ testPath);
-          console.log(`Loaded custom tests for ${nodeType}:`, testsModule.default);
-          return testsModule.default;
-        } catch (e) {
-          console.warn(`Tests for ${nodeType} failed to load:`, e);
-          return null;
-        }
-      }
-      
-      // No tests found for this node type
-      return null;
-    } catch (error) {
-      console.error(`Error loading custom tests for ${nodeType}:`, error);
-      return null;
-    }
+    return loadNodeTests(nodeType);
   };
 
   // Run tests for a node
