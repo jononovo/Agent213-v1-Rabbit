@@ -1,0 +1,519 @@
+# Step by Step Guide for Creating New Nodes
+
+This technical guide outlines the process of creating new nodes for the workflow system. It provides a comprehensive approach for AI agents and developers to create fully-functional nodes that integrate seamlessly with the workflow editor.
+
+## Table of Contents
+
+1. [Node Architecture Overview](#node-architecture-overview)
+2. [File Structure](#file-structure)
+3. [Node Components](#node-components)
+4. [Step 1: Create Definition File](#step-1-create-definition-file)
+5. [Step 2: Create UI Component](#step-2-create-ui-component)
+6. [Step 3: Create Executor](#step-3-create-executor)
+7. [Node Settings Implementation](#node-settings-implementation)
+8. [Validation and Edge Cases](#validation-and-edge-cases)
+9. [Testing Your Node](#testing-your-node)
+10. [Advanced Node Features](#advanced-node-features)
+
+## Node Architecture Overview
+
+The node system is built around a folder-based architecture where each node type is a self-contained module with:
+
+1. **Definition File**: Declares metadata, ports, settings, and validation rules
+2. **UI Component**: Renders the node in the workflow editor
+3. **Executor**: Handles the runtime logic when the node executes
+
+The system uses a central registry (`nodeRegistry.ts`) that discovers and loads node definitions dynamically, making them available throughout the application.
+
+## File Structure
+
+Each node should follow this standardized file structure:
+
+```
+client/src/nodes/[Category]/[node_type]/
+├── definition.ts  // Node definition, metadata, settings
+├── ui.tsx         // Visual representation in the editor
+└── executor.ts    // Runtime execution logic
+```
+
+Where:
+- `[Category]` is either `System` (core nodes) or `Custom` (user-created)
+- `[node_type]` is a unique identifier for your node (e.g., `text_input`, `json_parser`)
+
+## Node Components
+
+### Definition File
+Declares the node's metadata, inputs/outputs, default data, settings, and validation rules.
+
+### UI Component
+Renders the node in the workflow editor. Typically extends BaseNode and customizes the appearance.
+
+### Executor
+Contains the execution logic that runs when the node is triggered in a workflow.
+
+## Step 1: Create Definition File
+
+The definition file (`definition.ts`) is the most important component, as it:
+1. Declares the node's type, name, category, and description
+2. Defines input and output ports
+3. Sets default data values
+4. Specifies settings fields for configuration
+5. Provides validation rules using Zod
+
+Here's a comprehensive template:
+
+```typescript
+/**
+ * [Node Name] Node Definition
+ * 
+ * [Brief description of what the node does]
+ */
+
+import { z } from 'zod';
+import { [IconName] } from 'lucide-react';
+
+// Default configuration for the node
+const defaultData = {
+  // Default values for all configurable properties
+  propertyOne: '',
+  propertyTwo: 'default-value',
+  propertyThree: 0,
+  // ...additional properties
+};
+
+const definition = {
+  // Core node metadata
+  type: 'unique_node_type_id',          // Unique identifier, no spaces
+  name: 'Human-Readable Node Name',      // Display name
+  description: 'Detailed description of what this node does',
+  category: 'category_name',             // One of: actions, logic, data, ai, integration, etc.
+  icon: IconName,                        // Lucide icon or custom component
+  version: '1.0.0',                      // Semantic version
+  
+  // Default data for initialization
+  defaultData: defaultData,
+  
+  // Input ports definition
+  inputs: {
+    // Each input has a unique key and definition
+    input1: {
+      type: 'string',                    // Data type: string, number, boolean, object, any
+      description: 'Description of input',
+      required: true                     // Is this input required?
+    },
+    // Additional inputs...
+  },
+  
+  // Output ports definition
+  outputs: {
+    // Each output has a unique key and definition
+    output1: {
+      type: 'object',                    // Data type produced by this port
+      description: 'Description of output'
+    },
+    // Additional outputs...
+  },
+  
+  // Settings array - CRITICAL for NodeSettingsDrawer integration
+  settings: [
+    {
+      key: 'propertyOne',                // Must match a property in defaultData
+      type: 'string',                    // Field type: string, number, select, multiselect, textarea
+      label: 'User-friendly label',
+      description: 'Help text explaining this setting',
+      placeholder: 'Example placeholder',
+      required: false                    // Is this setting required?
+    },
+    {
+      key: 'propertyTwo',
+      type: 'select',
+      label: 'Selection Field',
+      description: 'Choose from available options',
+      options: [
+        { label: 'Option A', value: 'option-a' },
+        { label: 'Option B', value: 'option-b' }
+      ],
+      default: 'option-a'
+    },
+    {
+      key: 'propertyThree',
+      type: 'number',
+      label: 'Numeric Value',
+      description: 'Enter a number',
+      min: 0,
+      max: 100,
+      default: 50
+    },
+    // Additional settings...
+  ],
+  
+  // Validation schema using Zod
+  validation: z.object({
+    propertyOne: z.string().optional(),
+    propertyTwo: z.enum(['option-a', 'option-b']).default('option-a'),
+    propertyThree: z.number().min(0).max(100).default(50),
+    // Additional property validations...
+  })
+};
+
+export default definition;
+```
+
+### Key Considerations for Definition File
+
+1. **Settings Array**: This is crucial for the `NodeSettingsDrawer` integration. Each setting must include:
+   - `key`: Must match a property in `defaultData`
+   - `type`: Determines the input control rendered
+   - `label` and `description`: User-friendly text
+   - Appropriate additional properties based on type (options for select, min/max for number, etc.)
+
+2. **Type vs Key**: The `settings` array must use `key` rather than `id` for property identifiers, as the system now standardizes on `key`.
+
+3. **Category**: Choose from existing categories to properly group your node:
+   - `actions`: Nodes that perform operations or trigger events
+   - `logic`: Flow control nodes (if/else, switch, etc.)
+   - `data`: Data transformation and processing
+   - `ai`: AI/ML model integration
+   - `integration`: External service connections
+   - `input`: User input nodes
+   - `content`: Content generation and formatting
+
+## Step 2: Create UI Component
+
+The UI component (`ui.tsx`) defines how your node appears in the workflow editor. Most nodes should extend the `BaseNode` component for consistency.
+
+Here's a comprehensive template:
+
+```tsx
+/**
+ * [Node Name] Node UI Component
+ * 
+ * This component renders the [node type] node in the workflow editor.
+ */
+
+import React from 'react';
+import { [IconName] } from 'lucide-react';
+import { BaseNode } from '@/nodes/Base';
+import { Badge } from '@/components/ui/badge';
+
+export default function CustomNodeUI({ id, data }: { id: string, data: any }) {
+  // Extract node settings
+  const settings = data?.settings || {};
+  const propertyOne = settings.propertyOne || '';
+  const propertyTwo = settings.propertyTwo || 'default-value';
+  
+  // Get execution status for conditional display
+  const isProcessing = data?.isProcessing;
+  const isComplete = data?.isComplete;
+  const hasError = data?.hasError;
+  
+  // Get the status badge based on execution state
+  const getStatusBadge = () => {
+    if (isProcessing) return <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">Processing</Badge>;
+    if (isComplete) return <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">Complete</Badge>;
+    if (hasError) return <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">Error</Badge>;
+    return null;
+  };
+  
+  // Custom node content
+  const nodeContent = (
+    <div className="p-4 flex flex-col gap-2">
+      {/* Main property display */}
+      <div className="bg-muted/80 p-2 rounded-md flex flex-col">
+        <div className="flex items-center justify-between">
+          <Badge variant="outline" className="bg-muted/50">{propertyTwo}</Badge>
+          <div className="text-xs text-muted-foreground">Label</div>
+        </div>
+        
+        <div className="text-xs font-mono mt-1 truncate">
+          {propertyOne || 'Not configured'}
+        </div>
+      </div>
+      
+      {/* Status badge */}
+      {getStatusBadge() && (
+        <div className="mt-1">
+          {getStatusBadge()}
+        </div>
+      )}
+    </div>
+  );
+  
+  // Render using the BaseNode wrapper
+  return (
+    <BaseNode 
+      id={id} 
+      data={{
+        ...data,
+        hideOutputHandles: false,                // Show output handles
+        type: 'unique_node_type_id',             // Must match definition.type
+        icon: 'icon-name',                       // Explicitly set the icon
+        childrenContent: nodeContent,            // Use childrenContent instead of children
+        note: data.note,                         // Pass through note properties
+        showNote: data.showNote,
+        useGlobalSettingsOnly: true              // Use global settings drawer only
+      }}
+    />
+  );
+}
+```
+
+### Key Considerations for UI Component
+
+1. **Settings Extraction**: Access settings via `data?.settings` to display current configuration.
+
+2. **Status Display**: Use the `isProcessing`, `isComplete`, and `hasError` flags to show execution status.
+
+3. **BaseNode Integration**: Always use the `BaseNode` wrapper for consistency across all nodes.
+
+4. **Type Consistency**: Ensure the `type` property in `BaseNode` matches your node's unique identifier.
+
+## Step 3: Create Executor
+
+The executor (`executor.ts`) contains the logic that runs when the node is executed within a workflow:
+
+```typescript
+/**
+ * [Node Name] Node Executor
+ * 
+ * This file handles the execution logic for the [node type] node.
+ */
+
+import { createNodeOutput, createErrorOutput } from '../../nodeOutputUtils';
+import { NodeExecutionData } from '@shared/nodeTypes';
+
+// Define the node data interface
+interface CustomNodeData {
+  propertyOne: string;
+  propertyTwo: string;
+  propertyThree: number;
+  // Additional properties...
+}
+
+/**
+ * Execute function for the custom node
+ * This implements the core functionality
+ */
+export const execute = async (
+  nodeData: CustomNodeData,
+  inputs: Record<string, NodeExecutionData>
+): Promise<NodeExecutionData> => {
+  const startTime = new Date();
+  
+  try {
+    // 1. Extract input data
+    const inputData = inputs.input1?.items?.[0]?.json || {};
+    
+    // 2. Extract settings from nodeData
+    const { propertyOne, propertyTwo, propertyThree } = nodeData;
+    
+    // 3. Validate required settings
+    if (!propertyOne && propertyTwo === 'requires-property-one') {
+      throw new Error('Property One is required when Property Two is set to requires-property-one');
+    }
+    
+    // 4. Process the data (implement your node's core logic)
+    const result = {
+      // Your transformation or processing logic here
+      processedValue: `${propertyOne}_${inputData.value || ''}`,
+      settings: {
+        propertyTwo,
+        propertyThree
+      },
+      // Additional result properties...
+    };
+    
+    // 5. Return the result
+    return createNodeOutput(
+      result,
+      {
+        startTime,
+        additionalMeta: {
+          // Additional metadata about execution
+          propertyUsed: propertyOne,
+          success: true
+        }
+      }
+    );
+  } catch (error: any) {
+    console.error('Error in custom node executor:', error);
+    
+    // Return standardized error output
+    return createErrorOutput(
+      error.message || 'Error processing data',
+      'unique_node_type_id'
+    );
+  }
+};
+```
+
+### Key Considerations for Executor
+
+1. **Error Handling**: Always wrap execution in a try/catch block and use `createErrorOutput` for errors.
+
+2. **Input Extraction**: Handle cases where inputs might be missing or malformed.
+
+3. **Validation**: Validate node settings before processing to provide clear error messages.
+
+4. **Async Support**: The executor should return a Promise for both synchronous and asynchronous operations.
+
+5. **Proper Types**: Define an interface for your node's data to ensure type safety.
+
+## Node Settings Implementation
+
+The settings UI is now handled by the global `NodeSettingsDrawer` component, which:
+
+1. Retrieves settings from the node definition via the registry
+2. Transforms them into UI components
+3. Handles user input and validation
+
+For your node's settings to appear correctly:
+
+1. Define `settings` in the definition file with all required properties
+2. Ensure each setting has a matching property in `defaultData`
+3. Use `key` (not `id`) for property identifiers
+4. Include appropriate validation in the `validation` schema
+
+Example settings array with best practices:
+
+```typescript
+settings: [
+  {
+    key: 'apiEndpoint',
+    type: 'string',
+    label: 'API Endpoint',
+    description: 'Enter the API endpoint URL',
+    placeholder: 'https://api.example.com/v1/data',
+    required: true
+  },
+  {
+    key: 'method',
+    type: 'select',
+    label: 'HTTP Method',
+    description: 'Select the HTTP method to use',
+    options: [
+      { label: 'GET', value: 'GET' },
+      { label: 'POST', value: 'POST' },
+      { label: 'PUT', value: 'PUT' },
+      { label: 'DELETE', value: 'DELETE' }
+    ],
+    default: 'GET'
+  },
+  {
+    key: 'showAdvanced',
+    type: 'checkbox',
+    label: 'Show Advanced Options',
+    description: 'Enable to configure advanced settings',
+    default: false
+  },
+  {
+    key: 'timeout',
+    type: 'number',
+    label: 'Timeout (ms)',
+    description: 'Request timeout in milliseconds',
+    min: 100,
+    max: 30000,
+    default: 5000,
+    showWhen: (settings) => settings.showAdvanced === true // Conditional display
+  }
+]
+```
+
+## Validation and Edge Cases
+
+When implementing a node, consider these edge cases:
+
+1. **Missing Inputs**: Handle cases where expected inputs are not connected or contain no data.
+
+2. **Malformed Data**: Validate incoming data before processing to prevent runtime errors.
+
+3. **Type Conversions**: Be explicit about data type conversions (string to number, JSON parsing, etc.).
+
+4. **Timeouts**: For external operations, implement proper timeout handling.
+
+5. **Rate Limiting**: For API nodes, handle rate limiting and exponential backoff.
+
+6. **Large Data**: Consider memory implications when processing large datasets.
+
+## Testing Your Node
+
+To test your node:
+
+1. Place your node files in the correct directory structure
+2. Restart the application to allow the registry to discover your node
+3. Add your node to a workflow from the node palette
+4. Configure the node's settings
+5. Connect it to other nodes and test execution
+
+## Advanced Node Features
+
+### Conditional Settings
+
+You can make settings appear conditionally based on other settings:
+
+```typescript
+{
+  key: 'advancedSetting',
+  type: 'string',
+  label: 'Advanced Setting',
+  description: 'Only shown when advanced mode is enabled',
+  showWhen: (settings) => settings.mode === 'advanced'
+}
+```
+
+### Custom Validation Messages
+
+Use Zod to provide custom validation messages:
+
+```typescript
+validation: z.object({
+  apiKey: z.string()
+    .min(10, { message: "API key must be at least 10 characters long" })
+    .optional()
+    .or(z.literal(''))
+})
+```
+
+### Dependent Validations
+
+Implement complex validation logic with dependencies between fields:
+
+```typescript
+validation: z.object({
+  authType: z.enum(['none', 'apiKey', 'oauth']),
+  apiKey: z.string().optional()
+}).refine(data => {
+  // Require API key when auth type is 'apiKey'
+  return data.authType !== 'apiKey' || (data.apiKey && data.apiKey.length > 0);
+}, {
+  message: "API Key is required when using API Key authentication",
+  path: ['apiKey']
+})
+```
+
+### Multi-Output Nodes
+
+For nodes with multiple outputs:
+
+1. Define each output in the `outputs` object
+2. In the executor, return an object with items for each output port:
+
+```typescript
+return {
+  success: createNodeOutput(successResult),
+  error: createNodeOutput(errorResult),
+  // Additional outputs...
+};
+```
+
+### Node with Dynamic Ports
+
+For nodes with dynamic input/output ports:
+
+1. Implement a port configuration mechanism in settings
+2. Update the UI component to render the dynamic ports
+3. In the executor, process each input dynamically
+
+---
+
+By following this guide, you can create robust, maintainable nodes that integrate seamlessly with the workflow system. Remember that the key to a successful node implementation is thorough testing and comprehensive error handling.

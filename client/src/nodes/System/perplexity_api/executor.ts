@@ -13,13 +13,13 @@ export interface PerplexityApiNodeData {
   temperature: number;
   maxTokens: number;
   apiKey: string;
-  useSystemPrompt: boolean;
+  useSystemPrompt: boolean | string;
   systemPrompt: string;
 }
 
 // Default configuration for the node
 export const defaultData: PerplexityApiNodeData = {
-  model: 'sonar',
+  model: 'llama-3.1-sonar-small-128k-online',
   temperature: 0.7,
   maxTokens: 1000,
   apiKey: '',
@@ -53,8 +53,13 @@ export const execute = async (
     }
 
     // Prepare messages array
+    const useSystemPromptValue = 
+      typeof data.useSystemPrompt === 'string' 
+        ? data.useSystemPrompt === 'true' 
+        : data.useSystemPrompt;
+        
     const messages = [
-      ...(data.useSystemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+      ...(useSystemPromptValue ? [{ role: 'system', content: systemPrompt }] : []),
       { role: 'user', content: prompt }
     ];
 
