@@ -7,7 +7,6 @@
 
 import { NodeRegistryEntry } from '../../../lib/types';
 import definition from './definition';
-import schema from './schema';
 import * as executor from './executor';
 import * as ui from './ui';
 import { Sparkles } from 'lucide-react';
@@ -25,7 +24,6 @@ const metadata = {
 const ClaudeNode: NodeRegistryEntry = {
   type: 'claude',
   metadata,
-  schema,
   executor: {
     execute: executor.execute,
     defaultData: ui.defaultData
