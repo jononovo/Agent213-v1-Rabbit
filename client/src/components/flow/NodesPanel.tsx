@@ -34,7 +34,7 @@ import {
   Box
 } from 'lucide-react';
 import NodeItem from './NodeItem';
-import { getAllNodeTypes } from '@/lib/nodeRegistry';
+import { getAllNodes, initializeRegistry } from '@/lib/unifiedNodeRegistry';
 
 // Node categories based on the documentation
 const NODE_CATEGORIES = [
@@ -93,34 +93,34 @@ const NodesPanel = () => {
   const [folderBasedNodes, setFolderBasedNodes] = useState<Node[]>([]);
   
   useEffect(() => {
-    // Get all node types from the central registry
-    const registryNodes = getAllNodeTypes().map((nodeInfo, index) => {
+    // Get all nodes from the unified registry
+    const registryNodes = getAllNodes().map((node, index) => {
       // Resolve icon: either use the component directly if it's already a component,
       // or try to find it in the icon map if it's a string
-      let resolvedIcon = nodeInfo.icon;
-      if (typeof nodeInfo.icon === 'string' && ICON_MAP[nodeInfo.icon]) {
-        resolvedIcon = ICON_MAP[nodeInfo.icon];
-      } else if (!nodeInfo.icon) {
+      let resolvedIcon = node.icon;
+      if (typeof node.icon === 'string' && ICON_MAP[node.icon]) {
+        resolvedIcon = ICON_MAP[node.icon];
+      } else if (!node.icon) {
         // Default icon if none specified
         resolvedIcon = Box;
       }
       
       return {
         id: 1000 + index, // Use a different ID range to avoid conflicts
-        name: nodeInfo.name,
-        type: nodeInfo.id,
-        description: nodeInfo.description,
+        name: node.name,
+        type: node.type,
+        description: node.description,
         icon: resolvedIcon,
         createdAt: new Date(),
         updatedAt: new Date(),
         userId: null,
-        category: nodeInfo.category,
+        category: node.category,
         configuration: {}
       } as Node;
     });
     
     setFolderBasedNodes(registryNodes);
-    console.log(`Loaded ${registryNodes.length} nodes from registry`);
+    console.log(`Loaded ${registryNodes.length} nodes from unified registry`);
   }, []);
   
   // Debug: Log folder-based nodes

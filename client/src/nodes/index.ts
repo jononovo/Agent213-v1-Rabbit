@@ -1,31 +1,29 @@
 /**
- * Node System Index
+ * Node System Index - Migration Adapter
  * 
- * This file exports all node-related functionality as a single module.
- * It provides the public API for accessing nodes and node registry functions.
+ * This file now acts as a compatibility layer between the old folder-based system
+ * and the new unified node registry.
  * 
- * Note: This is the folder-based implementation that works alongside the unified node registry.
+ * IMPORTANT: This file is being phased out. All new code should use the unified node registry
+ * directly from '@/lib/unifiedNodeRegistry'.
  */
 
 import { NodeDefinition } from './types';
-import fs from 'fs'; // Not actually used at runtime - just for types
+import { getAllNodes as getRegistryNodes, getNode as getRegistryNode } from '@/lib/unifiedNodeRegistry';
 
 /**
- * Dynamic folder-based node system
- * 
- * Instead of using a static registry, we now dynamically load nodes
- * from their folders. This makes the system more maintainable and
- * allows for easier addition of new nodes.
+ * IMPORTANT: This compatibility layer is deprecated and will be removed in a future version.
+ * Use the unified node registry directly from '@/lib/unifiedNodeRegistry'.
  */
-
-// These functions provide a compatibility layer with the old registry
-// but implement the functionality using the folder structure.
 
 /**
  * Dynamically import a node definition at runtime
  * (This happens in the browser, not at build time)
+ * 
+ * @deprecated Use getNode from unifiedNodeRegistry instead
  */
 export async function importNodeDefinition(nodeType: string): Promise<NodeDefinition | null> {
+  console.warn('importNodeDefinition is deprecated. Use unifiedNodeRegistry.getNode instead.');
   try {
     // Dynamic import based on node type
     // Using @vite-ignore to suppress warnings about dynamic imports
@@ -39,8 +37,24 @@ export async function importNodeDefinition(nodeType: string): Promise<NodeDefini
 
 /**
  * Get metadata for a specific node type
+ * 
+ * @deprecated Use getNode from unifiedNodeRegistry instead
  */
 export async function getNode(nodeType: string): Promise<any> {
+  console.warn('getNode from nodes/index.ts is deprecated. Use unifiedNodeRegistry.getNode instead.');
+  // Attempt to get from unified registry first
+  const registryNode = getRegistryNode(nodeType);
+  if (registryNode) {
+    return {
+      type: registryNode.type,
+      name: registryNode.name,
+      description: registryNode.description,
+      category: registryNode.category,
+      icon: registryNode.icon,
+    };
+  }
+  
+  // Fallback to legacy import
   const definition = await importNodeDefinition(nodeType);
   if (!definition) return null;
   
@@ -54,95 +68,29 @@ export async function getNode(nodeType: string): Promise<any> {
 }
 
 /**
- * Get all available node types from the folder structure
- * Uses the same folder list that nodeSystem.ts uses for consistency
+ * Get all available node types from the unified registry
+ * 
+ * @deprecated Use getAllNodes from unifiedNodeRegistry instead
  */
 export function getAllNodes(): any[] {
-  // Import the same list of node types used by nodeSystem.ts
-  // This ensures consistency across the application
-  const FOLDER_BASED_NODE_TYPES = [
-    'text_input',
-    'claude',
-    'http_request',
-    'text_template',
-    'data_transform',
-    'decision',
-    'function',
-    'json_path',
-    'text_formatter',
-    'number_input',
-    'toggle_switch'
-  ];
-  
-  // Map the node types to their basic information
-  // The detailed information will be loaded dynamically when needed
-  return FOLDER_BASED_NODE_TYPES.map(type => {
-    // Default values that will be overridden by definition when loaded
-    let info: any = {
-      type,
-      name: type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      description: `${type.replace(/_/g, ' ')} node`,
-      category: getCategoryForNodeType(type),
-      icon: getIconForNodeType(type)
-    };
-    
-    return info;
-  });
-}
-
-/**
- * Helper function to determine category based on node type
- */
-function getCategoryForNodeType(type: string): string {
-  // AI-related nodes
-  if (['text_input', 'claude', 'text_template'].includes(type)) {
-    return 'ai';
-  }
-  
-  // Data processing nodes
-  if (['data_transform', 'json_path', 'function', 'text_formatter'].includes(type)) {
-    return 'data';
-  }
-  
-  // Action/integration nodes, including former trigger nodes
-  if (['http_request', 'decision', 'webhook_trigger', 'agent_trigger', 'embed_other_workflow'].includes(type)) {
-    return 'actions';
-  }
-  
-  // Input nodes
-  if (['number_input', 'toggle_switch'].includes(type)) {
-    return 'input';
-  }
-  
-  // Default category
-  return 'general';
-}
-
-/**
- * Helper function to determine icon based on node type
- */
-function getIconForNodeType(type: string): string {
-  const iconMap: Record<string, string> = {
-    'text_input': 'type',
-    'claude': 'sparkles',
-    'http_request': 'globe',
-    'text_template': 'file-text',
-    'data_transform': 'repeat',
-    'decision': 'git-branch',
-    'function': 'code',
-    'json_path': 'filter',
-    'text_formatter': 'text',
-    'number_input': 'hash',
-    'toggle_switch': 'toggle-left'
-  };
-  
-  return iconMap[type] || 'box';
+  console.warn('getAllNodes from nodes/index.ts is deprecated. Use unifiedNodeRegistry.getAllNodes instead.');
+  // Now gets nodes directly from the unified registry
+  return getRegistryNodes().map(node => ({
+    type: node.type,
+    name: node.name,
+    description: node.description,
+    category: node.category,
+    icon: node.icon
+  }));
 }
 
 /**
  * Get available node categories
+ * 
+ * @deprecated Use the unified node registry directly
  */
 export function getNodeCategories(): string[] {
+  console.warn('getNodeCategories from nodes/index.ts is deprecated. Use the unified registry instead.');
   // Get unique categories from all nodes
   const nodes = getAllNodes();
   const categories = nodes.map(node => node.category);
@@ -150,7 +98,7 @@ export function getNodeCategories(): string[] {
   // Use Array.filter instead of Set for compatibility
   const uniqueCategories: string[] = [];
   categories.forEach(category => {
-    if (uniqueCategories.indexOf(category) === -1) {
+    if (category && uniqueCategories.indexOf(category) === -1) {
       uniqueCategories.push(category);
     }
   });
@@ -160,8 +108,11 @@ export function getNodeCategories(): string[] {
 
 /**
  * Get nodes by category
+ * 
+ * @deprecated Use the unified registry directly
  */
 export function getNodesByCategory(category: string): any[] {
+  console.warn('getNodesByCategory from nodes/index.ts is deprecated. Use the unified registry instead.');
   const nodes = getAllNodes();
   return nodes.filter(node => node.category === category);
 }
