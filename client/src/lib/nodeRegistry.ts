@@ -130,5 +130,16 @@ export function getNodeDefinitionPath(nodeType: string): string {
   return `../nodes/${info.folderPath}/${nodeType}/definition`;
 }
 
+/**
+ * Get settings for a specific node type
+ * This provides the configuration for the NodeSettingsDrawer
+ */
+export function getNodeSettings(nodeType: string): any[] {
+  const info = discoveredNodes.get(nodeType);
+  if (!info || !info.settings) return [];
+  
+  return info.settings;
+}
+
 // Initialize registry when module is loaded
 initNodeRegistry();

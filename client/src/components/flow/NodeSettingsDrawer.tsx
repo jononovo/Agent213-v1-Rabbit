@@ -23,7 +23,7 @@ import { Save, X, BookOpen, HelpCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Agent } from '@shared/schema';
 import NodeReadmeModal from '@/components/nodes/common/NodeReadmeModal';
-import { getNodeDefinitionPath } from '@/lib/nodeRegistry';
+import { getNodeDefinitionPath, getNodeSettings } from '@/lib/nodeRegistry';
 
 interface NodeSettingsDrawerProps {
   isOpen: boolean;
@@ -196,7 +196,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   const getFieldsForNodeType = (type: string | undefined): SettingsField[] => {
     if (!type) return [];
     
-    // First check if the node has its own settings in its data
+    // First check if the node has its own settings in its data (legacy nodes)
     if (node?.data?.settings?.fields) {
       // Transform the node's settings to match our SettingsField format
       const nodeSettings = node.data.settings.fields.map((field: any) => ({
@@ -216,15 +216,32 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       return nodeSettings;
     }
     
-    // For future implementation: 
-    // We should load settings defined directly in node definition files
-    // This would require modifying this drawer component to be async
-    // or loading and caching the settings ahead of time
+    // Get settings from node definition via registry
+    const nodeSettings = getNodeSettings(type);
+    if (nodeSettings && nodeSettings.length > 0) {
+      console.log(`Found ${nodeSettings.length} settings in node definition for ${type}:`, nodeSettings);
+      
+      // Transform settings to match SettingsField format
+      const transformedSettings = nodeSettings.map((setting: any) => ({
+        id: setting.key, // Use key from node definition
+        label: setting.label,
+        type: mapFieldType(setting.type),
+        description: setting.description,
+        placeholder: setting.placeholder,
+        required: setting.required,
+        options: setting.options,
+        defaultValue: setting.default,
+        min: setting.min,
+        max: setting.max,
+        step: setting.step,
+        showWhen: setting.showWhen
+      }));
+      
+      console.log(`Transformed settings for ${type}:`, transformedSettings);
+      return transformedSettings;
+    }
     
-    // Current solution: Continue using the standard approach of having settings
-    // defined in the node's data object or in the fallback switch cases below
-    
-    // Fall back to type-specific settings for special cases
+    // Fall back to type-specific settings for special cases while migrating
     switch (type) {
       case 'webhook_trigger':
         return [
