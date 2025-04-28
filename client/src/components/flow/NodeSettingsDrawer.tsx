@@ -301,61 +301,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
             defaultValue: 5000
           }
         ];
-      case 'perplexity':
-      case 'perplexity_api':
-        return [
-          {
-            id: 'apiKey',
-            label: 'API Key',
-            type: 'password',
-            placeholder: 'Enter your Perplexity API key',
-            description: 'Your Perplexity API key is securely stored and used only for this node.'
-          },
-          {
-            id: 'model',
-            label: 'Model',
-            type: 'text',
-            description: 'The Perplexity model to use (e.g., llama-3.1-sonar-small-128k-online)',
-            placeholder: 'llama-3.1-sonar-small-128k-online'
-          },
-          {
-            id: 'temperature',
-            label: 'Temperature',
-            type: 'number',
-            min: 0,
-            max: 1,
-            step: 0.1,
-            defaultValue: 0.7,
-            description: 'Controls randomness. Lower values (0.1) are more deterministic, higher values (1.0) more creative.'
-          },
-          {
-            id: 'maxTokens',
-            label: 'Max Tokens',
-            type: 'number',
-            min: 1,
-            max: 4000,
-            defaultValue: 1000,
-            description: 'Maximum number of tokens to generate.'
-          },
-          {
-            id: 'useSystemPrompt',
-            label: 'Use System Prompt',
-            type: 'select',
-            description: 'Enable system prompt input',
-            options: [
-              { value: 'true', label: 'Yes' },
-              { value: 'false', label: 'No' }
-            ],
-            defaultValue: 'false'
-          },
-          {
-            id: 'systemPrompt',
-            label: 'System Prompt',
-            type: 'textarea',
-            description: 'Instructions for the AI assistant',
-            showWhen: (settings) => settings.useSystemPrompt === 'true'
-          },
-        ];
+      // Perplexity API has been migrated to definition-based settings
       case 'claude':
         return [
           {
