@@ -14,7 +14,7 @@ import { NodeExecutionData, WorkflowItem } from '../../types';
 async function callClaudeAPI(
   prompt: string, 
   apiKey: string, 
-  model: string = 'claude-3-sonnet-20240229',
+  model: string = 'claude-3-7-sonnet-20250219', // Updated to use latest model
   systemPrompt?: string,
   temperature: number = 0.7,
   maxTokens: number = 2000
@@ -186,7 +186,7 @@ export const execute = async (
     }
     
     // Get node settings
-    const model = nodeData.model || 'claude-3-sonnet-20240229';
+    const model = nodeData.model || 'claude-3-7-sonnet-20250219';
     const systemPrompt = nodeData.systemPrompt;
     const temperature = Number(nodeData.temperature || 0.7);
     const maxTokens = Number(nodeData.maxTokens || 2000);

@@ -5,6 +5,7 @@
  */
 
 import { NodeDefinition } from '../../types';
+import { z } from 'zod';
 
 const definition: NodeDefinition = {
   type: 'function_node',
@@ -28,6 +29,87 @@ const definition: NodeDefinition = {
       description: 'Error message if function execution failed'
     }
   },
+  
+  // Define settings for NodeSettingsDrawer
+  settings: [
+    {
+      key: 'code',
+      type: 'textarea',
+      label: 'Function Code',
+      description: 'JavaScript function code that processes input data.',
+      placeholder: 'function process(input) {\n  // Your code here\n  return input;\n}'
+    },
+    {
+      key: 'selectedTemplate',
+      type: 'select',
+      label: 'Function Template',
+      description: 'Pre-defined template to use for this function.',
+      options: [
+        { value: 'basic', label: 'Basic (return input)' },
+        { value: 'transform', label: 'Data Transform' },
+        { value: 'api', label: 'API Request' },
+        { value: 'json', label: 'JSON Processing' },
+        { value: 'conditional', label: 'Conditional Logic' }
+      ],
+      default: 'basic'
+    },
+    {
+      key: 'useAsyncFunction',
+      type: 'select',
+      label: 'Async Function',
+      description: 'Use async/await in your function for API calls or other asynchronous operations.',
+      options: [
+        { value: 'true', label: 'Yes - Use Async Function' },
+        { value: 'false', label: 'No - Use Synchronous Function' }
+      ],
+      default: 'true'
+    },
+    {
+      key: 'timeout',
+      type: 'number',
+      label: 'Timeout (ms)',
+      description: 'Maximum execution time in milliseconds.',
+      min: 100,
+      max: 30000,
+      default: 5000
+    },
+    {
+      key: 'errorHandling',
+      type: 'select',
+      label: 'Error Handling',
+      description: 'How to handle errors during function execution.',
+      options: [
+        { value: 'throw', label: 'Throw Error (stop workflow)' },
+        { value: 'return', label: 'Return Error Object (continue workflow)' },
+        { value: 'null', label: 'Return Null on Error' }
+      ],
+      default: 'throw'
+    },
+    {
+      key: 'cacheResults',
+      type: 'select',
+      label: 'Cache Results',
+      description: 'Cache results for identical inputs to improve performance.',
+      options: [
+        { value: 'true', label: 'Yes - Enable Caching' },
+        { value: 'false', label: 'No - Always Execute' }
+      ],
+      default: 'false'
+    },
+    {
+      key: 'executionEnvironment',
+      type: 'select',
+      label: 'Execution Environment',
+      description: 'Where to execute the function code.',
+      options: [
+        { value: 'client', label: 'Client-side (browser)' },
+        { value: 'server', label: 'Server-side (Node.js)' }
+      ],
+      default: 'client'
+    }
+  ],
+  
+  // Keep configOptions for backward compatibility
   configOptions: [
     {
       key: 'code',
@@ -88,6 +170,22 @@ const definition: NodeDefinition = {
       default: 'client'
     }
   ],
+  
+  // Validation schema using Zod
+  validation: z.object({
+    code: z.string().default('function process(input) {\n  // Your code here\n  return input;\n}'),
+    timeout: z.number().min(100).max(30000).default(5000),
+    useAsyncFunction: z.union([z.boolean(), z.enum(['true', 'false'])]).transform(val => 
+      typeof val === 'string' ? val === 'true' : val
+    ).default(true),
+    errorHandling: z.enum(['throw', 'return', 'null']).default('throw'),
+    selectedTemplate: z.enum(['basic', 'transform', 'api', 'json', 'conditional']).default('basic'),
+    cacheResults: z.union([z.boolean(), z.enum(['true', 'false'])]).transform(val => 
+      typeof val === 'string' ? val === 'true' : val
+    ).default(false),
+    executionEnvironment: z.enum(['client', 'server']).default('client')
+  }),
+  
   defaultData: {
     label: 'Function',
     description: 'Custom JavaScript function',

@@ -302,51 +302,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           }
         ];
       // Perplexity API has been migrated to definition-based settings
-      case 'claude':
-        return [
-          {
-            id: 'apiKey',
-            label: 'API Key',
-            type: 'password',
-            placeholder: 'Enter your Claude API key',
-            description: 'Your Claude API key is securely stored and used only for this node.'
-          },
-          {
-            id: 'model',
-            label: 'Model',
-            type: 'select',
-            placeholder: 'Select Claude model',
-            description: 'The Claude AI model to use for text generation.',
-            options: [
-              { value: 'claude-3-sonnet-20240229', label: 'Claude 3 Sonnet' },
-              { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
-              { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku' },
-              { value: 'claude-2.1', label: 'Claude 2.1' },
-              { value: 'claude-instant-1.2', label: 'Claude Instant 1.2' }
-            ]
-          },
-          {
-            id: 'systemPrompt',
-            label: 'System Prompt',
-            type: 'textarea',
-            placeholder: 'Enter a system prompt to guide Claude...',
-            description: 'Initial instructions that prime Claude on how to respond (optional).'
-          },
-          {
-            id: 'temperature',
-            label: 'Temperature',
-            type: 'text',
-            placeholder: '0.7',
-            description: 'Controls randomness. Lower values (0.1) are more deterministic, higher values (1.0) more creative.'
-          },
-          {
-            id: 'maxTokens',
-            label: 'Max Tokens',
-            type: 'text',
-            placeholder: '2000',
-            description: 'Maximum number of tokens to generate. Higher values allow longer responses.'
-          },
-        ];
+      // Claude API has been migrated to definition-based settings
       case 'generate_text':
       case 'generateText':
         return [
