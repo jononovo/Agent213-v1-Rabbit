@@ -1,0 +1,135 @@
+[React Flow]: It looks like you've created a new nodeTypes or edgeTypes object. If this wasn't on purpose please define the nodeTypes/edgeTypes outside of the component or memoize them. Help: https://reactflow.dev/error#002
+Grouped nodes by category: 
+Object {actions: Array(8), ai: Array(4), data: Array(5), logic: Array(1), code: Array(1), …}
+Loading components for initial nodes in workflow
+Loaded workflow data: Nodes: 3, Edges: 2
+Sample node: {"id":"webhook_trigger-1745833948213","type":"webhook_trigger","position":{"x":-390,"y":135},"data":{"label":"Webhook Trigger","description":"Creates a webhook URL that can trigger this workflow when ...
+Grouped nodes by category: 
+Object {actions: Array(8), ai: Array(4), data: Array(5), logic: Array(1), code: Array(1), …}
+Loading components for initial nodes in workflow
+Successfully loaded component for webhook_trigger from System directory (ui.tsx)
+Loaded workflow data: Nodes: 3, Edges: 2
+Sample node: {"id":"webhook_trigger-1745833948213","type":"webhook_trigger","position":{"x":-390,"y":135},"data":{"label":"Webhook Trigger","description":"Creates a webhook URL that can trigger this workflow when ...
+[React Flow]: It looks like you've created a new nodeTypes or edgeTypes object. If this wasn't on purpose please define the nodeTypes/edgeTypes outside of the component or memoize them. Help: https://reactflow.dev/error#002
+Grouped nodes by category: 
+Object {actions: Array(8), ai: Array(4), data: Array(5), logic: Array(1), code: Array(1), …}
+Loading components for initial nodes in workflow
+Loaded workflow data: Nodes: 3, Edges: 2
+Sample node: {"id":"webhook_trigger-1745833948213","type":"webhook_trigger","position":{"x":-390,"y":135},"data":{"label":"Webhook Trigger","description":"Creates a webhook URL that can trigger this workflow when ...
+Grouped nodes by category: 
+Object {actions: Array(8), ai: Array(4), data: Array(5), logic: Array(1), code: Array(1), …}
+Loading components for initial nodes in workflow
+Error loading executor for node type generate_text: 
+TypeError {}
+
+Loaded executor for node type: http_request
+Error loading executor for node type internal_ai_chat_agent: 
+TypeError {}
+
+Error loading executor for node type internal_create_agent: 
+TypeError {}
+
+Error loading executor for node type internal_new_agent: 
+TypeError {}
+
+Loaded executor for node type: json_parser
+Loaded executor for node type: json_path
+Loaded executor for node type: json_schema_validator
+Loaded executor for node type: markdown_renderer
+Loaded executor for node type: number_input
+Loaded executor for node type: perplexity_api
+Error loading executor for node type response_message: 
+TypeError {}
+
+Loaded executor for node type: send_to_webhook
+Loaded executor for node type: text_formatter
+Loaded executor for node type: text_input
+Error loading executor for node type text_prompt: 
+TypeError {}
+
+Loaded executor for node type: text_template
+Loaded executor for node type: toggle_switch
+Error loading executor for node type webhook_response: 
+TypeError {}
+
+Loaded executor for node type: webhook_trigger
+Loaded executor for node type: company_search
+Loaded executor for node type: contact_finder
+Loaded executor for node type: email_discovery
+Loaded 22 node executors
+📊 Unified Node Registry Report
+Total Nodes: 31
+Valid Nodes: 31
+Fully Registered Nodes: 0
+⚠️ 31 nodes are missing components:
+  - agent_trigger: Missing executor, uiComponent
+  - api_response_message: Missing executor, uiComponent
+  - claude: Missing uiComponent
+  - csv_processor: Missing uiComponent
+  - data_transform: Missing uiComponent
+  - decision: Missing uiComponent
+  - embed_other_workflow: Missing uiComponent
+  - function_node: Missing uiComponent
+  - generate_text: Missing executor, uiComponent
+  - http_request: Missing uiComponent
+  - internal_ai_chat_agent: Missing executor, uiComponent
+  - internal_create_agent: Missing executor, uiComponent
+  - internal_new_agent: Missing executor, uiComponent
+  - json_parser: Missing uiComponent
+  - json_path: Missing uiComponent
+  - json_schema_validator: Missing uiComponent
+Back to Builder
+Nodes
+Search nodes...
+All
+AI
+Input
+Data
+Content
+Code
+Actions
+Internal
+AI (4)
+
+
+
+
+Data (5)
+
+
+
+
+
+Input (3)
+
+
+
+Content (1)
+
+Code (1)
+
+Actions (8)
+
+
+
+
+
+
+
+
+New Workflow18
+Edit
+Run
+Test
+Logs
+Save
+React Flow
+
+Monkey Agent
+Describe your workflow and I'll build it
+
+A
+Describe the workflow you want to create, and I'll help you build it.
+05:53 AM
+Describe your workflow...
+Send
