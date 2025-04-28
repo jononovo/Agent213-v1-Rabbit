@@ -440,7 +440,23 @@ const NodeDebugPanel: React.FC = () => {
       node.status = 'validated';
     }
     
+    // Update the selected node
     setSelectedNode({ ...node });
+    
+    // Also update the node in the main nodes list
+    setNodeTypes(prev => {
+      return prev.map(n => {
+        if (n.type === node.type) {
+          return { 
+            ...n, 
+            status: node.status,
+            testResults: node.testResults,
+            customTestResults: node.customTestResults
+          };
+        }
+        return n;
+      });
+    });
     
     toast({
       title: "Testing completed",
@@ -682,7 +698,7 @@ const NodeDebugPanel: React.FC = () => {
                         </div>
                         <div className="flex items-center">
                           {testResult ? getTestStatusIcon(testResult.status) : getTestStatusIcon('pending')}
-                          {testResult?.duration && (
+                          {testResult?.duration && testResult.duration > 0 && (
                             <span className="text-xs text-slate-500 ml-2">{testResult.duration}ms</span>
                           )}
                         </div>

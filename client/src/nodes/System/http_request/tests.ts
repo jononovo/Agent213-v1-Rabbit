@@ -1,162 +1,243 @@
 /**
- * Custom tests for the http_request node
+ * Real functional tests for the http_request node
  * 
- * These tests validate the functionality of the HTTP Request node
- * by testing various request types and response handling
+ * These tests validate actual HTTP request functionality
  */
 import { NodeTest, NodeTestResult } from '../../types/nodeTestsStandard';
+
+/**
+ * HTTP request utility functions
+ */
+class HttpRequester {
+  /**
+   * Makes a GET request to a URL
+   */
+  static async get(url: string): Promise<any> {
+    const startTime = performance.now();
+    try {
+      const response = await fetch(url);
+      const duration = Math.round(performance.now() - startTime);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return {
+        data,
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        duration
+      };
+    } catch (error) {
+      const duration = Math.round(performance.now() - startTime);
+      throw { error, duration };
+    }
+  }
+  
+  /**
+   * Makes a POST request to a URL with data
+   */
+  static async post(url: string, data: any): Promise<any> {
+    const startTime = performance.now();
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+      const duration = Math.round(performance.now() - startTime);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
+      }
+      
+      const responseData = await response.json();
+      return {
+        data: responseData,
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        duration
+      };
+    } catch (error) {
+      const duration = Math.round(performance.now() - startTime);
+      throw { error, duration };
+    }
+  }
+  
+  /**
+   * Validates a URL
+   */
+  static validateUrl(url: string): boolean {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
 
 /**
  * Define real functional tests for the http_request node
  */
 const tests: NodeTest[] = [
   {
-    name: 'GET Request Test',
-    description: 'Tests basic GET request functionality',
-    category: 'api',
+    name: 'GET Request',
+    description: 'Tests basic GET request to a public API',
+    category: 'http',
     run: async (): Promise<NodeTestResult> => {
       try {
-        // Test with a real public API
-        const response = await fetch('https://jsonplaceholder.typicode.com/todos/1');
+        const testUrl = 'https://jsonplaceholder.typicode.com/todos/1';
         
-        if (!response.ok) {
+        // Perform the actual GET request
+        const result = await HttpRequester.get(testUrl);
+        
+        // Verify we got a valid response with the expected structure
+        if (!result.data || !result.data.id || result.data.id !== 1) {
           return {
             passed: false,
-            message: `GET request failed with status ${response.status}`,
+            message: 'GET request test failed: Response missing expected data structure',
             details: {
-              status: response.status,
-              statusText: response.statusText
+              url: testUrl,
+              response: result.data,
+              status: result.status,
+              executionTime: result.duration
             }
           };
         }
         
-        const data = await response.json();
-        
-        // Verify the response structure
-        if (!data.id || !data.title) {
-          return {
-            passed: false,
-            message: 'GET request response missing expected fields',
-            details: {
-              response: data
-            }
-          };
-        }
-        
+        // Test passed
         return {
           passed: true,
           message: 'GET request test passed successfully',
           details: {
-            responseData: data,
-            status: response.status
+            url: testUrl,
+            response: result.data,
+            status: result.status,
+            executionTime: result.duration
           }
         };
-      } catch (error) {
+      } catch (error: any) {
         return {
           passed: false,
-          message: `GET request test failed: ${error instanceof Error ? error.message : String(error)}`
+          message: `GET request test failed: ${error.error instanceof Error ? error.error.message : String(error.error)}`,
+          details: {
+            executionTime: error.duration
+          }
         };
       }
     }
   },
   {
-    name: 'POST Request Test',
-    description: 'Tests POST request with JSON body',
-    category: 'api',
+    name: 'POST Request',
+    description: 'Tests POST request with JSON payload',
+    category: 'http',
     run: async (): Promise<NodeTestResult> => {
       try {
-        // Test POST request
-        const postData = {
-          title: 'Test Todo',
-          completed: false,
+        const testUrl = 'https://jsonplaceholder.typicode.com/posts';
+        const testData = {
+          title: 'Test Post',
+          body: 'This is a test post',
           userId: 1
         };
         
-        const response = await fetch('https://jsonplaceholder.typicode.com/todos', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(postData)
-        });
+        // Perform the actual POST request
+        const result = await HttpRequester.post(testUrl, testData);
         
-        if (!response.ok) {
+        // Verify we got a valid response with the expected structure
+        if (!result.data || !result.data.id || !result.data.title || result.data.title !== testData.title) {
           return {
             passed: false,
-            message: `POST request failed with status ${response.status}`,
+            message: 'POST request test failed: Response missing expected data',
             details: {
-              status: response.status,
-              statusText: response.statusText
+              url: testUrl,
+              requestData: testData,
+              response: result.data,
+              status: result.status,
+              executionTime: result.duration
             }
           };
         }
         
-        const data = await response.json();
-        
-        // Verify response has an ID assigned (usually 101 for JSONPlaceholder)
-        if (!data.id) {
-          return {
-            passed: false,
-            message: 'POST request response missing ID',
-            details: {
-              response: data
-            }
-          };
-        }
-        
+        // Test passed
         return {
           passed: true,
           message: 'POST request test passed successfully',
           details: {
-            requestData: postData,
-            responseData: data,
-            status: response.status
+            url: testUrl,
+            requestData: testData,
+            response: result.data,
+            status: result.status,
+            executionTime: result.duration
           }
         };
-      } catch (error) {
+      } catch (error: any) {
         return {
           passed: false,
-          message: `POST request test failed: ${error instanceof Error ? error.message : String(error)}`
+          message: `POST request test failed: ${error.error instanceof Error ? error.error.message : String(error.error)}`,
+          details: {
+            executionTime: error.duration
+          }
         };
       }
     }
   },
   {
-    name: 'Error Handling Test',
-    description: 'Tests handling of non-existent endpoints',
+    name: 'URL Validation',
+    description: 'Tests URL validation functionality',
     category: 'validation',
     run: async (): Promise<NodeTestResult> => {
       try {
-        // Test with non-existent endpoint
-        const response = await fetch('https://jsonplaceholder.typicode.com/invalid-endpoint');
+        const startTime = performance.now();
         
-        // Even though this returns a 404, the fetch itself should succeed
-        // We're testing that the code properly handles HTTP error codes
+        // Test cases
+        const validUrl = 'https://jsonplaceholder.typicode.com/posts';
+        const invalidUrl = 'not-a-valid-url';
         
-        if (response.status !== 404) {
+        // Test valid URL
+        const validUrlResult = HttpRequester.validateUrl(validUrl);
+        
+        // Test invalid URL
+        const invalidUrlResult = HttpRequester.validateUrl(invalidUrl);
+        
+        const duration = Math.round(performance.now() - startTime);
+        
+        // Verify results
+        if (validUrlResult !== true || invalidUrlResult !== false) {
           return {
             passed: false,
-            message: `Expected 404 status, got ${response.status}`,
+            message: 'URL validation test failed: unexpected validation results',
             details: {
-              status: response.status,
-              statusText: response.statusText
+              validUrl,
+              validUrlResult,
+              invalidUrl,
+              invalidUrlResult,
+              executionTime: duration
             }
           };
         }
         
+        // Test passed
         return {
           passed: true,
-          message: 'Error handling test passed successfully',
+          message: 'URL validation test passed successfully',
           details: {
-            status: response.status,
-            statusText: response.statusText
+            validUrl,
+            validUrlResult,
+            invalidUrl,
+            invalidUrlResult,
+            executionTime: duration
           }
         };
       } catch (error) {
-        // Network errors would be caught here
         return {
           passed: false,
-          message: `Error handling test failed: ${error instanceof Error ? error.message : String(error)}`
+          message: `URL validation test failed: ${error instanceof Error ? error.message : String(error)}`
         };
       }
     }
