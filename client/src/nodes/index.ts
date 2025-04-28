@@ -4,7 +4,7 @@
  * This file exports all node-related functionality as a single module.
  * It provides the public API for accessing nodes and node registry functions.
  * 
- * Note: This is the new folder-based implementation that replaces the legacy registry.
+ * Note: This is the folder-based implementation that works alongside the unified node registry.
  */
 
 import { NodeDefinition } from './types';

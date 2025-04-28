@@ -91,18 +91,13 @@ export default function WorkflowTestBench() {
   useEffect(() => {
     const initWorkflowEngine = async () => {
       try {
-        // Direct initialization of folder-based node system
-        // Import the nodeSystem module that will handle node registration
-        const { registerNodeExecutorsFromRegistry } = await import('@/lib/nodeSystem');
+        // Initialize the unified node registry directly
         
-        // Register all node executors directly from the folder-based system
-        registerNodeExecutorsFromRegistry();
-        
-        // Update the enhancedWorkflowEngine registration if needed
+        // Update the enhancedWorkflowEngine registration
         await registerAllEnhancedNodeExecutors();
         
         // Log success message
-        console.log('Workflow engine initialized with folder-based node system');
+        console.log('Workflow engine initialized with unified node registry');
       } catch (err) {
         console.error('Failed to initialize workflow engine:', err);
         setError('Failed to initialize workflow engine. See console for details.');
