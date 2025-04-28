@@ -52,7 +52,7 @@ const definition = {
   settings: [
     {
       key: 'isWebhookResponse',
-      type: 'radio',
+      type: 'select',
       label: 'Respond to Original Webhook',
       description: 'When enabled, this node will respond to the original webhook request instead of making a new outbound request',
       options: [
