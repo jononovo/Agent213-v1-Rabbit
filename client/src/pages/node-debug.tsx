@@ -254,26 +254,25 @@ const NodeDebugPanel: React.FC = () => {
   // Function to try loading custom tests for a node
   const loadCustomTests = async (nodeType: string): Promise<NodeTest[] | null> => {
     try {
-      // Dynamic import of test files based on node type
-      // We explicitly handle specific node types with known test files
-      if (nodeType === 'text_formatter') {
-        const testsModule = await import('@/nodes/System/text_formatter/tests');
-        console.log("Loaded custom tests for text_formatter:", testsModule.default);
-        return testsModule.default;
-      }
+      // Map of known node types to their test file paths
+      const nodeTestPaths: Record<string, string> = {
+        'text_formatter': '@/nodes/System/text_formatter/tests',
+        'http_request': '@/nodes/System/http_request/tests',
+        'send_to_webhook': '@/nodes/System/send_to_webhook/tests'
+      };
       
-      if (nodeType === 'http_request') {
+      // Check if we have a registered test path for this node
+      if (nodeType in nodeTestPaths) {
         try {
-          const testsModule = await import('@/nodes/System/http_request/tests');
-          console.log("Loaded custom tests for http_request:", testsModule.default);
+          const testPath = nodeTestPaths[nodeType];
+          const testsModule = await import(/* @vite-ignore */ testPath);
+          console.log(`Loaded custom tests for ${nodeType}:`, testsModule.default);
           return testsModule.default;
         } catch (e) {
-          console.warn("HTTP request tests module failed to load:", e);
+          console.warn(`Tests for ${nodeType} failed to load:`, e);
           return null;
         }
       }
-      
-      // Future implementations can add more node-specific imports here
       
       // No tests found for this node type
       return null;
