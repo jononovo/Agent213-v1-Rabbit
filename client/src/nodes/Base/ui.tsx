@@ -50,7 +50,6 @@ import {
 import { NodeContainer } from '@/components/nodes/common/NodeContainer';
 import { NodeHeader } from '@/components/nodes/common/NodeHeader';
 import { NodeContent } from '@/components/nodes/common/NodeContent';
-import { NodeSettingsForm } from '@/components/nodes/common/NodeSettingsForm';
 import NodeHoverMenu, { 
   createDuplicateAction, 
   createDeleteAction, 
@@ -89,6 +88,7 @@ export interface BaseNodeData {
   errorMessage?: string;
   icon?: string | React.ReactNode;
   onChange?: (data: any) => void;
+  useGlobalSettingsOnly?: boolean; // All nodes now use global drawer by default
   [key: string]: any;
 }
 
@@ -97,7 +97,15 @@ export interface BaseNodeData {
  * 
  * This node type serves as the foundation for all other node types and
  * as a fallback for nodes that don't have specific UI implementations.
- * It provides core features like the settings drawer, hover menu, and status indicators.
+ * It provides core features like hover menu, status indicators, and node settings.
+ * 
+ * IMPORTANT: All nodes now use the global settings drawer implementation.
+ * The legacy local drawer approach has been removed to eliminate confusion
+ * and create a consistent settings experience across all nodes.
+ * 
+ * To add node-specific settings:
+ * 1. Define your settings fields in the node's data.settings.fields array
+ * 2. Access and update settings via the global drawer that appears when clicking the settings icon
  */
 function BaseNode({ 
   data, 
@@ -256,7 +264,13 @@ function BaseNode({
       }
     }
     
-    // No need to close a drawer - global drawer handles this
+    // Global drawer handles its own closing
+    
+    // Emit an event to let the FlowEditor know settings were updated
+    const event = new CustomEvent('node-settings-updated', { 
+      detail: { nodeId: id, settings: updatedData }
+    });
+    window.dispatchEvent(event);
   };
   
   // Get the status badge based on execution state
