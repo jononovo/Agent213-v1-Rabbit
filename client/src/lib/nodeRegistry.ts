@@ -141,5 +141,5 @@ export function getNodeSettings(nodeType: string): any[] {
   return info.settings;
 }
 
-// Initialize registry when module is loaded
-initNodeRegistry();
+// Note: The registry is no longer initialized automatically on module import
+// It must be explicitly initialized by calling initNodeRegistry() when needed

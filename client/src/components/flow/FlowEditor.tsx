@@ -34,8 +34,9 @@ import NodeSettingsDrawer from './NodeSettingsDrawer';
 import LoadingNode from '../flow/nodes/LoadingNode';
 // Import base node component as the fallback
 import BaseNode from '../../nodes/Base';
-// Import the nodeRegistry for automatic node discovery
-import { getAllNodeTypes, getNodeUIPath, getNodeInfo, hasNodeType } from '@/lib/nodeRegistry';
+// Import the registry functions for node discovery
+import { getAllNodeTypes, getNodeUIPath, getNodeInfo, hasNodeType, initNodeRegistry } from '@/lib/nodeRegistry';
+import { initializeRegistry } from '@/lib/unifiedNodeRegistry';
 
 // Define a dynamic import function for node components that uses the registry
 const loadNodeComponent = (nodeType: string) => {
@@ -106,7 +107,7 @@ const getNodeComponent = async (nodeType: string) => {
   }
 };
 
-// Create initial nodeTypes with fallbacks - uses registry to discover all nodes
+// Create node types with fallbacks
 const createNodeTypes = () => {
   const baseNodeTypes: NodeTypes = {
     // Special loading node type
@@ -118,31 +119,9 @@ const createNodeTypes = () => {
     baseNodeTypes[nodeInfo.id] = BaseNode;
   });
   
-  // Add some additional legacy types for backward compatibility
-  const legacyTypes = [
-    'internal_new_agent', 'internal_ai_chat_agent', 'internal',
-    'custom', 'trigger', 'processor', 'output', 'textInput',
-    'webhook', 'scheduler', 'email_trigger', 'email_send',
-    'database_query', 'filter', 'text_prompt', 'visualize_text',
-    'transform', 'chat_interface', 'generate_text', 'prompt_crafter',
-    'valid_response', 'perplexity', 'agent_trigger', 'embed_other_workflow',
-    'response_message', 'api_response_message', 'generateText',
-    'visualizeText', 'routing', 'promptCrafter', 'validResponse'
-  ];
-  
-  // Add any legacy types not already in the registry
-  legacyTypes.forEach(type => {
-    if (!baseNodeTypes[type]) {
-      baseNodeTypes[type] = BaseNode;
-    }
-  });
-  
   console.log(`Initialized node types with ${Object.keys(baseNodeTypes).length} entries`);
   return baseNodeTypes;
 };
-
-// Create initial nodeTypes with fallbacks
-const nodeTypes: NodeTypes = createNodeTypes();
 
 interface FlowEditorProps {
   workflow?: Workflow;
@@ -241,11 +220,14 @@ const FlowEditor = ({
   // Store loaded components in state 
   const [loadedComponents, setLoadedComponents] = useState<Record<string, any>>({});
   
+  // Store node types - initialized when registries are loaded
+  const [nodeTypes, setNodeTypes] = useState<NodeTypes>({ loading: LoadingNode });
+  
   // Memoize the dynamic nodeTypes to prevent unnecessary re-renders
   const dynamicNodeTypes = useMemo(() => {
     // Merge the base nodeTypes with any dynamically loaded components
     return { ...nodeTypes, ...loadedComponents };
-  }, [loadedComponents]); // Only recalculate when loadedComponents changes
+  }, [nodeTypes, loadedComponents]); // Recalculate when nodeTypes or loadedComponents change
   
   // Helper function to load node components for a specific type
   const loadNodeComponent = async (type: string): Promise<void> => {
@@ -370,6 +352,36 @@ const FlowEditor = ({
     }
   };
   
+  // Initialize the registry when the flow editor loads
+  useEffect(() => {
+    console.log("Initializing node registries for Flow Editor");
+    
+    // Initialize both registries
+    const initRegistries = async () => {
+      await Promise.all([
+        initNodeRegistry(),
+        initializeRegistry()
+      ]);
+      console.log("Node registries initialized");
+      
+      // Now that registries are initialized, update nodeTypes
+      const baseNodeTypes: NodeTypes = {
+        // Special loading node type
+        loading: LoadingNode,
+      };
+      
+      // Add all nodes from registry with BaseNode as fallback
+      getAllNodeTypes().forEach(nodeInfo => {
+        baseNodeTypes[nodeInfo.id] = BaseNode;
+      });
+      
+      console.log(`Initialized node types with ${Object.keys(baseNodeTypes).length} entries`);
+      setNodeTypes(baseNodeTypes);
+    };
+    
+    initRegistries();
+  }, []);
+
   // Load node components for all node types in the current workflow
   useEffect(() => {
     if (initialNodes.length > 0) {

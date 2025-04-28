@@ -513,5 +513,5 @@ export function getNodeUIPath(nodeType: string): string {
   return `../nodes/${node.folderPath}/${nodeType}/ui`;
 }
 
-// Initialize the registry when this module is loaded
-initializeRegistry();
+// Note: The registry is no longer initialized automatically on module import
+// It must be explicitly initialized by calling initializeRegistry() when needed
