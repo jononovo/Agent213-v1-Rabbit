@@ -226,6 +226,76 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     
     // Fall back to type-specific settings for special cases
     switch (type) {
+      case 'send_to_webhook':
+        return [
+          {
+            id: 'respondToOriginal',
+            label: 'Response Mode',
+            type: 'select',
+            description: 'Choose whether to send data to a new webhook or respond to the original request',
+            options: [
+              { value: 'false', label: 'Send to a new webhook URL' },
+              { value: 'true', label: 'Respond to the original webhook request' }
+            ],
+            default: 'false'
+          },
+          {
+            id: 'url',
+            label: 'Webhook URL',
+            type: 'text',
+            description: 'URL of the external webhook endpoint',
+            placeholder: 'https://example.com/webhook',
+            required: false
+          },
+          {
+            id: 'method',
+            label: 'HTTP Method',
+            type: 'select',
+            description: 'HTTP method to use for the webhook request',
+            options: [
+              { value: 'POST', label: 'POST' },
+              { value: 'PUT', label: 'PUT' },
+              { value: 'PATCH', label: 'PATCH' }
+            ],
+            default: 'POST'
+          },
+          {
+            id: 'headers',
+            label: 'Custom Headers',
+            type: 'textarea',
+            description: 'Custom HTTP headers to include in the request (JSON format)',
+            placeholder: '{"Content-Type": "application/json", "Authorization": "Bearer your-token"}',
+            required: false
+          },
+          {
+            id: 'retryCount',
+            label: 'Retry Count',
+            type: 'number',
+            description: 'Number of times to retry if the request fails',
+            min: 0,
+            max: 10,
+            default: 3
+          },
+          {
+            id: 'retryDelay',
+            label: 'Retry Delay (ms)',
+            type: 'number',
+            description: 'Delay between retry attempts in milliseconds',
+            min: 100,
+            max: 10000,
+            default: 1000
+          },
+          {
+            id: 'timeout',
+            label: 'Timeout (ms)',
+            type: 'number',
+            description: 'Request timeout in milliseconds',
+            min: 100,
+            max: 30000,
+            default: 5000
+          }
+        ];
+      
       case 'webhook_trigger':
         return [
           {
