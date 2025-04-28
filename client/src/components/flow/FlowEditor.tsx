@@ -34,23 +34,28 @@ import NodeSettingsDrawer from './NodeSettingsDrawer';
 import LoadingNode from '../flow/nodes/LoadingNode';
 // Import base node component as the fallback
 import BaseNode from '../../nodes/Base';
-// Import the registry functions for node discovery
-import { getAllNodeTypes, getNodeUIPath, getNodeInfo, hasNodeType, initNodeRegistry } from '@/lib/nodeRegistry';
-import { initializeRegistry } from '@/lib/unifiedNodeRegistry';
+// Import the unified registry functions for node discovery
+import { 
+  getAllNodes, 
+  getNodeUIPath, 
+  getNode, 
+  hasNode, 
+  initializeRegistry
+} from '@/lib/unifiedNodeRegistry';
 
-// Define a dynamic import function for node components that uses the registry
+// Define a dynamic import function for node components that uses the unified registry
 const loadNodeComponent = (nodeType: string) => {
   try {
-    // Check if the node type exists in the registry
-    if (hasNodeType(nodeType)) {
-      // Get the path from the registry
+    // Check if the node type exists in the unified registry
+    if (hasNode(nodeType)) {
+      // Get the path from the unified registry
       const uiPath = getNodeUIPath(nodeType);
       
       // Import the component from the appropriate path
       return import(/* @vite-ignore */ uiPath)
         .then(module => module.component || module.default)
         .catch(error => {
-          console.warn(`Failed to load component for ${nodeType} from registry path:`, error);
+          console.warn(`Failed to load component for ${nodeType} from unified registry path:`, error);
           return BaseNode;
         });
     }
@@ -114,9 +119,9 @@ const createNodeTypes = () => {
     loading: LoadingNode,
   };
   
-  // Add all nodes from registry with BaseNode as fallback
-  getAllNodeTypes().forEach(nodeInfo => {
-    baseNodeTypes[nodeInfo.id] = BaseNode;
+  // Add all nodes from unified registry with BaseNode as fallback
+  getAllNodes().forEach(node => {
+    baseNodeTypes[node.type] = BaseNode;
   });
   
   console.log(`Initialized node types with ${Object.keys(baseNodeTypes).length} entries`);
@@ -240,10 +245,10 @@ const FlowEditor = ({
     setLoadedNodeTypes(prev => ({ ...prev, [type]: true }));
     
     try {
-      // Try to load the component using the registry first
-      if (hasNodeType(type)) {
+      // Try to load the component using the unified registry first
+      if (hasNode(type)) {
         const uiPath = getNodeUIPath(type);
-        console.log(`Loading node ${type} from registry path: ${uiPath}`);
+        console.log(`Loading node ${type} from unified registry path: ${uiPath}`);
         
         try {
           // Try to load the component from the registry path
@@ -258,11 +263,11 @@ const FlowEditor = ({
               ...prev,
               [type]: component
             }));
-            console.log(`Successfully loaded component for ${type} from registry`);
+            console.log(`Successfully loaded component for ${type} from unified registry`);
             return;
           }
         } catch (registryError) {
-          console.warn(`Failed to load component for ${type} from registry:`, registryError);
+          console.warn(`Failed to load component for ${type} from unified registry:`, registryError);
         }
       }
       
@@ -354,32 +359,29 @@ const FlowEditor = ({
   
   // Initialize the registry when the flow editor loads
   useEffect(() => {
-    console.log("Initializing node registries for Flow Editor");
+    console.log("Initializing unified node registry for Flow Editor");
     
-    // Initialize both registries
-    const initRegistries = async () => {
-      await Promise.all([
-        initNodeRegistry(),
-        initializeRegistry()
-      ]);
+    // Initialize the unified registry
+    const initRegistry = async () => {
+      await initializeRegistry();
       console.log("Node registries initialized");
       
-      // Now that registries are initialized, update nodeTypes
+      // Now that registry is initialized, update nodeTypes
       const baseNodeTypes: NodeTypes = {
         // Special loading node type
         loading: LoadingNode,
       };
       
-      // Add all nodes from registry with BaseNode as fallback
-      getAllNodeTypes().forEach(nodeInfo => {
-        baseNodeTypes[nodeInfo.id] = BaseNode;
+      // Add all nodes from unified registry with BaseNode as fallback
+      getAllNodes().forEach(node => {
+        baseNodeTypes[node.type] = BaseNode;
       });
       
       console.log(`Initialized node types with ${Object.keys(baseNodeTypes).length} entries`);
       setNodeTypes(baseNodeTypes);
     };
     
-    initRegistries();
+    initRegistry();
   }, []);
 
   // Load node components for all node types in the current workflow
