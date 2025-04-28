@@ -4,10 +4,19 @@
  * A dedicated page for testing and validating nodes in the system.
  * This panel allows developers to commission, test, and validate nodes
  * without impacting the main workflow editor.
+ * 
+ * Features:
+ * - Node Directory Testing: Select a node folder to run all tests on that node
+ * - Detailed Test Results: View individual test results and feedback
+ * - AI Agent Testing Support: Structured for programmatic use by AI agents
  */
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, XCircle, AlertTriangle, RefreshCcw, FileSymlink, Search, Play, Zap, LayoutGrid, Clock, Link } from 'lucide-react';
+import { 
+  CheckCircle2, XCircle, AlertTriangle, RefreshCcw, FileSymlink, Search, 
+  Play, Zap, LayoutGrid, Clock, Link, FolderOpen, Upload, Download, 
+  FileCode, Bot, RotateCw, Save, ClipboardCheck, Cpu 
+} from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,6 +30,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import MainContent from '@/components/layout/MainContent';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Helper types
 interface NodeType {
