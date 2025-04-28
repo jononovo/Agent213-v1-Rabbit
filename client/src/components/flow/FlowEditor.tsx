@@ -25,7 +25,7 @@ import NodesPanel from './NodesPanel';
 import { useMutation } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { apiRequest } from '@/lib/queryClient';
-import { ArrowLeft, Save, Play, Square, Settings, TestTube, ListFilter } from 'lucide-react';
+import { ArrowLeft, Save, Play, Settings, TestTube } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import MonkeyAgentChatOverlay from '@/components/workflows/MonkeyAgentChatOverlay';
 import NodeSettingsDrawer from './NodeSettingsDrawer';
@@ -609,7 +609,6 @@ const FlowEditor = ({
 
   const { toast } = useToast();
   const [isRunning, setIsRunning] = useState(false);
-  const [currentLogId, setCurrentLogId] = useState<number | null>(null);
   const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
 
@@ -1029,54 +1028,6 @@ const FlowEditor = ({
     });
   };
   
-  // Function to stop a running workflow
-  const handleStopWorkflow = async () => {
-    if (!workflow?.id || !isRunning) return;
-    
-    try {
-      // Call the API to stop the workflow
-      const response = await apiRequest(`/api/workflows/${workflow.id}/stop`, 'POST', 
-        currentLogId ? { logId: currentLogId } : {});
-      
-      if (response.success) {
-        toast({
-          title: "Workflow Stopped",
-          description: "Workflow execution was manually stopped.",
-        });
-        
-        // Reset UI state
-        setNodes(nodes.map(node => {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              _isProcessing: false,
-              _hasError: false,
-              _errorMessage: '',
-            }
-          };
-        }) as Node[]);
-      } else {
-        toast({
-          title: "Error Stopping Workflow",
-          description: response.message || "Failed to stop workflow execution.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error stopping workflow:', error);
-      toast({
-        title: "Error Stopping Workflow",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
-        variant: "destructive"
-      });
-    } finally {
-      // Reset state even if there was an error
-      setIsRunning(false);
-      setCurrentLogId(null);
-    }
-  };
-
   const handleRunWorkflow = async () => {
     setIsRunning(true);
     
@@ -1128,28 +1079,6 @@ const FlowEditor = ({
           targetHandle: edge.targetHandle ? edge.targetHandle : undefined
         }))
       };
-      
-      // If the workflow has been saved to the server, create a log entry
-      if (workflow?.id) {
-        try {
-          // Create a log entry to track this execution
-          const logResponse = await apiRequest('/api/logs', 'POST', {
-            workflowId: workflow.id,
-            agentId: workflow.agentId || 1, // Default to agent ID 1 if not set
-            status: 'running',
-            input: { source: 'manual_execution' }
-          });
-          
-          // Store the log ID for stopping the workflow later
-          if (logResponse && logResponse.id) {
-            setCurrentLogId(logResponse.id);
-            console.log(`Created execution log: ${logResponse.id}`);
-          }
-        } catch (logError) {
-          console.warn('Failed to create execution log:', logError);
-          // Continue execution even if logging fails
-        }
-      }
       
       // Execute the enhanced workflow with new data format
       await executeEnhancedWorkflow(
@@ -1206,9 +1135,6 @@ const FlowEditor = ({
           if (finalState.output) {
             console.log('Workflow final output:', finalState.output);
           }
-          
-          // Reset log ID since execution is complete
-          setCurrentLogId(null);
         }
       );
     } catch (error) {
@@ -1220,7 +1146,6 @@ const FlowEditor = ({
       });
     } finally {
       setIsRunning(false);
-      setCurrentLogId(null);
     }
   };
 
@@ -1292,41 +1217,21 @@ const FlowEditor = ({
           )}
 
           <div className="flex space-x-2">
-            {isRunning ? (
-              <Button 
-                onClick={handleStopWorkflow}
-                variant="outline"
-                className="bg-red-50 text-red-500 hover:bg-red-100"
-              >
-                <Square className="h-4 w-4 mr-2" />
-                Stop
-              </Button>
-            ) : (
-              <Button 
-                onClick={handleRunWorkflow}
-                variant="outline"
-              >
-                <Play className="h-4 w-4 mr-2" />
-                Run
-              </Button>
-            )}
+            <Button 
+              onClick={handleRunWorkflow}
+              disabled={isRunning}
+              variant="outline"
+            >
+              <Play className="h-4 w-4 mr-2" />
+              Run
+            </Button>
             {workflow?.id && (
               <Button
                 onClick={() => navigate(`/workflow-test/${workflow.id}`)}
                 variant="outline"
-                disabled={isRunning}
               >
                 <TestTube className="h-4 w-4 mr-2" />
                 Test
-              </Button>
-            )}
-            {workflow?.id && (
-              <Button
-                onClick={() => navigate(`/workflow-logs/${workflow.id}`)}
-                variant="outline"
-              >
-                <ListFilter className="h-4 w-4 mr-2" />
-                Logs
               </Button>
             )}
             <Button 

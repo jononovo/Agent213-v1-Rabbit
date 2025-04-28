@@ -1,15 +1,15 @@
 /**
- * Send to Webhook Node Executor
+ * Webhook Response Node Executor
  * 
- * This file handles the execution logic for the send_to_webhook node,
- * which sends data to an external webhook endpoint or API.
+ * This file handles the execution logic for the webhook_response node,
+ * which sends data to an external webhook endpoint.
  */
 
 import { createNodeOutput, createErrorOutput } from '../../nodeOutputUtils';
 import { NodeExecutionData } from '@shared/nodeTypes';
 
-// Define the send to webhook node data interface
-interface SendToWebhookNodeData {
+// Define the webhook response node data interface
+interface WebhookResponseNodeData {
   url: string;
   method: 'POST' | 'PUT' | 'PATCH';
   headers?: Record<string, string>;
@@ -19,11 +19,11 @@ interface SendToWebhookNodeData {
 }
 
 /**
- * Execute function for the send to webhook node
- * This sends data to the configured webhook endpoint or API
+ * Execute function for the webhook response node
+ * This sends data to the configured webhook endpoint
  */
 export const execute = async (
-  nodeData: SendToWebhookNodeData,
+  nodeData: WebhookResponseNodeData,
   inputs: Record<string, NodeExecutionData>
 ): Promise<any> => {
   const startTime = new Date();
@@ -122,11 +122,11 @@ export const execute = async (
       }
     );
   } catch (error: any) {
-    console.error('Error in send to webhook executor:', error);
+    console.error('Error in webhook_response executor:', error);
     
     return createErrorOutput(
-      error.message || 'Error sending data to webhook',
-      'send_to_webhook'
+      error.message || 'Error sending webhook request',
+      'webhook_response'
     );
   }
 };

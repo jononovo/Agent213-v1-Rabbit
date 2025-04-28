@@ -242,21 +242,6 @@ export const apiEndpoints: ApiEndpoint[] = [
     ]
   },
   {
-    path: '/api/workflows/:id/stop',
-    method: 'POST',
-    description: 'Stop a running workflow',
-    category: 'workflows',
-    requestFormat: '{ logId?: number }',
-    responseFormat: '{ success: boolean, message: string }',
-    pathParams: [
-      {
-        name: 'id',
-        description: 'Workflow ID',
-        type: 'number'
-      }
-    ]
-  },
-  {
     path: '/api/workflows/:id/execute',
     method: 'POST',
     description: 'Execute a workflow with the provided input',

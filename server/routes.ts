@@ -16,7 +16,6 @@ import { log } from "./vite";
 import { workflowGenerationService } from "./services/workflowGenerationService";
 import { createAgentCoordinator } from "./services/agentCoordinator";
 import { registerAllTools } from "./tools/implementations";
-import { registerWorkflowExecution, clearWorkflowExecution, checkForTimedOutWorkflows } from "./utils/timeoutManager";
 
 /**
  * Utility function to execute a workflow
@@ -100,9 +99,6 @@ export async function runWorkflow(
   
   // Start executing the workflow
   console.log(`Executing workflow ${workflowId}: ${workflow.name}`);
-  
-  // Register this workflow execution with the timeout manager (1 minute timeout)
-  const clearTimeout = registerWorkflowExecution(executionLog.id, workflowId);
   
   try {
     // Implement basic execution, but preferably use an existing solution:
@@ -343,9 +339,6 @@ export async function runWorkflow(
       }
     });
     
-    // Clear the timeout since the workflow has completed
-    clearTimeout();
-    
     return result;
     
   } catch (error) {
@@ -361,9 +354,6 @@ export async function runWorkflow(
         status: "failed"
       }
     });
-    
-    // Clear the timeout since the workflow has completed (with error)
-    clearTimeout();
     
     throw error;
   }
@@ -448,74 +438,8 @@ async function handleWebhookRequest(
   }
 }
 
-/**
- * Stop a running workflow
- * 
- * This function manually stops a running workflow by updating its log
- * status to 'stopped' and clearing the workflow timeout
- */
-export async function stopWorkflow(workflowId: number, logId?: number): Promise<boolean> {
-  try {
-    // Find the most recent running log for this workflow if logId not provided
-    if (!logId) {
-      const logs = await storage.getLogs(undefined, workflowId);
-      const runningLog = logs.find(log => 
-        (log.status === 'running' || log.status === 'in_progress') && 
-        log.startedAt && 
-        !log.completedAt
-      );
-      
-      if (runningLog) {
-        logId = runningLog.id;
-      } else {
-        console.log(`No running logs found for workflow ${workflowId}`);
-        return false;
-      }
-    }
-    
-    if (!logId) {
-      return false;
-    }
-    
-    // Update the log to stopped status
-    await storage.updateLog(logId, {
-      status: 'stopped',
-      completedAt: new Date(),
-      executionPath: {
-        message: `Workflow execution manually stopped by user`,
-        status: 'stopped'
-      }
-    });
-    
-    // Clear any registered timeout
-    clearWorkflowExecution(workflowId);
-    
-    console.log(`Workflow ${workflowId} (Log ${logId}) manually stopped`);
-    return true;
-  } catch (error) {
-    console.error(`Error stopping workflow ${workflowId}:`, error);
-    return false;
-  }
-}
-
 export async function registerRoutes(app: Express): Promise<Server> {
   const server = createServer(app);
-  
-  // Set up a periodic check for timed-out workflows
-  // Run every 5 minutes (300000 ms)
-  const timeoutCheckInterval = setInterval(async () => {
-    try {
-      console.log("Running periodic check for timed-out workflows");
-      await checkForTimedOutWorkflows();
-    } catch (error) {
-      console.error("Error checking for timed-out workflows:", error);
-    }
-  }, 300000);
-  
-  // Ensure the interval is cleared when the server closes
-  server.on('close', () => {
-    clearInterval(timeoutCheckInterval);
-  });
   
   // Add token validation middleware
   app.use((req: Request, res: Response, next: NextFunction) => {
@@ -585,18 +509,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error during manual save:', error);
       res.status(500).json({ success: false, message: 'Error saving data', error: String(error) });
-    }
-  });
-  
-  // Endpoint to manually check for timed-out workflows
-  app.post('/api/admin/check-workflow-timeouts', async (req: Request, res: Response) => {
-    try {
-      console.log('Manual check for timed-out workflows triggered');
-      await checkForTimedOutWorkflows();
-      res.json({ success: true, message: 'Workflow timeout check completed successfully' });
-    } catch (error) {
-      console.error('Error checking for timed-out workflows:', error);
-      res.status(500).json({ success: false, message: 'Error checking for timed-out workflows', error: String(error) });
     }
   });
   
@@ -1948,40 +1860,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Stop a running workflow
-  app.post("/api/workflows/:id/stop", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id, 10);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid workflow ID" });
-      }
-
-      const { logId } = req.body;
-      
-      // Call the stopWorkflow function
-      const result = await stopWorkflow(id, logId);
-      
-      if (result) {
-        res.json({ 
-          success: true, 
-          message: "Workflow stopped successfully" 
-        });
-      } else {
-        res.status(404).json({ 
-          success: false, 
-          message: "No running workflow found or failed to stop workflow" 
-        });
-      }
-    } catch (error) {
-      console.error("Error stopping workflow:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: "Error stopping workflow",
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-
   // Execute a workflow
   app.post("/api/workflows/:id/execute", async (req, res) => {
     try {
@@ -2299,16 +2177,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Parse optional query parameters
       const agentId = req.query.agentId ? parseInt(req.query.agentId as string, 10) : undefined;
-      const workflowId = req.query.workflowId ? parseInt(req.query.workflowId as string, 10) : undefined;
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
       
-      const logs = await storage.getLogs(agentId, workflowId, limit);
+      const logs = await storage.getLogs(agentId, limit);
       res.json(logs);
     } catch (error) {
-      res.status(500).json({ 
-        message: "Error fetching logs", 
-        details: error instanceof Error ? error.message : String(error) 
-      });
+      res.status(500).json({ message: "Error fetching logs" });
     }
   });
   

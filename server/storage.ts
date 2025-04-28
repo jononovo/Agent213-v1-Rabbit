@@ -50,7 +50,7 @@ export interface IStorage {
   deleteNode(id: number): Promise<boolean>;
   
   // Log methods
-  getLogs(agentId?: number, workflowId?: number, limit?: number): Promise<Log[]>;
+  getLogs(agentId?: number, limit?: number): Promise<Log[]>;
   getLog(id: number): Promise<Log | undefined>;
   createLog(log: InsertLog): Promise<Log>;
   updateLog(id: number, log: Partial<Log>): Promise<Log | undefined>;
@@ -684,7 +684,7 @@ export class MemStorage implements IStorage {
   }
   
   // Log methods
-  async getLogs(agentId?: number, workflowId?: number, limit: number = 20): Promise<Log[]> {
+  async getLogs(agentId?: number, limit: number = 20): Promise<Log[]> {
     const logs = Array.from(this.logs.values())
       .sort((a, b) => {
         // Sort by startedAt in descending order
@@ -704,18 +704,10 @@ export class MemStorage implements IStorage {
         return dateB.getTime() - dateA.getTime();
       });
     
-    // Apply filters if provided
-    let filtered = logs;
-    
     // Filter by agentId if provided
-    if (agentId !== undefined) {
-      filtered = filtered.filter(log => log.agentId === agentId);
-    }
-    
-    // Filter by workflowId if provided
-    if (workflowId !== undefined) {
-      filtered = filtered.filter(log => log.workflowId === workflowId);
-    }
+    const filtered = agentId 
+      ? logs.filter(log => log.agentId === agentId)
+      : logs;
     
     // Apply limit
     return filtered.slice(0, limit);

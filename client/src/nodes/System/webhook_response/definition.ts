@@ -1,7 +1,7 @@
 /**
- * Send to Webhook Node Definition
+ * Webhook Response Node Definition
  * 
- * This node sends workflow data to an external webhook endpoint or API.
+ * This node sends workflow data to an external webhook endpoint.
  */
 
 import { z } from 'zod';
@@ -19,9 +19,9 @@ const defaultData = {
 };
 
 const definition = {
-  type: 'send_to_webhook',
-  name: 'Send to Webhook',
-  description: 'Sends data from your workflow to an external webhook URL or API endpoint',
+  type: 'webhook_response',
+  name: 'Webhook Response',
+  description: 'Sends workflow data to an external webhook endpoint',
   category: 'actions',
   icon: Send,
   version: '1.0.0',
