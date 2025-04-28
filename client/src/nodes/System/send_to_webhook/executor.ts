@@ -19,7 +19,7 @@ interface SendToWebhookNodeData {
   retryCount: number;
   retryDelay: number;
   timeout: number;
-  isWebhookResponse?: boolean; // New option to indicate this should respond to the original webhook
+  isWebhookResponse?: boolean | string; // Can be boolean or string 'true'/'false' from radio buttons
 }
 
 // Interface for the webhook request context
@@ -48,7 +48,10 @@ export const execute = async (
     
     // Check if this is responding to an original webhook request
     // This can be specified either in the node settings or detected from the input
-    const isWebhookResponse = nodeData.isWebhookResponse === true || 
+    // Handle both string 'true' and boolean true values from the UI
+    const isWebhookResponse = 
+      nodeData.isWebhookResponse === true || 
+      nodeData.isWebhookResponse === 'true' || 
       (inputData.responseContext?.isWebhookResponse === true);
     
     // Extract response context from the input if available

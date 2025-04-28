@@ -128,15 +128,10 @@ const definition = {
     isWebhookResponse: z.union([
       z.boolean().default(false), 
       z.enum(['true', 'false']).transform(val => val === 'true')
-    ]),
+    ]).default(false),
     url: z.string()
       .url({ message: "Please enter a valid URL" })
-      .optional()
-      .refine((url, ctx) => {
-        // URL is only required if we're not responding to the original webhook
-        const isResponse = ctx.parent.isWebhookResponse;
-        return url || (typeof isResponse === 'string' ? isResponse === 'true' : isResponse === true);
-      }, { message: "URL is required when not responding to original webhook" }),
+      .optional(),
     method: z.enum(['POST', 'PUT', 'PATCH']).default('POST'),
     headers: z.string().optional().transform(value => {
       try {
