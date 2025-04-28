@@ -48,10 +48,10 @@ const definition = {
       description: 'HTTP status code from the webhook response'
     }
   },
-  // Define fields for the node's settings drawer - simplest possible implementation
+  // Define fields for the node's settings drawer
   settings: [
     {
-      id: 'respondToOriginal',
+      key: 'respondToOriginal',
       type: 'select',
       label: 'Response Mode',
       description: 'Choose whether to send data to a new webhook or respond to the original request',
@@ -62,15 +62,15 @@ const definition = {
       default: 'false'
     },
     {
-      id: 'url',
-      type: 'text',
+      key: 'url',
+      type: 'string',
       label: 'Webhook URL',
       description: 'URL of the external webhook endpoint',
       placeholder: 'https://example.com/webhook',
       required: false
     },
     {
-      id: 'method',
+      key: 'method',
       type: 'select',
       label: 'HTTP Method',
       description: 'HTTP method to use for the webhook request',
@@ -82,7 +82,7 @@ const definition = {
       default: 'POST'
     },
     {
-      id: 'headers',
+      key: 'headers',
       type: 'textarea',
       label: 'Custom Headers',
       description: 'Custom HTTP headers to include in the request (JSON format)',
@@ -90,7 +90,7 @@ const definition = {
       required: false
     },
     {
-      id: 'retryCount',
+      key: 'retryCount',
       type: 'number',
       label: 'Retry Count',
       description: 'Number of times to retry if the request fails',
@@ -99,7 +99,7 @@ const definition = {
       default: 3
     },
     {
-      id: 'retryDelay',
+      key: 'retryDelay',
       type: 'number',
       label: 'Retry Delay (ms)',
       description: 'Delay between retry attempts in milliseconds',
@@ -108,7 +108,7 @@ const definition = {
       default: 1000
     },
     {
-      id: 'timeout',
+      key: 'timeout',
       type: 'number',
       label: 'Timeout (ms)',
       description: 'Request timeout in milliseconds',
