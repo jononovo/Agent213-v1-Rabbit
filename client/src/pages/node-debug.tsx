@@ -254,14 +254,42 @@ const NodeDebugPanel: React.FC = () => {
   // Function to try loading custom tests for a node
   const loadCustomTests = async (nodeType: string): Promise<NodeTest[] | null> => {
     try {
-      // In a real implementation, we would dynamically import the tests
-      // For this demo, we're only importing tests for text_formatter
-      if (nodeType === 'text_formatter') {
-        const testsModule = await import('@/nodes/System/text_formatter/tests');
-        console.log("Loaded custom tests for text_formatter:", testsModule.default);
-        return testsModule.default;
+      // Dynamic import of test files based on node type
+      // Each node type can have its own tests.ts file
+      let testsModule;
+      
+      switch (nodeType) {
+        case 'text_formatter':
+          testsModule = await import('@/nodes/System/text_formatter/tests');
+          console.log("Loaded custom tests for text_formatter:", testsModule.default);
+          return testsModule.default;
+          
+        case 'http_request':
+          testsModule = await import('@/nodes/System/http_request/tests');
+          console.log("Loaded custom tests for http_request:", testsModule.default);
+          return testsModule.default;
+          
+        default:
+          // Try to dynamically load tests based on node type and folder structure
+          try {
+            // For System nodes - add vite-ignore to suppress dynamic import warning
+            // @ts-ignore
+            testsModule = await import(/* @vite-ignore */ `@/nodes/System/${nodeType}/tests`);
+            console.log(`Loaded custom tests for ${nodeType}:`, testsModule.default);
+            return testsModule.default;
+          } catch (e) {
+            // For Custom nodes
+            try {
+              // @ts-ignore
+              testsModule = await import(/* @vite-ignore */ `@/nodes/Custom/${nodeType}/tests`);
+              console.log(`Loaded custom tests for ${nodeType} (Custom):`, testsModule.default);
+              return testsModule.default;
+            } catch (e2) {
+              // No tests found for this node
+              return null;
+            }
+          }
       }
-      return null;
     } catch (error) {
       console.error(`Error loading custom tests for ${nodeType}:`, error);
       return null;
