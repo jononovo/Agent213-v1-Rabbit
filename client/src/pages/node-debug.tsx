@@ -936,55 +936,141 @@ const NodeDebugPanel: React.FC = () => {
                         {selectedNode.status || 'pending'}
                       </Badge>
                     </div>
+                    <div className="bg-slate-50 p-2 rounded col-span-2">
+                      <span className="text-slate-500">Tests Available:</span> 
+                      <span className="ml-2">{TESTS.length} standard tests</span>
+                      {selectedNode.customTestResults && selectedNode.customTestResults.length > 0 && (
+                        <Badge className="ml-2 bg-blue-100 text-blue-800 border border-blue-300">
+                          +{selectedNode.customTestResults.length} custom tests
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
-                <div>
-                  <h3 className="text-sm font-medium mb-2">Test Results</h3>
+                <Tabs defaultValue="standard">
+                  <TabsList className="mb-2">
+                    <TabsTrigger value="standard">Standard Tests</TabsTrigger>
+                    <TabsTrigger value="custom" disabled={!selectedNode.customTestResults || selectedNode.customTestResults.length === 0}>
+                      Custom Tests {selectedNode.customTestResults && selectedNode.customTestResults.length > 0 ? 
+                        `(${selectedNode.customTestResults.length})` : ''}
+                    </TabsTrigger>
+                  </TabsList>
                   
-                  {selectedNode.testResults && selectedNode.testResults.length > 0 ? (
-                    <div className="space-y-3">
-                      {TESTS.map((testDef) => {
-                        const testResult = selectedNode.testResults?.find(r => r.test === testDef.id);
-                        return (
-                          <div key={testDef.id} className="border rounded-md overflow-hidden">
+                  <TabsContent value="standard">
+                    <h3 className="text-sm font-medium mb-2">Standard Test Results</h3>
+                    
+                    {selectedNode.testResults && selectedNode.testResults.length > 0 ? (
+                      <div className="space-y-3">
+                        {TESTS.map((testDef) => {
+                          const testResult = selectedNode.testResults?.find(r => r.test === testDef.id);
+                          return (
+                            <div key={testDef.id} className="border rounded-md overflow-hidden">
+                              <div className="flex items-center justify-between p-3 bg-slate-50 border-b">
+                                <div className="flex items-center space-x-3">
+                                  <div className="bg-slate-200 p-1.5 rounded">
+                                    <testDef.icon className="h-4 w-4 text-slate-700" />
+                                  </div>
+                                  <div>
+                                    <h4 className="font-medium">{testDef.name}</h4>
+                                    <p className="text-xs text-slate-500">{testDef.description}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center">
+                                  {testResult ? getTestStatusIcon(testResult.status) : getTestStatusIcon('pending')}
+                                  {testResult?.duration && (
+                                    <span className="text-xs text-slate-500 ml-2">{testResult.duration}ms</span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {testResult?.status === 'failed' && testResult.message && (
+                                <div className="p-3 bg-red-50 text-red-700 text-sm">
+                                  {testResult.message}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <Alert>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>No Tests Run</AlertTitle>
+                        <AlertDescription>
+                          This node hasn't been tested yet. Click "Run Tests" to start the test suite.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="custom">
+                    <div className="flex items-center mb-3">
+                      <h3 className="text-sm font-medium">Custom Node Tests</h3>
+                      <Badge className="ml-2 bg-blue-100 text-blue-800 border border-blue-300">
+                        Node-Specific
+                      </Badge>
+                    </div>
+                    
+                    {selectedNode.customTestResults && selectedNode.customTestResults.length > 0 ? (
+                      <div className="space-y-3">
+                        {selectedNode.customTestResults.map((testResult, index) => (
+                          <div key={`custom-${index}`} className="border rounded-md overflow-hidden">
                             <div className="flex items-center justify-between p-3 bg-slate-50 border-b">
                               <div className="flex items-center space-x-3">
-                                <div className="bg-slate-200 p-1.5 rounded">
-                                  <testDef.icon className="h-4 w-4 text-slate-700" />
+                                <div className="bg-blue-100 p-1.5 rounded">
+                                  <Beaker className="h-4 w-4 text-blue-700" />
                                 </div>
                                 <div>
-                                  <h4 className="font-medium">{testDef.name}</h4>
-                                  <p className="text-xs text-slate-500">{testDef.description}</p>
+                                  <h4 className="font-medium">{testResult.name}</h4>
+                                  <p className="text-xs text-slate-500">{testResult.description}</p>
+                                  {testResult.category && (
+                                    <Badge variant="outline" className="mt-1 text-xs">
+                                      {testResult.category}
+                                    </Badge>
+                                  )}
                                 </div>
                               </div>
                               <div className="flex items-center">
-                                {testResult ? getTestStatusIcon(testResult.status) : getTestStatusIcon('pending')}
-                                {testResult?.duration && (
+                                {getTestStatusIcon(testResult.status)}
+                                {testResult.duration && (
                                   <span className="text-xs text-slate-500 ml-2">{testResult.duration}ms</span>
                                 )}
                               </div>
                             </div>
                             
-                            {testResult?.status === 'failed' && testResult.message && (
+                            {testResult.status === 'failed' && testResult.message && (
                               <div className="p-3 bg-red-50 text-red-700 text-sm">
                                 {testResult.message}
                               </div>
                             )}
+                            
+                            {testResult.details && Object.keys(testResult.details).length > 0 && (
+                              <div className="p-3 border-t bg-slate-50">
+                                <details className="text-xs">
+                                  <summary className="cursor-pointer font-medium text-slate-700">
+                                    Test Details
+                                  </summary>
+                                  <div className="mt-2 p-2 bg-slate-100 rounded font-mono overflow-x-auto">
+                                    <pre>{JSON.stringify(testResult.details, null, 2)}</pre>
+                                  </div>
+                                </details>
+                              </div>
+                            )}
                           </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <Alert>
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertTitle>No Tests Run</AlertTitle>
-                      <AlertDescription>
-                        This node hasn't been tested yet. Click "Run Tests" to start the test suite.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <Alert>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>No Custom Tests Available</AlertTitle>
+                        <AlertDescription>
+                          This node doesn't have any custom tests defined.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </>
           ) : (
