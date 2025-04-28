@@ -137,65 +137,60 @@ const NodeDebugPanel: React.FC = () => {
   const [folderTestProgress, setFolderTestProgress] = useState(0);
   const [folderTestResults, setFolderTestResults] = useState<NodeFolderTest | null>(null);
 
-  // Fetch node types from the registry
-  const [registeredNodes, setRegisteredNodes] = useState<NodeType[]>([]);
+  // Directly use the registry data without API call
+  const [nodeTypes, setNodeTypes] = useState<NodeType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Initialize nodes from the registry
+  // Load nodes directly from registry
   useEffect(() => {
-    const fetchNodes = async () => {
-      try {
-        // Get nodes from registry and transform to NodeType format
-        const nodeInfos = getAllNodeTypes();
-        
-        // Create NodeType objects from registry info
-        const nodes: NodeType[] = nodeInfos.map(info => ({
-          type: info.id,
-          name: info.name,
-          category: info.category,
-          status: 'pending', // Default status
-          customFolder: info.folderPath === 'Custom' ? `nodes/Custom/${info.id}` : undefined
-        }));
-        
-        setRegisteredNodes(nodes);
-      } catch (error) {
-        console.error("Error loading nodes from registry:", error);
-      }
-    };
-    
-    fetchNodes();
+    try {
+      console.log("Loading nodes from registry");
+      // Get nodes from registry
+      const nodeInfos = getAllNodeTypes();
+      
+      console.log("Node registry returned:", nodeInfos.length, "nodes");
+      
+      // Create NodeType objects from registry info
+      const nodes: NodeType[] = nodeInfos.map(info => ({
+        type: info.id,
+        name: info.name || info.id.split('_').map(
+          s => s.charAt(0).toUpperCase() + s.slice(1)
+        ).join(' '),
+        category: info.category || 'unknown',
+        status: 'pending', // Default status
+        customFolder: info.folderPath === 'Custom' ? `nodes/Custom/${info.id}` : undefined
+      }));
+      
+      console.log("Transformed nodes:", nodes.length);
+      setNodeTypes(nodes);
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error loading nodes from registry:", error);
+      setIsLoading(false);
+    }
   }, []);
   
-  // We'll use the registeredNodes as our source of truth
-  const { data: nodeTypes = registeredNodes, isLoading, refetch } = useQuery({ 
-    queryKey: ['nodeTypes'],
-    queryFn: async () => {
-      // If we already have nodes from the registry, return them
-      if (registeredNodes.length > 0) {
-        return registeredNodes;
-      }
-      
-      // Fallback to API call if needed
-      try {
-        const response = await fetch('/api/nodes');
-        if (!response.ok) {
-          throw new Error('Failed to fetch nodes from API');
-        }
-        const data = await response.json();
-        
-        // Convert API data to NodeType format
-        return data.map((node: any) => ({
-          type: node.type,
-          name: node.name,
-          category: node.category || 'unknown',
-          status: 'pending'
-        }));
-      } catch (error) {
-        console.error("Error fetching nodes:", error);
-        return registeredNodes;
-      }
-    },
-    enabled: true,
-  });
+  // Function to refresh the node list manually
+  const refetch = () => {
+    setIsLoading(true);
+    try {
+      const nodeInfos = getAllNodeTypes();
+      const nodes: NodeType[] = nodeInfos.map(info => ({
+        type: info.id,
+        name: info.name || info.id.split('_').map(
+          s => s.charAt(0).toUpperCase() + s.slice(1)
+        ).join(' '),
+        category: info.category || 'unknown',
+        status: 'pending',
+        customFolder: info.folderPath === 'Custom' ? `nodes/Custom/${info.id}` : undefined
+      }));
+      setNodeTypes(nodes);
+    } catch (error) {
+      console.error("Error refreshing nodes:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Filter nodes based on search query and status filter
   const filteredNodes = nodeTypes.filter((node: NodeType) => {
