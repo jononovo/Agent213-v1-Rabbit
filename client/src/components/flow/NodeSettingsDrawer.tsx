@@ -243,47 +243,6 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     
     // Fall back to type-specific settings for special cases while migrating
     switch (type) {
-      case 'webhook_trigger':
-        return [
-          {
-            id: 'path',
-            label: 'Custom Path',
-            type: 'text',
-            placeholder: 'my-custom-endpoint',
-            description: 'Custom path segment for the webhook URL (optional)'
-          },
-          {
-            id: 'secret',
-            label: 'Secret Key',
-            type: 'password',
-            description: 'Secret key for validating webhook requests'
-          },
-          {
-            id: 'authType',
-            label: 'Authentication',
-            type: 'select',
-            description: 'Method of authentication for the webhook',
-            options: [
-              { value: 'none', label: 'None' },
-              { value: 'apiKey', label: 'API Key' },
-              { value: 'bearer', label: 'Bearer Token' }
-            ],
-            defaultValue: 'none'
-          },
-          {
-            id: 'methods',
-            label: 'HTTP Methods',
-            type: 'multiselect',
-            description: 'HTTP methods this webhook will accept',
-            options: [
-              { value: 'GET', label: 'GET' },
-              { value: 'POST', label: 'POST' },
-              { value: 'PUT', label: 'PUT' },
-              { value: 'DELETE', label: 'DELETE' }
-            ],
-            defaultValue: ['POST']
-          }
-        ];
       
       case 'webhook_response':
         return [
