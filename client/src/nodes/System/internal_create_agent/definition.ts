@@ -6,7 +6,6 @@
 
 import { NodeDefinition, NodeSetting } from '@/nodes/types';
 import { z } from 'zod';
-import { UserPlus } from 'lucide-react';
 
 // Default configuration for the node
 export const defaultData = {
@@ -20,7 +19,7 @@ const definition: NodeDefinition = {
   type: 'internal_create_agent',
   name: 'Create Agent',
   description: 'Creates a new agent within the system',
-  icon: UserPlus,
+  icon: 'user-plus',
   category: 'actions',
   version: '1.0.0',
   inputs: {

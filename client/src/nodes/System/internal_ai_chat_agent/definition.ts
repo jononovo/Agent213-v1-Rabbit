@@ -6,7 +6,6 @@
 
 import { NodeDefinition, NodeSetting } from '@/nodes/types';
 import { z } from 'zod';
-import { MessageSquare } from 'lucide-react';
 
 // Default configuration for the node
 export const defaultData = {
@@ -19,7 +18,7 @@ const definition: NodeDefinition = {
   type: 'internal_ai_chat_agent',
   name: 'AI Chat Agent',
   description: 'Enables AI chat functionality with trigger phrase detection',
-  icon: MessageSquare,
+  icon: 'message-square',
   category: 'ai',
   version: '1.0.0',
   inputs: {

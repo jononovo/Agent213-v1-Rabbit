@@ -6,7 +6,6 @@
 
 import { NodeDefinition, NodeSetting } from '@/nodes/types';
 import { z } from 'zod';
-import { MessagesSquare } from 'lucide-react';
 
 // Default configuration for the node
 export const defaultData = {
@@ -21,7 +20,7 @@ const definition: NodeDefinition = {
   type: 'generate_text',
   name: 'Generate Text',
   description: 'Generates text using various AI models',
-  icon: MessagesSquare,
+  icon: 'message-square',
   category: 'ai',
   version: '1.0.0',
   inputs: {
