@@ -303,38 +303,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
         ];
       // Perplexity API has been migrated to definition-based settings
       // Claude API has been migrated to definition-based settings
-      case 'generate_text':
-      case 'generateText':
-        return [
-          {
-            id: 'apiKey',
-            label: 'API Key',
-            type: 'password',
-            placeholder: 'Enter your Claude API key',
-            description: 'Your Claude API key is securely stored and used only for this node.'
-          },
-          {
-            id: 'model',
-            label: 'Model',
-            type: 'text',
-            placeholder: 'e.g., claude-3.5-sonnet',
-            description: 'The model to use for text generation.'
-          },
-          {
-            id: 'temperature',
-            label: 'Temperature',
-            type: 'text',
-            placeholder: '0.7',
-            description: 'Controls randomness. Lower values are more deterministic, higher values more creative.'
-          },
-          {
-            id: 'maxTokens',
-            label: 'Max Tokens',
-            type: 'text',
-            placeholder: '1024',
-            description: 'Maximum number of tokens to generate.'
-          },
-        ];
+      // Generate Text has been migrated to definition-based settings
       case 'internal_new_agent':
         return [
           {
