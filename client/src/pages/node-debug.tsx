@@ -32,7 +32,10 @@ import MainContent from '@/components/layout/MainContent';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import NodeListTable from '@/components/node-list-table';
-import { getAllNodeTypes } from '@/lib/nodeRegistry';
+import { 
+  getAllNodes, 
+  initializeRegistry 
+} from '@/lib/unifiedNodeRegistry';
 
 // Helper types
 interface NodeType {
@@ -141,49 +144,64 @@ const NodeDebugPanel: React.FC = () => {
   const [nodeTypes, setNodeTypes] = useState<NodeType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Load nodes directly from registry
+  // Initialize the registry and load nodes
   useEffect(() => {
-    try {
-      console.log("Loading nodes from registry");
-      // Get nodes from registry
-      const nodeInfos = getAllNodeTypes();
-      
-      console.log("Node registry returned:", nodeInfos.length, "nodes");
-      
-      // Create NodeType objects from registry info
-      const nodes: NodeType[] = nodeInfos.map(info => ({
-        type: info.id,
-        name: info.name || info.id.split('_').map(
-          s => s.charAt(0).toUpperCase() + s.slice(1)
-        ).join(' '),
-        category: info.category || 'unknown',
-        status: 'pending', // Default status
-        customFolder: info.folderPath === 'Custom' ? `nodes/Custom/${info.id}` : undefined
-      }));
-      
-      console.log("Transformed nodes:", nodes.length);
-      setNodeTypes(nodes);
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Error loading nodes from registry:", error);
-      setIsLoading(false);
-    }
+    const loadRegistryNodes = async () => {
+      try {
+        console.log("Initializing unified node registry");
+        // Initialize the registry first
+        await initializeRegistry();
+        
+        console.log("Loading nodes from registry");
+        // Get nodes from registry - using the correct function from unifiedNodeRegistry
+        const registryNodes = getAllNodes();
+        
+        console.log("Node registry returned:", registryNodes.length, "nodes");
+        
+        // Create NodeType objects from registry info
+        const nodes: NodeType[] = registryNodes.map((node: any) => ({
+          type: node.type,
+          name: node.name || node.type.split('_').map(
+            (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+          ).join(' '),
+          category: node.category || 'unknown',
+          status: 'pending', // Default status
+          customFolder: node.folderPath === 'Custom' ? `nodes/Custom/${node.type}` : undefined
+        }));
+        
+        console.log("Transformed nodes:", nodes.length);
+        setNodeTypes(nodes);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error loading nodes from registry:", error);
+        setIsLoading(false);
+      }
+    };
+    
+    loadRegistryNodes();
   }, []);
   
   // Function to refresh the node list manually
-  const refetch = () => {
+  const refetch = async () => {
     setIsLoading(true);
     try {
-      const nodeInfos = getAllNodeTypes();
-      const nodes: NodeType[] = nodeInfos.map(info => ({
-        type: info.id,
-        name: info.name || info.id.split('_').map(
-          s => s.charAt(0).toUpperCase() + s.slice(1)
+      // Make sure registry is initialized
+      await initializeRegistry();
+      
+      // Get nodes from registry
+      const registryNodes = getAllNodes();
+      
+      // Transform to our node type format
+      const nodes: NodeType[] = registryNodes.map((node: any) => ({
+        type: node.type,
+        name: node.name || node.type.split('_').map(
+          (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
         ).join(' '),
-        category: info.category || 'unknown',
+        category: node.category || 'unknown',
         status: 'pending',
-        customFolder: info.folderPath === 'Custom' ? `nodes/Custom/${info.id}` : undefined
+        customFolder: node.folderPath === 'Custom' ? `nodes/Custom/${node.type}` : undefined
       }));
+      
       setNodeTypes(nodes);
     } catch (error) {
       console.error("Error refreshing nodes:", error);
