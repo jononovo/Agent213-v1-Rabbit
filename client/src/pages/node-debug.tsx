@@ -123,8 +123,8 @@ interface NodeFolderTest {
 const NodeDebugPanel: React.FC = () => {
   const { toast } = useToast();
   const [selectedNode, setSelectedNode] = useState<NodeType | null>(null);
-  const [activeTab, setActiveTab] = useState('available');
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [isRunningTests, setIsRunningTests] = useState(false);
   const [testProgress, setTestProgress] = useState(0);
   
@@ -201,7 +201,7 @@ const NodeDebugPanel: React.FC = () => {
     }
   ];
 
-  // Filter nodes based on search query and active tab
+  // Filter nodes based on search query and status filter
   const filteredNodes = nodeTypes.filter(node => {
     const matchesSearch = 
       searchQuery === '' || 
@@ -209,12 +209,15 @@ const NodeDebugPanel: React.FC = () => {
       node.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
       node.category.toLowerCase().includes(searchQuery.toLowerCase());
     
-    if (activeTab === 'available') return matchesSearch;
-    if (activeTab === 'validated') return matchesSearch && node.status === 'validated';
-    if (activeTab === 'partial') return matchesSearch && node.status === 'partial';
-    if (activeTab === 'failed') return matchesSearch && node.status === 'failed';
-    if (activeTab === 'pending') return matchesSearch && (node.status === 'pending' || !node.status);
+    // Apply status filter if one is selected
+    if (statusFilter) {
+      if (statusFilter === 'pending') {
+        return matchesSearch && (node.status === 'pending' || !node.status);
+      }
+      return matchesSearch && node.status === statusFilter;
+    }
     
+    // No filter, return all matching nodes
     return matchesSearch;
   });
 
@@ -733,7 +736,7 @@ const NodeDebugPanel: React.FC = () => {
             <CardTitle>Nodes</CardTitle>
             <CardDescription>Available nodes in the system</CardDescription>
             
-            <div className="mt-2">
+            <div className="mt-4 flex flex-col gap-3">
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
@@ -743,198 +746,62 @@ const NodeDebugPanel: React.FC = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
+              
+              <div className="flex justify-between items-center">
+                <div className="flex gap-2">
+                  <Badge 
+                    variant={statusFilter === null ? "default" : "outline"} 
+                    className="cursor-pointer"
+                    onClick={() => setStatusFilter(null)}
+                  >
+                    All ({nodeTypes.length})
+                  </Badge>
+                  <Badge 
+                    variant={statusFilter === 'validated' ? "default" : "outline"} 
+                    className="cursor-pointer bg-green-100 text-green-800 hover:bg-green-200"
+                    onClick={() => setStatusFilter('validated')}
+                  >
+                    Validated ({getNodeStatusCount('validated')})
+                  </Badge>
+                  <Badge 
+                    variant={statusFilter === 'partial' ? "default" : "outline"} 
+                    className="cursor-pointer bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                    onClick={() => setStatusFilter('partial')}
+                  >
+                    Partial ({getNodeStatusCount('partial')})
+                  </Badge>
+                  <Badge 
+                    variant={statusFilter === 'failed' ? "default" : "outline"} 
+                    className="cursor-pointer bg-red-100 text-red-800 hover:bg-red-200"
+                    onClick={() => setStatusFilter('failed')}
+                  >
+                    Failed ({getNodeStatusCount('failed')})
+                  </Badge>
+                  <Badge 
+                    variant={statusFilter === 'pending' ? "default" : "outline"} 
+                    className="cursor-pointer"
+                    onClick={() => setStatusFilter('pending')}
+                  >
+                    Pending ({getNodeStatusCount('pending')})
+                  </Badge>
+                </div>
+              </div>
             </div>
           </CardHeader>
           
           <CardContent className="p-0">
-            <Tabs defaultValue="available" value={activeTab} onValueChange={setActiveTab}>
-              <div className="px-6">
-                <TabsList className="w-full">
-                  <TabsTrigger value="available" className="flex-1">
-                    All
-                    <Badge variant="secondary" className="ml-2">{nodeTypes.length}</Badge>
-                  </TabsTrigger>
-                  <TabsTrigger value="validated" className="flex-1">
-                    Validated
-                    <Badge variant="secondary" className="ml-2 bg-green-100 text-green-800">
-                      {getNodeStatusCount('validated')}
-                    </Badge>
-                  </TabsTrigger>
-                  <TabsTrigger value="pending" className="flex-1">
-                    Pending
-                    <Badge variant="secondary" className="ml-2">
-                      {getNodeStatusCount('pending')}
-                    </Badge>
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-              
-              <ScrollArea className="h-[60vh]">
-                <TabsContent value="available" className="m-0">
-                  <div className="overflow-hidden">
-                    {/* Table header */}
-                    <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-slate-100 text-xs font-medium text-slate-500 border-b">
-                      <div className="col-span-4">NAME</div>
-                      <div className="col-span-3">TYPE</div>
-                      <div className="col-span-3">CATEGORY</div>
-                      <div className="col-span-2">STATUS</div>
-                    </div>
-                    
-                    {/* Table rows */}
-                    <div className="divide-y">
-                      {filteredNodes.map((node) => (
-                        <div 
-                          key={node.type} 
-                          className={`grid grid-cols-12 gap-2 items-center px-4 py-3 hover:bg-slate-50 cursor-pointer transition-colors ${selectedNode?.type === node.type ? 'bg-slate-100' : ''}`}
-                          onClick={() => handleViewNode(node)}
-                        >
-                          <div className="col-span-4 font-medium truncate">{node.name}</div>
-                          <div className="col-span-3 text-sm text-slate-500 truncate">{node.type}</div>
-                          <div className="col-span-3">
-                            <Badge variant="outline" className="text-xs">{node.category}</Badge>
-                          </div>
-                          <div className="col-span-2">
-                            <Badge className={`${getStatusColor(node.status)} border text-xs`}>
-                              {node.status || 'pending'}
-                            </Badge>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {filteredNodes.length === 0 && (
-                        <div className="p-8 text-center text-slate-500">
-                          <AlertTriangle className="h-8 w-8 mx-auto text-slate-400 mb-2" />
-                          <p>No nodes found matching your criteria</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="validated" className="m-0">
-                  {/* Same structure as "available" but filtered */}
-                  <div className="divide-y">
-                    {filteredNodes.map((node) => (
-                      <div 
-                        key={node.type} 
-                        className={`p-4 hover:bg-slate-50 cursor-pointer transition-colors ${selectedNode?.type === node.type ? 'bg-slate-100' : ''}`}
-                        onClick={() => handleViewNode(node)}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium">{node.name}</h3>
-                            <p className="text-sm text-slate-500 mt-1">{node.type}</p>
-                          </div>
-                          <Badge 
-                            className={`${getStatusColor(node.status)} border`}
-                          >
-                            {node.status || 'pending'}
-                          </Badge>
-                        </div>
-                        
-                        <div className="mt-2">
-                          <Badge variant="outline" className="mr-1 text-xs">{node.category}</Badge>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {filteredNodes.length === 0 && (
-                      <div className="p-8 text-center text-slate-500">
-                        <AlertTriangle className="h-8 w-8 mx-auto text-slate-400 mb-2" />
-                        <p>No validated nodes found</p>
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="partial" className="m-0">
-                  {/* Similar structure for partial */}
-                  <div className="divide-y">
-                    {filteredNodes.map((node) => (
-                      <div 
-                        key={node.type} 
-                        className={`p-4 hover:bg-slate-50 cursor-pointer transition-colors ${selectedNode?.type === node.type ? 'bg-slate-100' : ''}`}
-                        onClick={() => handleViewNode(node)}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium">{node.name}</h3>
-                            <p className="text-sm text-slate-500 mt-1">{node.type}</p>
-                          </div>
-                          <Badge 
-                            className={`${getStatusColor(node.status)} border`}
-                          >
-                            {node.status || 'pending'}
-                          </Badge>
-                        </div>
-                        
-                        <div className="mt-2">
-                          <Badge variant="outline" className="mr-1 text-xs">{node.category}</Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="failed" className="m-0">
-                  {/* Similar structure for failed */}
-                  <div className="divide-y">
-                    {filteredNodes.map((node) => (
-                      <div 
-                        key={node.type} 
-                        className={`p-4 hover:bg-slate-50 cursor-pointer transition-colors ${selectedNode?.type === node.type ? 'bg-slate-100' : ''}`}
-                        onClick={() => handleViewNode(node)}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium">{node.name}</h3>
-                            <p className="text-sm text-slate-500 mt-1">{node.type}</p>
-                          </div>
-                          <Badge 
-                            className={`${getStatusColor(node.status)} border`}
-                          >
-                            {node.status || 'pending'}
-                          </Badge>
-                        </div>
-                        
-                        <div className="mt-2">
-                          <Badge variant="outline" className="mr-1 text-xs">{node.category}</Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="pending" className="m-0">
-                  {/* Similar structure for pending */}
-                  <div className="divide-y">
-                    {filteredNodes.map((node) => (
-                      <div 
-                        key={node.type} 
-                        className={`p-4 hover:bg-slate-50 cursor-pointer transition-colors ${selectedNode?.type === node.type ? 'bg-slate-100' : ''}`}
-                        onClick={() => handleViewNode(node)}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium">{node.name}</h3>
-                            <p className="text-sm text-slate-500 mt-1">{node.type}</p>
-                          </div>
-                          <Badge 
-                            className={`${getStatusColor(node.status)} border`}
-                          >
-                            {node.status || 'pending'}
-                          </Badge>
-                        </div>
-                        
-                        <div className="mt-2">
-                          <Badge variant="outline" className="mr-1 text-xs">{node.category}</Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-              </ScrollArea>
-            </Tabs>
+            <ScrollArea className="h-[60vh]">
+              <NodeListTable 
+                nodes={filteredNodes}
+                selectedNode={selectedNode}
+                onNodeSelect={handleViewNode}
+                emptyMessage={
+                  statusFilter 
+                    ? `No ${statusFilter} nodes found matching your criteria` 
+                    : "No nodes found matching your criteria"
+                }
+              />
+            </ScrollArea>
           </CardContent>
           
           <CardFooter className="flex justify-between pt-6">
