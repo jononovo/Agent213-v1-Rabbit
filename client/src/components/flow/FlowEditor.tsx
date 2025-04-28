@@ -1035,7 +1035,7 @@ const FlowEditor = ({
     
     try {
       // Call the API to stop the workflow
-      const response = await apiRequest(`/api/workflows/${workflow.id}/stop`, 'POST', 
+      const response = await apiRequest('POST', `/api/workflows/${workflow.id}/stop`, 
         currentLogId ? { logId: currentLogId } : {});
       
       if (response.success) {
@@ -1133,7 +1133,7 @@ const FlowEditor = ({
       if (workflow?.id) {
         try {
           // Create a log entry to track this execution
-          const logResponse = await apiRequest('/api/logs', 'POST', {
+          const logResponse = await apiRequest('POST', '/api/logs', {
             workflowId: workflow.id,
             agentId: workflow.agentId || 1, // Default to agent ID 1 if not set
             status: 'running',
