@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import NodeItem from './NodeItem';
 import { getAllNodes, initializeRegistry } from '@/lib/unifiedNodeRegistry';
+import { LucideIcon } from 'lucide-react';
 
 // Node categories based on the documentation
 const NODE_CATEGORIES = [
@@ -93,34 +94,43 @@ const NodesPanel = () => {
   const [folderBasedNodes, setFolderBasedNodes] = useState<Node[]>([]);
   
   useEffect(() => {
-    // Get all nodes from the unified registry
-    const registryNodes = getAllNodes().map((node, index) => {
-      // Resolve icon: either use the component directly if it's already a component,
-      // or try to find it in the icon map if it's a string
-      let resolvedIcon = node.icon;
-      if (typeof node.icon === 'string' && ICON_MAP[node.icon]) {
-        resolvedIcon = ICON_MAP[node.icon];
-      } else if (!node.icon) {
-        // Default icon if none specified
-        resolvedIcon = Box;
-      }
+    // Initialize the registry first
+    const loadNodes = async () => {
+      console.log("NodesPanel: Initializing unified registry");
+      await initializeRegistry();
       
-      return {
-        id: 1000 + index, // Use a different ID range to avoid conflicts
-        name: node.name,
-        type: node.type,
-        description: node.description,
-        icon: resolvedIcon,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        userId: null,
-        category: node.category,
-        configuration: {}
-      } as Node;
-    });
+      // Now get all nodes from the unified registry
+      const registryNodes = getAllNodes().map((node, index) => {
+        // Resolve icon: either use the component directly if it's already a component,
+        // or try to find it in the icon map if it's a string
+        let resolvedIcon: any = node.icon;
+        if (typeof node.icon === 'string' && ICON_MAP[node.icon]) {
+          resolvedIcon = ICON_MAP[node.icon];
+        } else if (!node.icon) {
+          // Default icon if none specified
+          resolvedIcon = Box;
+        }
+        
+        return {
+          id: 1000 + index, // Use a different ID range to avoid conflicts
+          name: node.name,
+          type: node.type,
+          description: node.description,
+          icon: resolvedIcon,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          userId: null,
+          category: node.category,
+          configuration: {}
+        } as Node;
+      });
     
-    setFolderBasedNodes(registryNodes);
-    console.log(`Loaded ${registryNodes.length} nodes from unified registry`);
+      setFolderBasedNodes(registryNodes);
+      console.log(`Loaded ${registryNodes.length} nodes from unified registry`);
+    };
+    
+    // Execute async function
+    loadNodes();
   }, []);
   
   // Debug: Log folder-based nodes
