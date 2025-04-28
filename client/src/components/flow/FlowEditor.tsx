@@ -44,7 +44,7 @@ import {
 } from '@/lib/unifiedNodeRegistry';
 
 // Define a dynamic import function for node components that uses the unified registry
-const loadNodeComponent = (nodeType: string) => {
+const loadNodeComponentStatic = (nodeType: string) => {
   try {
     // Check if the node type exists in the unified registry
     if (hasNode(nodeType)) {
@@ -102,7 +102,7 @@ const getNodeComponent = async (nodeType: string) => {
   
   try {
     // Load the component
-    const component = await loadNodeComponent(nodeType);
+    const component = await loadNodeComponentStatic(nodeType);
     // Cache it for future use
     loadedComponents[nodeType] = component;
     return component;
