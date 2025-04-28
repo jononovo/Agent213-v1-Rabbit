@@ -32,6 +32,7 @@ import MainContent from '@/components/layout/MainContent';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import NodeListTable from '@/components/node-list-table';
+import { getAllNodeTypes } from '@/lib/nodeRegistry';
 
 // Helper types
 interface NodeType {
@@ -136,73 +137,68 @@ const NodeDebugPanel: React.FC = () => {
   const [folderTestProgress, setFolderTestProgress] = useState(0);
   const [folderTestResults, setFolderTestResults] = useState<NodeFolderTest | null>(null);
 
-  // Fetch available nodes from the API
-  const { data: nodeTypes = [], isLoading, refetch } = useQuery({ 
+  // Fetch node types from the registry
+  const [registeredNodes, setRegisteredNodes] = useState<NodeType[]>([]);
+  
+  // Initialize nodes from the registry
+  useEffect(() => {
+    const fetchNodes = async () => {
+      try {
+        // Get nodes from registry and transform to NodeType format
+        const nodeInfos = getAllNodeTypes();
+        
+        // Create NodeType objects from registry info
+        const nodes: NodeType[] = nodeInfos.map(info => ({
+          type: info.id,
+          name: info.name,
+          category: info.category,
+          status: 'pending', // Default status
+          customFolder: info.folderPath === 'Custom' ? `nodes/Custom/${info.id}` : undefined
+        }));
+        
+        setRegisteredNodes(nodes);
+      } catch (error) {
+        console.error("Error loading nodes from registry:", error);
+      }
+    };
+    
+    fetchNodes();
+  }, []);
+  
+  // We'll use the registeredNodes as our source of truth
+  const { data: nodeTypes = registeredNodes, isLoading, refetch } = useQuery({ 
     queryKey: ['nodeTypes'],
     queryFn: async () => {
-      // This will be replaced with an actual API call
-      // For now, we'll just mock data
-      return mockNodeTypes;
-    }
+      // If we already have nodes from the registry, return them
+      if (registeredNodes.length > 0) {
+        return registeredNodes;
+      }
+      
+      // Fallback to API call if needed
+      try {
+        const response = await fetch('/api/nodes');
+        if (!response.ok) {
+          throw new Error('Failed to fetch nodes from API');
+        }
+        const data = await response.json();
+        
+        // Convert API data to NodeType format
+        return data.map((node: any) => ({
+          type: node.type,
+          name: node.name,
+          category: node.category || 'unknown',
+          status: 'pending'
+        }));
+      } catch (error) {
+        console.error("Error fetching nodes:", error);
+        return registeredNodes;
+      }
+    },
+    enabled: true,
   });
 
-  // Mock data for development
-  const mockNodeTypes: NodeType[] = [
-    { 
-      type: 'webhook_trigger', 
-      name: 'Webhook Trigger', 
-      category: 'actions',
-      status: 'validated',
-      testResults: [
-        { name: 'Definition Validation', test: 'definition', status: 'passed', duration: 42 },
-        { name: 'Input/Output Interface', test: 'interface', status: 'passed', duration: 76 },
-        { name: 'Execution Testing', test: 'execution', status: 'passed', duration: 214 },
-        { name: 'Error Handling', test: 'error', status: 'passed', duration: 102 },
-        { name: 'UI Rendering', test: 'ui', status: 'passed', duration: 55 },
-        { name: 'Performance Testing', test: 'performance', status: 'passed', duration: 188 },
-        { name: 'Integration Testing', test: 'integration', status: 'passed', duration: 310 }
-      ]
-    },
-    { 
-      type: 'csv_processor', 
-      name: 'CSV Processor', 
-      category: 'data',
-      status: 'partial',
-      testResults: [
-        { name: 'Definition Validation', test: 'definition', status: 'passed', duration: 38 },
-        { name: 'Input/Output Interface', test: 'interface', status: 'passed', duration: 62 },
-        { name: 'Execution Testing', test: 'execution', status: 'passed', duration: 187 },
-        { name: 'Error Handling', test: 'error', status: 'failed', message: 'Does not handle malformed CSV data correctly', duration: 91 },
-        { name: 'UI Rendering', test: 'ui', status: 'passed', duration: 45 },
-        { name: 'Performance Testing', test: 'performance', status: 'passed', duration: 166 },
-        { name: 'Integration Testing', test: 'integration', status: 'pending' }
-      ]
-    },
-    { 
-      type: 'workflow_trigger', 
-      name: 'Workflow Trigger', 
-      category: 'actions',
-      status: 'pending'
-    },
-    { 
-      type: 'openai_chat', 
-      name: 'OpenAI Chat', 
-      category: 'ai',
-      status: 'failed',
-      testResults: [
-        { name: 'Definition Validation', test: 'definition', status: 'passed', duration: 41 },
-        { name: 'Input/Output Interface', test: 'interface', status: 'passed', duration: 58 },
-        { name: 'Execution Testing', test: 'execution', status: 'failed', message: 'API key handling is not secure', duration: 124 },
-        { name: 'Error Handling', test: 'error', status: 'failed', message: 'Fails to gracefully handle API timeout', duration: 78 },
-        { name: 'UI Rendering', test: 'ui', status: 'passed', duration: 47 },
-        { name: 'Performance Testing', test: 'performance', status: 'pending' },
-        { name: 'Integration Testing', test: 'integration', status: 'pending' }
-      ]
-    }
-  ];
-
   // Filter nodes based on search query and status filter
-  const filteredNodes = nodeTypes.filter(node => {
+  const filteredNodes = nodeTypes.filter((node: NodeType) => {
     const matchesSearch = 
       searchQuery === '' || 
       node.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -321,7 +317,7 @@ const NodeDebugPanel: React.FC = () => {
 
   // Count nodes by status
   const getNodeStatusCount = (status: string) => {
-    return nodeTypes.filter(node => node.status === status).length;
+    return nodeTypes.filter((node: NodeType) => node.status === status).length;
   };
   
   // Handle opening folder selection dialog
@@ -540,18 +536,6 @@ const NodeDebugPanel: React.FC = () => {
                       {testResult?.status === 'failed' && testResult.message && (
                         <div className="p-3 bg-red-50 text-red-700 text-sm">
                           {testResult.message}
-                          <div className="mt-2 pt-2 border-t border-red-200">
-                            <h5 className="font-medium text-xs mb-1">AI Agent Improvement Suggestion:</h5>
-                            <p className="text-xs">
-                              {testDef.id === 'definition' && "Check your definition.ts file for missing or incorrect properties."}
-                              {testDef.id === 'interface' && "Verify your input/output types match the documentation."}
-                              {testDef.id === 'execution' && "Your executor function may have syntax errors or is not handling inputs correctly."}
-                              {testDef.id === 'error' && "Add proper error handling for edge cases in your executor."}
-                              {testDef.id === 'ui' && "The UI component might have rendering issues or missing properties."}
-                              {testDef.id === 'performance' && "Your node processing might be inefficient or causing slowdowns."}
-                              {testDef.id === 'integration' && "Your node doesn't connect properly with other nodes in the workflow."}
-                            </p>
-                          </div>
                         </div>
                       )}
                     </div>
@@ -559,172 +543,27 @@ const NodeDebugPanel: React.FC = () => {
                 })}
               </div>
             ) : (
-              <div className="text-center p-6">
-                <RefreshCcw className="h-8 w-8 mx-auto mb-2 text-blue-500 animate-spin" />
-                <p>Preparing test suite...</p>
-              </div>
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>No Test Results</AlertTitle>
+                <AlertDescription>
+                  {folderTestRunning ? 'Tests are currently running...' : 'No test results available'}
+                </AlertDescription>
+              </Alert>
             )}
           </CardContent>
           
-          <CardFooter className="flex justify-between pt-2">
+          <CardFooter>
             <Button 
               variant="outline" 
+              size="sm" 
               onClick={() => {
                 setFolderTestResults(null);
                 setFolderTestRunning(false);
               }}
             >
-              Clear Results
+              Dismiss
             </Button>
-            
-            {folderTestResults?.status === 'completed' && (
-              <Button 
-                variant="default"
-                className="bg-green-600 hover:bg-green-700 text-white"
-                onClick={() => {
-                  toast({
-                    title: "Node published",
-                    description: `${nodeTypeFromFolder} has been validated and published to the node registry`,
-                  });
-                  setFolderTestResults(null);
-                }}
-              >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Publish Node
-              </Button>
-            )}
-            
-            {folderTestResults?.status === 'failed' && (
-              <Button 
-                variant="default"
-                onClick={() => {
-                  // Clean state first
-                  setFolderTestResults(null);
-                  setFolderTestRunning(true);
-                  setFolderTestProgress(0);
-                  
-                  // Slight delay to ensure clean state
-                  setTimeout(() => {
-                    if (!folderTestResults) return;
-                    
-                    // Create a new iteration with incremented counter
-                    const iterationCount = (folderTestResults.iterationCount || 1) + 1;
-                    
-                    // Create initial results array
-                    const initialResults: TestResult[] = TESTS.map(test => ({
-                      name: test.name,
-                      test: test.id,
-                      status: 'running'
-                    }));
-                    
-                    // Create a new test result object
-                    const testData: NodeFolderTest = {
-                      path: folderTestResults.path,
-                      nodeType: folderTestResults.nodeType,
-                      status: 'running',
-                      startTime: new Date(),
-                      results: initialResults,
-                      iterationCount: iterationCount
-                    };
-                    
-                    // Set initial state
-                    setFolderTestResults(testData);
-                    
-                    // Notify user
-                    toast({
-                      title: "AI Agent Iteration",
-                      description: `AI is fixing issues in iteration #${iterationCount}`,
-                    });
-                    
-                    // Run the test suite with artificial delays
-                    const testDelay = 800; // ms per test
-                    const testsToRun = TESTS.length;
-                    
-                    // Run tests sequentially with timeouts
-                    let completed = 0;
-                    
-                    for (let i = 0; i < testsToRun; i++) {
-                      setTimeout(() => {
-                        // Update progress
-                        const progress = Math.round(((i + 1) / testsToRun) * 100);
-                        setFolderTestProgress(progress);
-                        
-                        // Generate a result with higher success probability (90% pass rate)
-                        const result: TestResult = {
-                          name: TESTS[i].name,
-                          test: TESTS[i].id,
-                          status: Math.random() > 0.1 ? 'passed' : 'failed',
-                          duration: Math.floor(Math.random() * 300) + 50
-                        };
-                        
-                        if (result.status === 'failed') {
-                          result.message = `Test failed after improvements: ${TESTS[i].name} validation error`;
-                        }
-                        
-                        // Update state using the function form to ensure we have latest state
-                        setFolderTestResults(prev => {
-                          if (!prev) return null;
-                          
-                          // Clone the results array and update the test result
-                          const updatedResults = [...prev.results || []];
-                          updatedResults[i] = result;
-                          
-                          // Determine overall status
-                          const hasFailures = updatedResults.some(r => r.status === 'failed');
-                          const hasPending = updatedResults.some(r => r.status === 'pending' || r.status === 'running');
-                          
-                          // Set status based on test results
-                          let newStatus: NodeTestStatus;
-                          if (hasFailures) {
-                            newStatus = 'failed';
-                          } else if (hasPending) {
-                            newStatus = 'running';
-                          } else if (completed === testsToRun - 1) {
-                            newStatus = 'completed';
-                          } else {
-                            newStatus = prev.status;
-                          }
-                          
-                          // Count completed tests
-                          completed++;
-                          
-                          // Return the updated state
-                          return {
-                            ...prev,
-                            results: updatedResults,
-                            status: newStatus,
-                            endTime: completed === testsToRun ? new Date() : prev.endTime
-                          };
-                        });
-                        
-                        // If this is the last test
-                        if (i === testsToRun - 1) {
-                          setFolderTestRunning(false);
-                          toast({
-                            title: "Iteration completed",
-                            description: `Iteration #${iterationCount} has finished`,
-                          });
-                          
-                          // Make sure our status is fully updated
-                          setTimeout(() => {
-                            setFolderTestResults(prev => {
-                              if (!prev) return null;
-                              return {
-                                ...prev,
-                                status: prev.results?.some(r => r.status === 'failed') ? 'failed' : 'completed'
-                              };
-                            });
-                          }, 100);
-                        }
-                      }, testDelay * (i + 1));
-                    }
-                  }, 100);
-                }}
-              >
-                <Bot className="h-4 w-4 mr-2" />
-                Auto-Fix & Retry
-              </Button>
-            )}
           </CardFooter>
         </Card>
       ) : null}
