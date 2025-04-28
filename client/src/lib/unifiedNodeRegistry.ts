@@ -341,16 +341,15 @@ function createEnhancedExecutor(
       // Default case: wrap the result in a standard format
       return {
         items: Array.isArray(result) 
-          ? result.map(item => ({ json: item, text: JSON.stringify(item) }))
-          : [{ json: result, text: typeof result === 'string' ? result : JSON.stringify(result) }],
+          ? result.map(item => ({ json: item }))
+          : [{ json: result }],
         meta: { startTime: new Date(), endTime: new Date() }
       };
     } catch (error) {
       console.error(`Error executing ${node.type} node:`, error);
       return {
         items: [{
-          json: { error: error instanceof Error ? error.message : String(error) },
-          text: error instanceof Error ? error.message : String(error)
+          json: { error: error instanceof Error ? error.message : String(error) }
         }],
         meta: { startTime: new Date(), endTime: new Date(), error: true }
       };
