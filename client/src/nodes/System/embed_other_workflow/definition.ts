@@ -5,6 +5,19 @@ const definition: NodeDefinition = {
   name: 'Embed Other Workflow',
   description: 'This node triggers another workflow from within your current workflow. Select the workflow to call, specify which input field to use as the input data, and set a timeout if needed.',
   category: 'actions',
+  version: '1.0.0',
+  inputs: {
+    input: {
+      type: 'any',
+      description: 'Input data to pass to the embedded workflow'
+    }
+  },
+  outputs: {
+    output: {
+      type: 'any',
+      description: 'Output data from the embedded workflow'
+    }
+  },
   settings: [
     {
       key: 'workflowId',
@@ -17,14 +30,14 @@ const definition: NodeDefinition = {
     {
       key: 'inputField',
       label: 'Input Field',
-      type: 'string',
+      type: 'text',
       placeholder: 'Enter input field name',
       description: 'The field from input data to use as the input for the workflow.'
     },
     {
       key: 'timeout',
       label: 'Timeout (ms)',
-      type: 'string',
+      type: 'text',
       placeholder: '30000',
       description: 'Maximum time in milliseconds to wait for workflow response. Default: 30000 (30 seconds)'
     }

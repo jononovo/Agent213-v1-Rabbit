@@ -5,11 +5,24 @@ const definition: NodeDefinition = {
   name: 'Webhook Response',
   description: 'This node sends a response back to the webhook caller. Configure the response format and status code.',
   category: 'actions',
+  version: '1.0.0',
+  inputs: {
+    input: {
+      type: 'any',
+      description: 'Data to send in the webhook response'
+    }
+  },
+  outputs: {
+    output: {
+      type: 'any',
+      description: 'Response from the webhook'
+    }
+  },
   settings: [
     {
       key: 'url',
       label: 'Webhook URL',
-      type: 'string',
+      type: 'text',
       placeholder: 'https://example.com/webhook',
       description: 'URL of the external webhook endpoint',
       required: true

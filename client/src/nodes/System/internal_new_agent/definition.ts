@@ -5,6 +5,14 @@ const definition: NodeDefinition = {
   name: 'New Agent Trigger',
   description: 'This node triggers when a user clicks the "New Agent" button in the UI. Configure the template settings and default behavior when creating new agents.',
   category: 'actions',
+  version: '1.0.0',
+  inputs: {},  // No inputs as this is a trigger node
+  outputs: {
+    agent: {
+      type: 'object',
+      description: 'New agent data'
+    }
+  },
   settings: [
     {
       key: 'agentTemplate',

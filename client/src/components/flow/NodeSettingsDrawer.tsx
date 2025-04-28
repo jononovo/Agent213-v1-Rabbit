@@ -23,7 +23,7 @@ import { Save, X, BookOpen, HelpCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Agent } from '@shared/schema';
 import NodeReadmeModal from '@/components/nodes/common/NodeReadmeModal';
-import { getNodeDefinitionPath, getNodeSettings, getNodeInfo } from '@/lib/nodeRegistry';
+import { getNodeDefinitionPath, getNodeSettings, getNodeInfo, hasNodeType } from '@/lib/nodeRegistry';
 
 interface NodeSettingsDrawerProps {
   isOpen: boolean;
@@ -241,258 +241,111 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       return transformedSettings;
     }
     
-    // Fall back to type-specific settings for special cases while migrating
-    switch (type) {
-      
-      case 'webhook_response':
-        return [
-          {
-            id: 'url',
-            label: 'Webhook URL',
-            type: 'text',
-            placeholder: 'https://example.com/webhook',
-            description: 'URL of the external webhook endpoint',
-            required: true
-          },
-          {
-            id: 'method',
-            label: 'HTTP Method',
-            type: 'select',
-            description: 'HTTP method to use for the webhook request',
-            options: [
-              { value: 'POST', label: 'POST' },
-              { value: 'PUT', label: 'PUT' },
-              { value: 'PATCH', label: 'PATCH' }
-            ],
-            defaultValue: 'POST'
-          },
-          {
-            id: 'headers',
-            label: 'Custom Headers',
-            type: 'json',
-            placeholder: '{"Content-Type": "application/json", "Authorization": "Bearer your-token"}',
-            description: 'Custom HTTP headers to include in the request (JSON format)'
-          },
-          {
-            id: 'retryCount',
-            label: 'Retry Count',
-            type: 'number',
-            description: 'Number of times to retry if the request fails',
-            min: 0,
-            max: 10,
-            defaultValue: 3
-          },
-          {
-            id: 'retryDelay',
-            label: 'Retry Delay (ms)',
-            type: 'number',
-            description: 'Delay between retry attempts in milliseconds',
-            min: 100,
-            max: 10000,
-            defaultValue: 1000
-          },
-          {
-            id: 'timeout',
-            label: 'Timeout (ms)',
-            type: 'number',
-            description: 'Request timeout in milliseconds',
-            min: 100,
-            max: 30000,
-            defaultValue: 5000
-          }
-        ];
-      // Perplexity API has been migrated to definition-based settings
-      // Claude API has been migrated to definition-based settings
-      // Generate Text has been migrated to definition-based settings
-      case 'internal_new_agent':
-        return [
-          {
-            id: 'agentTemplate',
-            label: 'Agent Template',
-            type: 'select',
-            placeholder: 'Select an agent template',
-            description: 'Optional template to use as a base for the new agent.',
-            options: [
-              { value: 'blank', label: 'Blank Agent' },
-              { value: 'customer-support', label: 'Customer Support Agent' },
-              { value: 'data-analysis', label: 'Data Analysis Agent' },
-              { value: 'content-creation', label: 'Content Creation Agent' }
-            ]
-          },
-          {
-            id: 'defaultWorkflow',
-            label: 'Default Workflow',
-            type: 'select',
-            placeholder: 'Create default workflow?',
-            description: 'Automatically create a starter workflow for the new agent',
-            options: [
-              { value: 'none', label: 'No Default Workflow' },
-              { value: 'basic-chat', label: 'Basic Chat Workflow' },
-              { value: 'data-processing', label: 'Data Processing Workflow' },
-              { value: 'custom', label: 'Custom Template' }
-            ]
-          },
-          {
-            id: 'autoActivate',
-            label: 'Auto-Activate',
-            type: 'select',
-            placeholder: 'Automatically activate the agent?',
-            description: 'Set the agent as active immediately after creation.',
-            options: [
-              { value: 'true', label: 'Yes - Activate Immediately' },
-              { value: 'false', label: 'No - Manual Activation' }
-            ]
-          },
-          {
-            id: 'sendWelcomeMessage',
-            label: 'Welcome Message',
-            type: 'textarea',
-            placeholder: 'Enter a welcome message to display when the agent is created...',
-            description: 'Optional message to show upon successful agent creation.'
-          }
-        ];
-      // AI Chat Agent has been migrated to definition-based settings
-      // Create Agent has been migrated to definition-based settings
+    // Fall back to default settings for internal nodes that don't have definition files yet
+    if (type && type.startsWith('internal_') && !hasNodeType(type)) {
+      return [
+        {
+          id: 'eventType',
+          label: 'Event Type',
+          type: 'select',
+          placeholder: 'Select event type',
+          description: 'The type of system event this node responds to.',
+          options: [
+            { value: 'ui_action', label: 'UI Action' },
+            { value: 'system_event', label: 'System Event' },
+            { value: 'scheduled', label: 'Scheduled Task' },
+            { value: 'manual', label: 'Manual Trigger' }
+          ]
+        },
+        {
+          id: 'priority',
+          label: 'Priority Level',
+          type: 'select',
+          placeholder: 'Select priority',
+          description: 'Execution priority for this internal operation.',
+          options: [
+            { value: 'low', label: 'Low' },
+            { value: 'medium', label: 'Medium' },
+            { value: 'high', label: 'High' },
+            { value: 'critical', label: 'Critical' }
+          ]
+        },
+        {
+          id: 'customConfig',
+          label: 'Custom Configuration',
+          type: 'textarea',
+          placeholder: 'Enter any custom configuration as JSON...',
+          description: 'Additional configuration options in JSON format.'
+        }
+      ];
+    }
         
-      // Response Message has been migrated to definition-based settings
-      
-      // API Response Message has been migrated to definition-based settings
-      // Agent Trigger has been migrated to definition-based settings
-      case 'embed_other_workflow':
-        return [
-          {
-            id: 'workflowId',
-            label: 'Target Workflow',
-            type: 'select',
-            placeholder: 'Select target workflow',
-            description: 'The workflow that will be triggered by this node.',
-            options: [] // Will be populated dynamically with available workflows
-          },
-          {
-            id: 'inputField',
-            label: 'Input Field',
-            type: 'text',
-            placeholder: 'Enter input field name',
-            description: 'The field from input data to use as the input for the workflow.'
-          },
-          {
-            id: 'timeout',
-            label: 'Timeout (ms)',
-            type: 'text',
-            placeholder: '30000',
-            description: 'Maximum time in milliseconds to wait for workflow response. Default: 30000 (30 seconds)'
+    // Generate basic settings based on node data for any other node type
+    const basicSettings: SettingsField[] = [];
+    
+    // If node has a settingsData object, we'll create dynamic fields based on it
+    if (node?.data?.settingsData) {
+      // Generate fields from the settingsData object
+      Object.entries(node.data.settingsData).forEach(([key, value]) => {
+        const valueType = typeof value;
+        let fieldType: SettingsField['type'] = 'text';
+        
+        // Determine field type based on value type
+        if (valueType === 'number') {
+          fieldType = 'number';
+        } else if (valueType === 'boolean') {
+          fieldType = 'select';
+        } else if (valueType === 'object') {
+          fieldType = 'json';
+        }
+        
+        // Create field definition
+        // Ensure the value is of a type that can be assigned to defaultValue
+        let defaultValue: string | number | boolean | string[] | undefined = undefined;
+        
+        if (valueType === 'string' || valueType === 'number' || valueType === 'boolean') {
+          defaultValue = value as string | number | boolean;
+        } else if (Array.isArray(value)) {
+          // Only use string arrays
+          const stringArray = value.filter(item => typeof item === 'string') as string[];
+          if (stringArray.length > 0) {
+            defaultValue = stringArray;
           }
-        ];
-      // Function node has been migrated to definition-based settings
-      default:
-        // For any other node that starts with "internal_"
-        if (type && type.startsWith('internal_')) {
-          return [
-            {
-              id: 'eventType',
-              label: 'Event Type',
-              type: 'select',
-              placeholder: 'Select event type',
-              description: 'The type of system event this node responds to.',
-              options: [
-                { value: 'ui_action', label: 'UI Action' },
-                { value: 'system_event', label: 'System Event' },
-                { value: 'scheduled', label: 'Scheduled Task' },
-                { value: 'manual', label: 'Manual Trigger' }
-              ]
-            },
-            {
-              id: 'priority',
-              label: 'Priority Level',
-              type: 'select',
-              placeholder: 'Select priority',
-              description: 'Execution priority for this internal operation.',
-              options: [
-                { value: 'low', label: 'Low' },
-                { value: 'medium', label: 'Medium' },
-                { value: 'high', label: 'High' },
-                { value: 'critical', label: 'Critical' }
-              ]
-            },
-            {
-              id: 'customConfig',
-              label: 'Custom Configuration',
-              type: 'textarea',
-              placeholder: 'Enter any custom configuration as JSON...',
-              description: 'Additional configuration options in JSON format.'
-            }
+        }
+        
+        const field: SettingsField = {
+          id: key,
+          label: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1').trim(),
+          type: fieldType,
+          description: `Configure the ${key} setting for this node`,
+          defaultValue
+        };
+        
+        // Add options for boolean fields
+        if (fieldType === 'select' && typeof value === 'boolean') {
+          field.options = [
+            { value: 'true', label: 'Yes' },
+            { value: 'false', label: 'No' }
           ];
         }
         
-        // Generate basic settings based on node data for any other node type
-        const basicSettings: SettingsField[] = [];
-        
-        // If node has a settingsData object, we'll create dynamic fields based on it
-        if (node?.data?.settingsData) {
-          // Generate fields from the settingsData object
-          Object.entries(node.data.settingsData).forEach(([key, value]) => {
-            const valueType = typeof value;
-            let fieldType: SettingsField['type'] = 'text';
-            
-            // Determine field type based on value type
-            if (valueType === 'number') {
-              fieldType = 'number';
-            } else if (valueType === 'boolean') {
-              fieldType = 'select';
-            } else if (valueType === 'object') {
-              fieldType = 'json';
-            }
-            
-            // Create field definition
-            // Ensure the value is of a type that can be assigned to defaultValue
-            let defaultValue: string | number | boolean | string[] | undefined = undefined;
-            
-            if (valueType === 'string' || valueType === 'number' || valueType === 'boolean') {
-              defaultValue = value as string | number | boolean;
-            } else if (Array.isArray(value)) {
-              // Only use string arrays
-              const stringArray = value.filter(item => typeof item === 'string') as string[];
-              if (stringArray.length > 0) {
-                defaultValue = stringArray;
-              }
-            }
-            
-            const field: SettingsField = {
-              id: key,
-              label: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1').trim(),
-              type: fieldType,
-              description: `Configure the ${key} setting for this node`,
-              defaultValue
-            };
-            
-            // Add options for boolean fields
-            if (fieldType === 'select' && typeof value === 'boolean') {
-              field.options = [
-                { value: 'true', label: 'Yes' },
-                { value: 'false', label: 'No' }
-              ];
-            }
-            
-            basicSettings.push(field);
-          });
-        }
-        
-        // Add a label field for all nodes if one doesn't already exist
-        if (!basicSettings.some(f => f.id === 'label')) {
-          basicSettings.unshift({
-            id: 'label',
-            label: 'Node Label',
-            type: 'text',
-            description: 'The display name for this node',
-            defaultValue: node?.data?.label || ''
-          });
-        }
-        
-        return basicSettings;
+        basicSettings.push(field);
+      });
     }
+    
+    // Add a label field for all nodes if one doesn't already exist
+    if (!basicSettings.some(f => f.id === 'label')) {
+      basicSettings.unshift({
+        id: 'label',
+        label: 'Node Label',
+        type: 'text',
+        description: 'The display name for this node',
+        defaultValue: node?.data?.label || ''
+      });
+    }
+    
+    return basicSettings;
   };
-
-  if (!node) return null;
 
   const handleSettingChange = (fieldId: string, value: any) => {
     let updatedSettings = { ...settings, [fieldId]: value };
@@ -573,7 +426,10 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     setReadmeModalOpen(false);
   };
 
-return (
+  // Check if node is null to avoid rendering with invalid data
+  if (!node) return null;
+
+  return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetContent side="right" className="w-[400px] sm:w-[540px] p-0">
         <div className="p-6 pb-1">
@@ -815,7 +671,8 @@ return (
                                       const newValues = currentValues.filter((v: string) => v !== option.value);
                                       handleSettingChange(field.id, newValues);
                                     } else {
-                                      handleSettingChange(field.id, [...currentValues, option.value]);
+                                      const newValues = [...currentValues, option.value];
+                                      handleSettingChange(field.id, newValues);
                                     }
                                   }}
                                 >
@@ -825,44 +682,17 @@ return (
                             })}
                           </div>
                         ) : (
-                          <div>
-                            <Input
-                              id={field.id}
-                              type="text"
-                              placeholder={field.placeholder}
-                              value={settings[field.id] || ''}
-                              onChange={(e) => handleSettingChange(field.id, e.target.value)}
-                            />
-                            {field.id === 'model' && (node.type === 'perplexity' || node.type === 'perplexity_api') && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Recommended models: llama-3.1-sonar-small-128k-online, llama-3.1-sonar-large-128k-online, llama-3.1-sonar-huge-128k-online
-                              </p>
-                            )}
-                            {field.id === 'model' && (node.type === 'claude') && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Claude models: claude-3-sonnet-20240229, claude-3-opus-20240229, claude-3-haiku-20240307
-                              </p>
-                            )}
-                            {field.id === 'model' && (node.type === 'generate_text' || node.type === 'generateText') && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Claude models: claude-3.5-sonnet, claude-3-opus, claude-3-sonnet, claude-3-haiku
-                              </p>
-                            )}
-                          </div>
+                          <Input
+                            id={field.id}
+                            type="text"
+                            placeholder={field.placeholder}
+                            value={settings[field.id] || ''}
+                            onChange={(e) => handleSettingChange(field.id, e.target.value)}
+                          />
                         )}
                         
-                        {/* Show description if available */}
                         {field.description && (
-                          <p className="text-xs text-muted-foreground">
-                            {field.description}
-                          </p>
-                        )}
-                        
-                        {/* Add special help text for function code field */}
-                        {field.id === 'code' && node.type === 'function_node' && (
-                          <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">
-                            Tip: Your function must include a process(input) method that returns a value
-                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">{field.description}</p>
                         )}
                       </div>
                     );
@@ -877,13 +707,17 @@ return (
           )}
         </ScrollArea>
         
-        <SheetFooter className="px-6 py-4 border-t">
+        <SheetFooter className="p-6 pt-4 border-t">
           <div className="flex justify-between w-full">
-            <Button variant="outline" onClick={onClose}>
-              <X className="h-4 w-4 mr-2" /> Cancel
-            </Button>
-            <Button onClick={handleSave} className="bg-primary text-primary-foreground">
-              <Save className="h-4 w-4 mr-2" /> Save Changes
+            <SheetClose asChild>
+              <Button variant="ghost" className="w-24">
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+            </SheetClose>
+            <Button className="w-24" onClick={handleSave}>
+              <Save className="h-4 w-4 mr-2" />
+              Save
             </Button>
           </div>
         </SheetFooter>
