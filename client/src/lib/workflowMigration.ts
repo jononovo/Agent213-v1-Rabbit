@@ -6,7 +6,7 @@
  */
 
 import { NodeDefinition } from '../nodes/types';
-import { FOLDER_BASED_NODE_TYPES } from './nodeValidator';
+import { hasNode, getAllNodes } from './unifiedNodeRegistry';
 
 /**
  * Interface for flow data structure
@@ -51,7 +51,7 @@ export function migrateNode(node: any): any {
     typeof node.data === 'object' &&
     node.data.defaultData &&
     node.type &&
-    FOLDER_BASED_NODE_TYPES.includes(node.type)
+    hasNode(node.type)
   ) {
     return node;
   }
@@ -115,7 +115,7 @@ export function needsMigration(flowData: FlowData): boolean {
     !node.data || 
     !node.data.defaultData ||
     !node.type ||
-    !FOLDER_BASED_NODE_TYPES.includes(node.type)
+    !hasNode(node.type)
   );
 }
 
