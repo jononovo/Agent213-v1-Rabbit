@@ -1,40 +1,34 @@
-/**
- * Embed Other Workflow Node Definition
- * 
- * This node allows triggering another workflow from within the current workflow,
- * enabling modular workflow design and orchestration.
- */
+import { NodeDefinition } from '../../types';
 
-import { NodeDefinition } from '@/nodes/types';
-
-// Default data (duplicated here to avoid circular dependency)
-const defaultData = {
-  workflowId: null,
-  inputField: 'json',
-  timeout: 30000,
-  waitForCompletion: true
-};
-
-export const definition: NodeDefinition = {
+const definition: NodeDefinition = {
   type: 'embed_other_workflow',
   name: 'Embed Other Workflow',
-  description: 'Trigger and optionally wait for another workflow to complete',
+  description: 'This node triggers another workflow from within your current workflow. Select the workflow to call, specify which input field to use as the input data, and set a timeout if needed.',
   category: 'actions',
-  version: '1.0.0',
-  icon: 'GitBranch',
-  defaultData: defaultData,
-  inputs: {
-    input: {
-      type: 'any',
-      description: 'Input data to send to the triggered workflow'
+  settings: [
+    {
+      key: 'workflowId',
+      label: 'Target Workflow',
+      type: 'select',
+      placeholder: 'Select target workflow',
+      description: 'The workflow that will be triggered by this node.',
+      options: [] // Will be populated dynamically with available workflows
+    },
+    {
+      key: 'inputField',
+      label: 'Input Field',
+      type: 'string',
+      placeholder: 'Enter input field name',
+      description: 'The field from input data to use as the input for the workflow.'
+    },
+    {
+      key: 'timeout',
+      label: 'Timeout (ms)',
+      type: 'string',
+      placeholder: '30000',
+      description: 'Maximum time in milliseconds to wait for workflow response. Default: 30000 (30 seconds)'
     }
-  },
-  outputs: {
-    output: {
-      type: 'any',
-      description: 'Result data from the executed workflow'
-    }
-  }
+  ]
 };
 
 export default definition;

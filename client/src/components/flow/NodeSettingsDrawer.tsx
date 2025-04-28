@@ -23,7 +23,7 @@ import { Save, X, BookOpen, HelpCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Agent } from '@shared/schema';
 import NodeReadmeModal from '@/components/nodes/common/NodeReadmeModal';
-import { getNodeDefinitionPath, getNodeSettings } from '@/lib/nodeRegistry';
+import { getNodeDefinitionPath, getNodeSettings, getNodeInfo } from '@/lib/nodeRegistry';
 
 interface NodeSettingsDrawerProps {
   isOpen: boolean;
@@ -677,7 +677,20 @@ return (
           {/* Settings Tab */}
           {activeTab === 'settings' && (
             <div className="space-y-4">
-              {/* Node information is now retrieved from node definitions */}
+              {/* Show node information from the registry */}
+              {node.type && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Configure settings for {getNodeInfo(node.type)?.name || node.type}
+                  </p>
+                  
+                  <Alert className="mt-2">
+                    <AlertDescription>
+                      {getNodeInfo(node.type)?.description || 'Configure this node\'s settings below.'}
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
               
               {fieldOptions.length > 0 ? (
                 <div className="space-y-4 pb-6">
