@@ -23,9 +23,8 @@ import { Save, X, BookOpen, HelpCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Agent } from '@shared/schema';
 import NodeReadmeModal from '@/components/nodes/common/NodeReadmeModal';
-// Import from the unified registry instead of the legacy registry
-import { getNodeDefinitionPath, getNodeSettings as legacyGetNodeSettings, getNodeInfo, hasNodeType } from '@/lib/nodeRegistry';
-import { getNodeSettings, hasNode } from '@/lib/unifiedNodeRegistry';
+// Import from the unified registry
+import { getNodeSettings, hasNode, getNodeDefinitionPath } from '@/lib/unifiedNodeRegistry';
 
 interface NodeSettingsDrawerProps {
   isOpen: boolean;
@@ -218,14 +217,8 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       return nodeSettings;
     }
     
-    // Get settings from node definition via the unified registry (preferred) or the legacy registry
-    // First try the unified registry
-    const unifiedSettings = getNodeSettings(type);
-    // Fall back to the legacy registry if needed
-    const legacySettings = legacyGetNodeSettings(type);
-    
-    // Use whichever registry has the settings
-    const nodeSettings = unifiedSettings.length > 0 ? unifiedSettings : legacySettings;
+    // Get settings from node definition via the unified registry
+    const nodeSettings = getNodeSettings(type);
     
     if (nodeSettings && nodeSettings.length > 0) {
       console.log(`Found ${nodeSettings.length} settings in node definition for ${type}:`, nodeSettings);
@@ -251,7 +244,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     }
     
     // Fall back to default settings for internal nodes that don't have definition files yet
-    if (type && type.startsWith('internal_') && !hasNodeType(type) && !hasNode(type)) {
+    if (type && type.startsWith('internal_') && !hasNode(type)) {
       return [
         {
           id: 'eventType',
@@ -546,12 +539,12 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
               {node.type && (
                 <div className="mb-4">
                   <p className="text-sm text-muted-foreground">
-                    Configure settings for {getNodeInfo(node.type)?.name || node.type}
+                    Configure settings for {node.type}
                   </p>
                   
                   <Alert className="mt-2">
                     <AlertDescription>
-                      {getNodeInfo(node.type)?.description || 'Configure this node\'s settings below.'}
+                      Configure this node's settings below.
                     </AlertDescription>
                   </Alert>
                 </div>

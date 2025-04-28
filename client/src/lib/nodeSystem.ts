@@ -1,12 +1,16 @@
 /**
- * Node System
+ * DEPRECATED: This module is being phased out in favor of the unified node registry.
+ * 
+ * Node System - Legacy Implementation
  * 
  * This module connects the folder-based node structure with the workflow execution engine.
  * It automatically discovers and registers node executors using dynamic imports.
- * All nodes (both System and Custom) use the same folder-based registry mechanism.
+ * 
+ * NOTE: This module is maintained only for backward compatibility.
+ * All new code should use the unifiedNodeRegistry instead.
  */
 
-import { registerEnhancedNodeExecutor, createEnhancedNodeExecutor } from './enhancedWorkflowEngine';
+// Import from unified registry instead
 import { 
   FOLDER_BASED_NODE_TYPES, 
   SYSTEM_NODE_TYPES,
@@ -145,23 +149,8 @@ async function registerNodeType(nodeType: string, missingComponents: Record<stri
         
         console.log(`Registering executor for node type: ${nodeType}`);
         
-        // Register with workflow engine
-        registerEnhancedNodeExecutor(
-          nodeType,
-          createEnhancedNodeExecutor(
-            {
-              type: nodeType,
-              displayName: nodeDefinition.name || nodeType,
-              description: nodeDefinition.description || '',
-              icon: nodeDefinition.icon || 'bolt',
-              category: nodeDefinition.category || 'general',
-              version: nodeDefinition.version || '1.0.0',
-              inputs: formatPortDefinitions(nodeDefinition.inputs || {}, true),
-              outputs: formatPortDefinitions(nodeDefinition.outputs || {}, false)
-            },
-            createNodeExecutor(nodeType, executor)
-          )
-        );
+        // Register with unified registry instead - DEPRECATED, THIS IS A NO-OP NOW
+        console.log(`Would register executor for ${nodeType} in legacy system, but using unified registry instead`);
         
         console.log(`Registered enhanced node executor for type: ${nodeType}`);
       }).catch(error => {
