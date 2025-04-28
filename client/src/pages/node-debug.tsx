@@ -978,9 +978,11 @@ const NodeDebugPanel: React.FC = () => {
                                 </div>
                                 <div className="flex items-center">
                                   {testResult ? getTestStatusIcon(testResult.status) : getTestStatusIcon('pending')}
-                                  {testResult?.duration && (
-                                    <span className="text-xs text-slate-500 ml-2">{testResult.duration}ms</span>
-                                  )}
+                                  {testResult?.duration ? (
+                                    <span className="text-xs text-slate-500 ml-2">
+                                      {testResult.duration > 0 ? `${testResult.duration}ms` : null}
+                                    </span>
+                                  ) : null}
                                 </div>
                               </div>
                               
@@ -1033,9 +1035,11 @@ const NodeDebugPanel: React.FC = () => {
                               </div>
                               <div className="flex items-center">
                                 {getTestStatusIcon(testResult.status)}
-                                {testResult.duration && (
-                                  <span className="text-xs text-slate-500 ml-2">{testResult.duration}ms</span>
-                                )}
+                                {testResult.duration ? (
+                                  <span className="text-xs text-slate-500 ml-2">
+                                    {testResult.duration > 0 ? `${testResult.duration}ms` : null}
+                                  </span>
+                                ) : null}
                               </div>
                             </div>
                             
