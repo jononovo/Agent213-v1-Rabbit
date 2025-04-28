@@ -20,15 +20,7 @@ const defaultData = {
   retryCount: 3,
   retryDelay: 1000,
   timeout: 5000,
-  isWebhookResponse: 'false' // Using string 'false' to match select dropdown values
-};
-
-// Define a showWhen function type to avoid TypeScript errors
-type ShowWhenFn = (settings: Record<string, any>) => boolean;
-
-// Function to check if we should show URL-related fields
-const showIfNotWebhookResponse: ShowWhenFn = (settings: Record<string, any>) => {
-  return settings.isWebhookResponse === 'false';
+  respondToOriginal: 'false' // Using string 'false' to match select dropdown values
 };
 
 const definition = {
@@ -56,16 +48,16 @@ const definition = {
       description: 'HTTP status code from the webhook response'
     }
   },
-  // Define fields for the node's settings drawer
+  // Define fields for the node's settings drawer - simplest possible implementation
   settings: [
     {
-      key: 'isWebhookResponse',
+      key: 'respondToOriginal',
       type: 'select',
-      label: 'Respond to Original Webhook',
-      description: 'When enabled, this node will respond to the original webhook request instead of making a new outbound request',
+      label: 'Response Mode',
+      description: 'Choose whether to send data to a new webhook or respond to the original request',
       options: [
-        { label: 'Yes - Respond to the original webhook request', value: 'true' },
-        { label: 'No - Send to a new external webhook URL', value: 'false' }
+        { label: 'Send to a new webhook URL', value: 'false' },
+        { label: 'Respond to the original webhook request', value: 'true' }
       ],
       default: 'false'
     },
@@ -73,10 +65,9 @@ const definition = {
       key: 'url',
       type: 'text',
       label: 'Webhook URL',
-      description: 'URL of the external webhook endpoint (not required if responding to original webhook)',
+      description: 'URL of the external webhook endpoint',
       placeholder: 'https://example.com/webhook',
-      required: false,
-      showWhen: showIfNotWebhookResponse
+      required: false
     },
     {
       key: 'method',
@@ -88,8 +79,7 @@ const definition = {
         { label: 'PUT', value: 'PUT' },
         { label: 'PATCH', value: 'PATCH' }
       ],
-      default: 'POST',
-      showWhen: showIfNotWebhookResponse
+      default: 'POST'
     },
     {
       key: 'headers',
@@ -97,8 +87,7 @@ const definition = {
       label: 'Custom Headers',
       description: 'Custom HTTP headers to include in the request (JSON format)',
       placeholder: '{"Content-Type": "application/json", "Authorization": "Bearer your-token"}',
-      required: false,
-      showWhen: showIfNotWebhookResponse
+      required: false
     },
     {
       key: 'retryCount',
@@ -107,8 +96,7 @@ const definition = {
       description: 'Number of times to retry if the request fails',
       min: 0,
       max: 10,
-      default: 3,
-      showWhen: showIfNotWebhookResponse
+      default: 3
     },
     {
       key: 'retryDelay',
@@ -117,8 +105,7 @@ const definition = {
       description: 'Delay between retry attempts in milliseconds',
       min: 100,
       max: 10000,
-      default: 1000,
-      showWhen: showIfNotWebhookResponse
+      default: 1000
     },
     {
       key: 'timeout',
@@ -127,13 +114,12 @@ const definition = {
       description: 'Request timeout in milliseconds',
       min: 100,
       max: 30000,
-      default: 5000,
-      showWhen: showIfNotWebhookResponse
+      default: 5000
     }
   ],
   // Data validation schema
   validation: z.object({
-    isWebhookResponse: z.union([
+    respondToOriginal: z.union([
       z.boolean().default(false), 
       z.enum(['true', 'false']).transform(val => val === 'true')
     ]).default(false),
