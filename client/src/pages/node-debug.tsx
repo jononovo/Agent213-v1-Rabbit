@@ -9,13 +9,14 @@
  * - Node Directory Testing: Select a node folder to run all tests on that node
  * - Detailed Test Results: View individual test results and feedback
  * - AI Agent Testing Support: Structured for programmatic use by AI agents
+ * - Custom Node Tests: Support for node-specific custom tests
  */
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
   CheckCircle2, XCircle, AlertTriangle, RefreshCcw, FileSymlink, Search, 
   Play, Zap, LayoutGrid, Clock, Link, FolderOpen, Upload, Download, 
-  FileCode, Bot, RotateCw, Save, ClipboardCheck, Cpu 
+  FileCode, Bot, RotateCw, Save, ClipboardCheck, Cpu, Beaker
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +38,9 @@ import {
   initializeRegistry 
 } from '@/lib/unifiedNodeRegistry';
 
+// Import the node test interfaces
+import { NodeTest, NodeTestResult } from '@/nodes/types/nodeTestsStandard';
+
 // Helper types
 interface NodeType {
   type: string;
@@ -44,6 +48,7 @@ interface NodeType {
   category: string;
   status?: 'validated' | 'partial' | 'failed' | 'pending';
   testResults?: TestResult[];
+  customTestResults?: CustomTestResult[];
   customFolder?: string; // Path to custom folder for folder-based nodes
 }
 
@@ -53,6 +58,17 @@ interface TestResult {
   status: 'passed' | 'failed' | 'pending' | 'running';
   message?: string;
   duration?: number; 
+}
+
+// Interface for custom test results
+interface CustomTestResult {
+  name: string;
+  description: string;
+  category?: string;
+  status: 'passed' | 'failed' | 'pending' | 'running';
+  message?: string;
+  duration?: number;
+  details?: Record<string, any>;
 }
 
 type TestType = 'definition' | 'interface' | 'execution' | 'error' | 'ui' | 'performance' | 'integration';
@@ -235,18 +251,40 @@ const NodeDebugPanel: React.FC = () => {
     setSelectedNode(node);
   };
 
+  // Function to try loading custom tests for a node
+  const loadCustomTests = async (nodeType: string): Promise<NodeTest[] | null> => {
+    try {
+      // In a real implementation, we would dynamically import the tests
+      // For this demo, we're only importing tests for text_formatter
+      if (nodeType === 'text_formatter') {
+        const testsModule = await import('@/nodes/System/text_formatter/tests');
+        console.log("Loaded custom tests for text_formatter:", testsModule.default);
+        return testsModule.default;
+      }
+      return null;
+    } catch (error) {
+      console.error(`Error loading custom tests for ${nodeType}:`, error);
+      return null;
+    }
+  };
+
   // Run tests for a node
-  const handleRunTests = (node: NodeType) => {
+  const handleRunTests = async (node: NodeType) => {
     setIsRunningTests(true);
     setTestProgress(0);
     
-    // Mock test runner with artificial delays
-    const testDelay = 600; // ms per test
-    const testsToRun = TESTS.length;
-    
     // Create a copy of the node to manipulate during testing
     const updatedNode = { ...node };
+    
+    // Load any custom tests for this node
+    const customTests = await loadCustomTests(node.type);
+    const hasCustomTests = customTests && customTests.length > 0;
+    
+    // Reset test results
     updatedNode.testResults = [];
+    updatedNode.customTestResults = [];
+    
+    // Set up standard tests
     TESTS.forEach(test => {
       updatedNode.testResults?.push({
         name: test.name,
@@ -255,13 +293,29 @@ const NodeDebugPanel: React.FC = () => {
       });
     });
     
+    // Set up custom tests if available
+    if (hasCustomTests) {
+      customTests.forEach(test => {
+        updatedNode.customTestResults?.push({
+          name: test.name,
+          description: test.description,
+          category: test.category,
+          status: 'running'
+        });
+      });
+    }
+    
     setSelectedNode(updatedNode);
     
-    // Simulate running each test with a delay
+    // Standard tests
+    const testDelay = 600; // ms per test
+    const standardTestsToRun = TESTS.length;
+    
+    // Simulate running each standard test with a delay
     TESTS.forEach((test, index) => {
       setTimeout(() => {
         // Update progress
-        setTestProgress(Math.round(((index + 1) / testsToRun) * 100));
+        setTestProgress(Math.round(((index + 1) / standardTestsToRun) * 100));
         
         // Simulate a test result (random for demo)
         const result: TestResult = {
@@ -281,7 +335,7 @@ const NodeDebugPanel: React.FC = () => {
           
           // Determine overall status based on test results
           const hasFailures = updatedNode.testResults.some(r => r.status === 'failed');
-          const hasPending = updatedNode.testResults.some(r => r.status === 'pending');
+          const hasPending = updatedNode.testResults.some(r => r.status === 'pending' || r.status === 'running');
           
           if (hasFailures) {
             updatedNode.status = 'failed';
@@ -294,15 +348,88 @@ const NodeDebugPanel: React.FC = () => {
           setSelectedNode({ ...updatedNode });
         }
         
-        // When all tests are completed
-        if (index === testsToRun - 1) {
-          setIsRunningTests(false);
-          toast({
-            title: "Testing completed",
-            description: `${updatedNode.name} test suite has finished`,
-          });
+        // When all standard tests are completed
+        if (index === standardTestsToRun - 1) {
+          // Now run custom tests if available
+          if (hasCustomTests && customTests) {
+            runCustomTests(updatedNode, customTests);
+          } else {
+            // No custom tests, we're done
+            finishTesting(updatedNode);
+          }
         }
       }, testDelay * (index + 1));
+    });
+  };
+  
+  // Run custom tests for a node
+  const runCustomTests = async (node: NodeType, customTests: NodeTest[]) => {
+    if (!node.customTestResults) return;
+    
+    // Run each custom test for real (not simulated)
+    for (let i = 0; i < customTests.length; i++) {
+      const customTest = customTests[i];
+      
+      try {
+        // Actually run the test
+        const testStartTime = performance.now();
+        const result = await customTest.run();
+        const testDuration = Math.round(performance.now() - testStartTime);
+        
+        // Convert to our internal format
+        const customResult: CustomTestResult = {
+          name: customTest.name,
+          description: customTest.description,
+          category: customTest.category,
+          status: result.passed ? 'passed' : 'failed',
+          message: result.message,
+          duration: testDuration,
+          details: result.details
+        };
+        
+        // Update the node's custom test results
+        node.customTestResults[i] = customResult;
+        setSelectedNode({ ...node });
+        
+        // Short delay between tests for UI update
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } catch (error) {
+        // Handle test execution error
+        node.customTestResults[i] = {
+          name: customTest.name,
+          description: customTest.description,
+          category: customTest.category,
+          status: 'failed',
+          message: `Test execution error: ${error instanceof Error ? error.message : String(error)}`
+        };
+        setSelectedNode({ ...node });
+      }
+    }
+    
+    // Custom tests are complete
+    finishTesting(node);
+  };
+  
+  // Helper to finish testing and update UI
+  const finishTesting = (node: NodeType) => {
+    setIsRunningTests(false);
+    
+    // Calculate overall status
+    const standardFailures = node.testResults?.some(r => r.status === 'failed') || false;
+    const customFailures = node.customTestResults?.some(r => r.status === 'failed') || false;
+    const hasFailures = standardFailures || customFailures;
+    
+    if (hasFailures) {
+      node.status = 'failed';
+    } else {
+      node.status = 'validated';
+    }
+    
+    setSelectedNode({ ...node });
+    
+    toast({
+      title: "Testing completed",
+      description: `${node.name} test suite has finished`,
     });
   };
 
