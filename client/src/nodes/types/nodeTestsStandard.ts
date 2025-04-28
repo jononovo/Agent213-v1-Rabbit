@@ -1,24 +1,34 @@
 /**
- * Standard interface for custom node-specific tests
+ * Standard interface for node-specific tests
  * 
- * This file defines the standard interface for node-specific tests.
- * Each node can provide its own test suite to verify its functionality.
+ * This file defines the interfaces that all node test implementations
+ * should conform to, providing a consistent testing structure across
+ * the system.
  */
 
 /**
- * Interface for a single node test
+ * Interface for a node test
+ * Each test has a unique name, description, category, and execution function
  */
 export interface NodeTest {
-  // Test name
+  /**
+   * Name of the test, e.g. "Input Validation"
+   */
   name: string;
-  
-  // Test description
+
+  /**
+   * Detailed description of what the test validates
+   */
   description: string;
-  
-  // Optional test category
+
+  /**
+   * Optional category to group tests, e.g. "validation", "performance", "api"
+   */
   category?: string;
-  
-  // Function that runs the test and returns result
+
+  /**
+   * Function that runs the actual test and returns a result
+   */
   run: () => Promise<NodeTestResult>;
 }
 
@@ -26,12 +36,26 @@ export interface NodeTest {
  * Result of running a node test
  */
 export interface NodeTestResult {
-  // Whether the test passed
+  /**
+   * Whether the test passed or failed
+   */
   passed: boolean;
-  
-  // Message explaining the result (especially useful for failures)
+
+  /**
+   * Human-readable message describing the test result
+   */
   message: string;
-  
-  // Optional details for display (can include execution time, inputs/outputs, etc.)
+
+  /**
+   * Optional detailed information about the test
+   * Can include input/output data, execution metrics, etc.
+   */
   details?: Record<string, any>;
 }
+
+/**
+ * A collection of tests for a specific node
+ */
+export type NodeTestSuite = NodeTest[];
+
+export default NodeTestSuite;
