@@ -20,7 +20,7 @@ const defaultData = {
   retryCount: 3,
   retryDelay: 1000,
   timeout: 5000,
-  isWebhookResponse: false // Using boolean for configOptions
+  isWebhookResponse: 'false' // Using string 'false' to match select dropdown values
 };
 
 const definition = {
@@ -48,78 +48,6 @@ const definition = {
       description: 'HTTP status code from the webhook response'
     }
   },
-  // Config options that will appear in the settings drawer 
-  // Similar to the function_node implementation
-  configOptions: [
-    {
-      key: 'isWebhookResponse',
-      type: 'boolean',
-      label: 'Respond to Original Webhook',
-      description: 'When enabled, this node will respond to the original webhook request instead of making a new outbound request',
-      default: false
-    },
-    {
-      key: 'url',
-      type: 'string',
-      label: 'Webhook URL',
-      description: 'URL of the external webhook endpoint (not required if responding to original webhook)',
-      placeholder: 'https://example.com/webhook',
-      required: false,
-      showIf: { key: 'isWebhookResponse', value: false }
-    },
-    {
-      key: 'method',
-      type: 'select',
-      label: 'HTTP Method',
-      description: 'HTTP method to use for the webhook request',
-      options: [
-        { label: 'POST', value: 'POST' },
-        { label: 'PUT', value: 'PUT' },
-        { label: 'PATCH', value: 'PATCH' }
-      ],
-      default: 'POST',
-      showIf: { key: 'isWebhookResponse', value: false }
-    },
-    {
-      key: 'headers',
-      type: 'json',
-      label: 'Custom Headers',
-      description: 'Custom HTTP headers to include in the request (JSON format)',
-      placeholder: '{"Content-Type": "application/json", "Authorization": "Bearer your-token"}',
-      required: false,
-      showIf: { key: 'isWebhookResponse', value: false }
-    },
-    {
-      key: 'retryCount',
-      type: 'number',
-      label: 'Retry Count',
-      description: 'Number of times to retry if the request fails',
-      min: 0,
-      max: 10,
-      default: 3,
-      showIf: { key: 'isWebhookResponse', value: false }
-    },
-    {
-      key: 'retryDelay',
-      type: 'number',
-      label: 'Retry Delay (ms)',
-      description: 'Delay between retry attempts in milliseconds',
-      min: 100,
-      max: 10000,
-      default: 1000,
-      showIf: { key: 'isWebhookResponse', value: false }
-    },
-    {
-      key: 'timeout',
-      type: 'number',
-      label: 'Timeout (ms)',
-      description: 'Request timeout in milliseconds',
-      min: 100,
-      max: 30000,
-      default: 5000,
-      showIf: { key: 'isWebhookResponse', value: false }
-    }
-  ],
   // Define fields for the node's settings drawer
   settings: [
     {
