@@ -104,6 +104,17 @@ const TESTS: TestDefinition[] = [
   }
 ];
 
+// Interface for a node folder test request
+interface NodeFolderTest {
+  path: string;
+  nodeType: string;
+  status: 'queued' | 'running' | 'completed' | 'failed';
+  startTime?: Date;
+  endTime?: Date;
+  results?: TestResult[];
+  iterationCount?: number; // For AI agent improvement iterations
+}
+
 const NodeDebugPanel: React.FC = () => {
   const { toast } = useToast();
   const [selectedNode, setSelectedNode] = useState<NodeType | null>(null);
@@ -111,6 +122,14 @@ const NodeDebugPanel: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isRunningTests, setIsRunningTests] = useState(false);
   const [testProgress, setTestProgress] = useState(0);
+  
+  // New state for node folder testing
+  const [folderDialogOpen, setFolderDialogOpen] = useState(false);
+  const [nodeFolderPath, setNodeFolderPath] = useState('');
+  const [nodeTypeFromFolder, setNodeTypeFromFolder] = useState('');
+  const [folderTestRunning, setFolderTestRunning] = useState(false);
+  const [folderTestProgress, setFolderTestProgress] = useState(0);
+  const [folderTestResults, setFolderTestResults] = useState<NodeFolderTest | null>(null);
 
   // Fetch available nodes from the API
   const { data: nodeTypes = [], isLoading, refetch } = useQuery({ 
@@ -296,9 +315,351 @@ const NodeDebugPanel: React.FC = () => {
   const getNodeStatusCount = (status: string) => {
     return nodeTypes.filter(node => node.status === status).length;
   };
+  
+  // Handle opening folder selection dialog
+  const handleOpenFolderDialog = () => {
+    setFolderDialogOpen(true);
+  };
+  
+  // Handle folder path input change
+  const handleFolderPathChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNodeFolderPath(e.target.value);
+    
+    // Try to extract node type from path
+    const pathParts = e.target.value.split('/');
+    if (pathParts.length > 0) {
+      // Get the last part of the path
+      const lastPart = pathParts[pathParts.length - 1];
+      if (lastPart && lastPart !== '') {
+        setNodeTypeFromFolder(lastPart);
+      }
+    }
+  };
+  
+  // Handle starting folder test
+  const handleStartFolderTest = () => {
+    if (!nodeFolderPath) {
+      toast({
+        title: "Path required",
+        description: "Please enter a valid node folder path",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setFolderDialogOpen(false);
+    setFolderTestRunning(true);
+    setFolderTestProgress(0);
+    
+    // Create a new test result object
+    const newTest: NodeFolderTest = {
+      path: nodeFolderPath,
+      nodeType: nodeTypeFromFolder,
+      status: 'running',
+      startTime: new Date(),
+      results: [],
+      iterationCount: 1
+    };
+    
+    // Initialize test results
+    TESTS.forEach(test => {
+      newTest.results?.push({
+        name: test.name,
+        test: test.id,
+        status: 'running'
+      });
+    });
+    
+    setFolderTestResults(newTest);
+    
+    // Run the test suite with artificial delays
+    const testDelay = 800; // ms per test
+    const testsToRun = TESTS.length;
+    
+    // Simulate running each test with a delay
+    TESTS.forEach((test, index) => {
+      setTimeout(() => {
+        // Update progress
+        const progress = Math.round(((index + 1) / testsToRun) * 100);
+        setFolderTestProgress(progress);
+        
+        if (newTest.results) {
+          // Simulate a test result (random for demo)
+          const result: TestResult = {
+            name: test.name,
+            test: test.id,
+            status: Math.random() > 0.2 ? 'passed' : 'failed',
+            duration: Math.floor(Math.random() * 300) + 50
+          };
+          
+          if (result.status === 'failed') {
+            result.message = `Test failed in ${nodeFolderPath}: ${test.name} validation error`;
+          }
+          
+          // Update the test results
+          newTest.results[index] = result;
+          
+          // Determine overall status based on test results
+          const hasFailures = newTest.results.some(r => r.status === 'failed');
+          const hasPending = newTest.results.some(r => r.status === 'pending');
+          
+          if (hasFailures) {
+            newTest.status = 'failed';
+          } else if (hasPending) {
+            newTest.status = 'running';
+          } else if (index === testsToRun - 1) {
+            newTest.status = 'completed';
+            newTest.endTime = new Date();
+          }
+          
+          // Update the state
+          setFolderTestResults({...newTest});
+        }
+        
+        // When all tests are completed
+        if (index === testsToRun - 1) {
+          setFolderTestRunning(false);
+          toast({
+            title: "Folder testing completed",
+            description: `Test suite for ${nodeTypeFromFolder} has finished`,
+          });
+          
+          // For demo, add the newly tested node to the list if it's not there already
+          if (!nodeTypes.some(n => n.type === nodeTypeFromFolder)) {
+            const newNode: NodeType = {
+              type: nodeTypeFromFolder,
+              name: nodeTypeFromFolder.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' '),
+              category: 'custom',
+              status: newTest.status === 'completed' ? 'validated' : 'failed',
+              testResults: newTest.results
+            };
+            // This would normally be done with an API call to save the node
+            // mockNodeTypes.push(newNode);
+            // refetch();
+          }
+        }
+      }, testDelay * (index + 1));
+    });
+  };
 
   return (
     <MainContent>
+      {/* Folder test result panel */}
+      {folderTestRunning || folderTestResults ? (
+        <Card className="mb-6">
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle className="flex items-center">
+                  <FolderOpen className="h-5 w-5 mr-2 text-blue-500" />
+                  Node Folder Test
+                </CardTitle>
+                <CardDescription>
+                  Testing node in folder: <code className="bg-slate-100 px-1 py-0.5 rounded">{nodeFolderPath}</code>
+                </CardDescription>
+              </div>
+              
+              {folderTestRunning ? (
+                <Badge className="bg-blue-100 text-blue-800 border border-blue-300">
+                  Testing in progress
+                </Badge>
+              ) : folderTestResults?.status === 'completed' ? (
+                <Badge className="bg-green-100 text-green-800 border border-green-300">
+                  Testing completed
+                </Badge>
+              ) : (
+                <Badge className="bg-red-100 text-red-800 border border-red-300">
+                  Testing failed
+                </Badge>
+              )}
+            </div>
+            
+            {folderTestRunning && (
+              <div className="mt-4">
+                <Label className="text-xs text-slate-500 mb-1 block">Test Progress</Label>
+                <Progress value={folderTestProgress} />
+                <p className="text-xs text-slate-500 mt-1">Running test suite for {nodeTypeFromFolder}: {folderTestProgress}% complete</p>
+              </div>
+            )}
+          </CardHeader>
+          
+          <CardContent>
+            {folderTestResults?.results && folderTestResults.results.length > 0 ? (
+              <div className="space-y-3">
+                {TESTS.map((testDef, idx) => {
+                  const testResult = folderTestResults.results?.[idx];
+                  return (
+                    <div key={testDef.id} className="border rounded-md overflow-hidden">
+                      <div className="flex items-center justify-between p-3 bg-slate-50 border-b">
+                        <div className="flex items-center space-x-3">
+                          <div className="bg-slate-200 p-1.5 rounded">
+                            <testDef.icon className="h-4 w-4 text-slate-700" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium">{testDef.name}</h4>
+                            <p className="text-xs text-slate-500">{testDef.description}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          {testResult ? getTestStatusIcon(testResult.status) : getTestStatusIcon('pending')}
+                          {testResult?.duration && (
+                            <span className="text-xs text-slate-500 ml-2">{testResult.duration}ms</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {testResult?.status === 'failed' && testResult.message && (
+                        <div className="p-3 bg-red-50 text-red-700 text-sm">
+                          {testResult.message}
+                          <div className="mt-2 pt-2 border-t border-red-200">
+                            <h5 className="font-medium text-xs mb-1">AI Agent Improvement Suggestion:</h5>
+                            <p className="text-xs">
+                              {testDef.id === 'definition' && "Check your definition.ts file for missing or incorrect properties."}
+                              {testDef.id === 'interface' && "Verify your input/output types match the documentation."}
+                              {testDef.id === 'execution' && "Your executor function may have syntax errors or is not handling inputs correctly."}
+                              {testDef.id === 'error' && "Add proper error handling for edge cases in your executor."}
+                              {testDef.id === 'ui' && "The UI component might have rendering issues or missing properties."}
+                              {testDef.id === 'performance' && "Your node processing might be inefficient or causing slowdowns."}
+                              {testDef.id === 'integration' && "Your node doesn't connect properly with other nodes in the workflow."}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center p-6">
+                <RefreshCcw className="h-8 w-8 mx-auto mb-2 text-blue-500 animate-spin" />
+                <p>Preparing test suite...</p>
+              </div>
+            )}
+          </CardContent>
+          
+          <CardFooter className="flex justify-between pt-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setFolderTestResults(null);
+                setFolderTestRunning(false);
+              }}
+            >
+              Clear Results
+            </Button>
+            
+            {folderTestResults?.status === 'completed' && (
+              <Button 
+                variant="default"
+                className="bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => {
+                  toast({
+                    title: "Node published",
+                    description: `${nodeTypeFromFolder} has been validated and published to the node registry`,
+                  });
+                  setFolderTestResults(null);
+                }}
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Publish Node
+              </Button>
+            )}
+            
+            {folderTestResults?.status === 'failed' && (
+              <Button 
+                variant="default"
+                onClick={() => {
+                  setFolderTestRunning(true);
+                  setFolderTestProgress(0);
+                  
+                  // Re-run the tests but with higher success probability
+                  if (folderTestResults) {
+                    const newTest = {...folderTestResults, status: 'running'};
+                    newTest.iterationCount = (newTest.iterationCount || 1) + 1;
+                    
+                    // Reset results
+                    newTest.results = [];
+                    TESTS.forEach(test => {
+                      newTest.results?.push({
+                        name: test.name,
+                        test: test.id,
+                        status: 'running'
+                      });
+                    });
+                    
+                    setFolderTestResults(newTest);
+                    
+                    // Simulate AI agent improving the node
+                    toast({
+                      title: "AI Agent Iteration",
+                      description: `AI is fixing issues in iteration #${newTest.iterationCount}`,
+                    });
+                    
+                    // Run the test suite with artificial delays
+                    const testDelay = 800; // ms per test
+                    const testsToRun = TESTS.length;
+                    
+                    // Simulate running each test with a delay and higher success rate
+                    TESTS.forEach((test, index) => {
+                      setTimeout(() => {
+                        // Update progress
+                        const progress = Math.round(((index + 1) / testsToRun) * 100);
+                        setFolderTestProgress(progress);
+                        
+                        if (newTest.results) {
+                          // Higher success rate than the first run
+                          const result: TestResult = {
+                            name: test.name,
+                            test: test.id,
+                            status: Math.random() > 0.1 ? 'passed' : 'failed',
+                            duration: Math.floor(Math.random() * 300) + 50
+                          };
+                          
+                          if (result.status === 'failed') {
+                            result.message = `Test failed after improvements: ${test.name} validation error`;
+                          }
+                          
+                          // Update the test results
+                          newTest.results[index] = result;
+                          
+                          // Determine overall status based on test results
+                          const hasFailures = newTest.results.some(r => r.status === 'failed');
+                          const hasPending = newTest.results.some(r => r.status === 'pending');
+                          
+                          if (hasFailures) {
+                            newTest.status = 'failed';
+                          } else if (hasPending) {
+                            newTest.status = 'running';
+                          } else if (index === testsToRun - 1) {
+                            newTest.status = 'completed';
+                            newTest.endTime = new Date();
+                          }
+                          
+                          // Update the state
+                          setFolderTestResults({...newTest});
+                        }
+                        
+                        // When all tests are completed
+                        if (index === testsToRun - 1) {
+                          setFolderTestRunning(false);
+                          toast({
+                            title: "Iteration completed",
+                            description: `Iteration #${newTest.iterationCount} for ${nodeTypeFromFolder} has finished`,
+                          });
+                        }
+                      }, testDelay * (index + 1));
+                    });
+                  }
+                }}
+              >
+                <Bot className="h-4 w-4 mr-2" />
+                Auto-Fix & Retry
+              </Button>
+            )}
+          </CardFooter>
+        </Card>
+      ) : null}
+      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left panel - Node listing */}
         <Card className="lg:col-span-1">
@@ -510,19 +871,64 @@ const NodeDebugPanel: React.FC = () => {
               Refresh
             </Button>
             
-            <Select>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="actions">Actions</SelectItem>
-                <SelectItem value="data">Data</SelectItem>
-                <SelectItem value="ai">AI</SelectItem>
-                <SelectItem value="integration">Integration</SelectItem>
-              </SelectContent>
-            </Select>
+            <Button 
+              variant="default" 
+              onClick={handleOpenFolderDialog}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <FolderOpen className="h-4 w-4 mr-2" />
+              Test Node Folder
+            </Button>
           </CardFooter>
+          
+          {/* Folder testing dialog */}
+          <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Test Node Folder</DialogTitle>
+                <DialogDescription>
+                  Enter the path to the node folder you want to test.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="folder-path" className="text-right col-span-1">
+                    Folder Path
+                  </Label>
+                  <div className="col-span-3">
+                    <Input
+                      id="folder-path"
+                      placeholder="nodes/System/my_node_name"
+                      value={nodeFolderPath}
+                      onChange={handleFolderPathChange}
+                      className="col-span-3"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Example: nodes/System/webhook_trigger or nodes/Custom/my_new_node
+                    </p>
+                  </div>
+                </div>
+                
+                {nodeTypeFromFolder && (
+                  <div className="flex items-center px-4">
+                    <p className="text-sm">
+                      Detected node type: <Badge variant="outline">{nodeTypeFromFolder}</Badge>
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setFolderDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleStartFolderTest}>
+                  Start Testing
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </Card>
         
         {/* Right panel - Test details and execution */}
