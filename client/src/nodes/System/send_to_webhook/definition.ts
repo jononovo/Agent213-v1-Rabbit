@@ -23,6 +23,14 @@ const defaultData = {
   isWebhookResponse: 'false' // Using string 'false' to match select dropdown values
 };
 
+// Define a showWhen function type to avoid TypeScript errors
+type ShowWhenFn = (settings: Record<string, any>) => boolean;
+
+// Function to check if we should show URL-related fields
+const showIfNotWebhookResponse: ShowWhenFn = (settings: Record<string, any>) => {
+  return settings.isWebhookResponse === 'false';
+};
+
 const definition = {
   type: 'send_to_webhook',
   name: 'Send to Webhook',
@@ -63,12 +71,12 @@ const definition = {
     },
     {
       key: 'url',
-      type: 'string',
+      type: 'text',
       label: 'Webhook URL',
       description: 'URL of the external webhook endpoint (not required if responding to original webhook)',
       placeholder: 'https://example.com/webhook',
       required: false,
-      showIf: { key: 'isWebhookResponse', value: 'false' }
+      showWhen: showIfNotWebhookResponse
     },
     {
       key: 'method',
@@ -81,16 +89,16 @@ const definition = {
         { label: 'PATCH', value: 'PATCH' }
       ],
       default: 'POST',
-      showIf: { key: 'isWebhookResponse', value: 'false' }
+      showWhen: showIfNotWebhookResponse
     },
     {
       key: 'headers',
-      type: 'json',
+      type: 'textarea',
       label: 'Custom Headers',
       description: 'Custom HTTP headers to include in the request (JSON format)',
       placeholder: '{"Content-Type": "application/json", "Authorization": "Bearer your-token"}',
       required: false,
-      showIf: { key: 'isWebhookResponse', value: 'false' }
+      showWhen: showIfNotWebhookResponse
     },
     {
       key: 'retryCount',
@@ -100,7 +108,7 @@ const definition = {
       min: 0,
       max: 10,
       default: 3,
-      showIf: { key: 'isWebhookResponse', value: 'false' }
+      showWhen: showIfNotWebhookResponse
     },
     {
       key: 'retryDelay',
@@ -110,7 +118,7 @@ const definition = {
       min: 100,
       max: 10000,
       default: 1000,
-      showIf: { key: 'isWebhookResponse', value: 'false' }
+      showWhen: showIfNotWebhookResponse
     },
     {
       key: 'timeout',
@@ -120,7 +128,7 @@ const definition = {
       min: 100,
       max: 30000,
       default: 5000,
-      showIf: { key: 'isWebhookResponse', value: 'false' }
+      showWhen: showIfNotWebhookResponse
     }
   ],
   // Data validation schema

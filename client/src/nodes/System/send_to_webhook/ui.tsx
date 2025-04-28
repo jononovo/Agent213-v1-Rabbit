@@ -16,7 +16,8 @@ import { Badge } from '@/components/ui/badge';
 export default function SendToWebhookNode({ id, data }: { id: string, data: any }) {
   // Extract node settings
   const settings = data?.settings || {};
-  const isWebhookResponse = settings.isWebhookResponse === true;
+  const isWebhookResponse = settings.isWebhookResponse === true || 
+                           settings.isWebhookResponse === 'true';
   const url = settings.url || 'No URL configured';
   const method = settings.method || 'POST';
   
