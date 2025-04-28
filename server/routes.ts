@@ -35,6 +35,9 @@ export async function runWorkflow(
   // Default options
   const { includeDetail = false, debug = false, executionMode = "step" } = options;
   
+  // Initialize webhook response tracking
+  let webhookResponseHandled = false;
+  
   // Get workflow
   const workflow = await storage.getWorkflow(workflowId);
   if (!workflow) {
@@ -312,10 +315,24 @@ export async function runWorkflow(
     
     const executionStatus = errors.length > 0 ? "error" : "completed";
     
+    // Check if any node in the workflow marked the webhook response as handled
+    // This allows the send_to_webhook node to signal it handled the response
+    const webhookResponseHandledNode = Object.values(nodeOutputs).find(
+      (output: any) => output?.webhookResponseHandled === true
+    );
+    
+    if (webhookResponseHandledNode) {
+      webhookResponseHandled = true;
+      if (debug) {
+        console.log("Webhook response was handled by a node in the workflow");
+      }
+    }
+    
     const result = {
       output: finalOutput,
       errors: errors.length > 0 ? errors : undefined,
       nodeOutputs: includeDetail ? nodeOutputs : undefined,
+      webhookResponseHandled, // Add this flag to the result
       executionDetails: {
         workflowId,
         executionTime,
@@ -374,6 +391,14 @@ export async function runWorkflow(
  * Helper function to handle incoming webhook requests
  * This is used by both custom path webhooks and dynamic path webhooks
  */
+/**
+ * Helper function to handle incoming webhook requests
+ * This is used by both custom path webhooks and dynamic path webhooks
+ * 
+ * Updated to support two webhook response modes:
+ * 1. Legacy automatic mode - Return workflow result as HTTP response
+ * 2. Node-based response mode - Store response context for send_to_webhook nodes to use
+ */
 async function handleWebhookRequest(
   req: Request,
   res: Response,
@@ -411,7 +436,15 @@ async function handleWebhookRequest(
       query: req.query,
       params: req.params,
       nodeId: nodeId,
-      requestId: requestId
+      requestId: requestId,
+      // Add response context that send_to_webhook nodes can use
+      responseContext: {
+        isWebhookResponse: true,
+        originalWebhookRequest: {
+          path: req.path,
+          method: req.method,
+        }
+      }
     };
 
     // Execute the workflow with the webhook data
@@ -430,13 +463,22 @@ async function handleWebhookRequest(
       nodesExecuted: result.executionDetails?.nodesExecuted
     });
 
-    // Return the workflow execution result
-    res.json({
-      success: true,
-      message: "Webhook received and workflow executed",
-      requestId: requestId,
-      result: result.output
-    });
+    // Check if any send_to_webhook node detected and processed the webhook response
+    // If not, fall back to the legacy automatic response mode for backward compatibility
+    if (result.webhookResponseHandled) {
+      console.log(`[${requestId}] Webhook response handled by a node in the workflow`);
+      // Response already sent by a node in the workflow
+      return;
+    } else {
+      console.log(`[${requestId}] No webhook response node found. Using legacy automatic response.`);
+      // Legacy automatic response - return the workflow output as the HTTP response
+      res.json({
+        success: true,
+        message: "Webhook received and workflow executed",
+        requestId: requestId,
+        result: result.output
+      });
+    }
   } catch (error) {
     console.error(`[${requestId}] Webhook execution error:`, error);
     res.status(500).json({ 
