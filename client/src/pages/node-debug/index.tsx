@@ -139,14 +139,14 @@ const NodeDebugPanel: React.FC = () => {
       node.category.toLowerCase().includes(searchQuery.toLowerCase());
     
     // Apply status filter if one is selected
-    if (statusFilter) {
+    if (statusFilter && statusFilter !== 'all') {
       if (statusFilter === 'pending') {
         return matchesSearch && (node.status === 'pending' || !node.status);
       }
       return matchesSearch && node.status === statusFilter;
     }
     
-    // No filter, return all matching nodes
+    // No filter or "all" selected, return all matching nodes
     return matchesSearch;
   });
 
@@ -514,7 +514,7 @@ const NodeDebugPanel: React.FC = () => {
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Statuses</SelectItem>
+              <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="validated">Validated</SelectItem>
               <SelectItem value="partial">Partial</SelectItem>
