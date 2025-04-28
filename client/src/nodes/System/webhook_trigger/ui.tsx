@@ -2,34 +2,52 @@
  * Webhook Trigger Node UI Component
  * 
  * This component renders the webhook trigger node in the workflow editor.
+ * ENHANCED VERSION: Now using the Integration Engine for more autonomous operation.
  */
 
 import React, { useState, useEffect } from 'react';
-import { Globe, Link } from 'lucide-react';
+import { Globe, Link, CheckCircle } from 'lucide-react';
 import { BaseNode } from '@/nodes/Base';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { integrationClient } from '../../../utils/integrationClient';
 
 export default function WebhookTriggerNode({ id, data }: { id: string, data: any }) {
   const [webhookUrl, setWebhookUrl] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  const [registered, setRegistered] = useState(false);
   
-  // Generate the webhook URL when the component mounts or settings change
+  // Register and generate the webhook URL when the component mounts or settings change
   useEffect(() => {
     // Use the custom path if provided, otherwise generate a URL with workflowId and nodeId
     const path = data?.settings?.path;
     const workflowId = data?.workflowId || 'unknown';
+    const methods = data?.settings?.methods || ['POST'];
     
-    const endpoint = path 
-      ? `webhooks/${path}` 
-      : `webhooks/workflow/${workflowId}/node/${id}`;
+    const endpointPath = path 
+      ? path 
+      : `workflow/${workflowId}/node/${id}`;
     
-    const protocol = window.location.protocol;
-    const host = window.location.host;
-    const baseUrl = `${protocol}//${host}`;
+    // Update the webhook URL
+    const generatedUrl = integrationClient.generateWebhookUrl(endpointPath);
+    setWebhookUrl(generatedUrl);
     
-    setWebhookUrl(`${baseUrl}/api/${endpoint}`);
-  }, [id, data?.settings?.path, data?.workflowId]);
+    // Register the webhook with the integration engine if it's a real workflow
+    if (workflowId && workflowId !== 'unknown') {
+      // Register with integration engine
+      integrationClient.registerEndpoint(endpointPath, {
+        methods,
+        workflowId: typeof workflowId === 'string' ? parseInt(workflowId, 10) : workflowId,
+        nodeId: id,
+        description: `Webhook trigger for workflow ${workflowId}, node ${id}`
+      }).then(() => {
+        setRegistered(true);
+      }).catch(error => {
+        console.error('Error registering webhook during UI mount:', error);
+        setRegistered(false);
+      });
+    }
+  }, [id, data?.settings?.path, data?.workflowId, data?.settings?.methods]);
   
   // Function to copy the webhook URL to clipboard
   const copyToClipboard = () => {
@@ -50,7 +68,15 @@ export default function WebhookTriggerNode({ id, data }: { id: string, data: any
       {/* Badge moved to header in BaseNode */}
       
       <div className="bg-muted/80 p-2 rounded-md flex flex-col gap-1">
-        <div className="text-xs text-muted-foreground mb-1">Webhook URL:</div>
+        <div className="flex justify-between items-center mb-1">
+          <div className="text-xs text-muted-foreground">Webhook URL:</div>
+          {registered && (
+            <div className="flex items-center gap-1 text-green-500 text-xs">
+              <CheckCircle className="h-3 w-3" />
+              <span>Registered</span>
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <div className="text-xs font-mono bg-background p-1.5 rounded border flex-1 truncate">
             {webhookUrl}
@@ -70,6 +96,10 @@ export default function WebhookTriggerNode({ id, data }: { id: string, data: any
         <div className="text-xs text-muted-foreground mt-1">
           Allowed methods: <span className="font-semibold">{allowedMethods}</span>
         </div>
+      </div>
+      
+      <div className="text-xs text-muted-foreground">
+        <p>This webhook is immediately available through the Integration Engine.</p>
       </div>
     </div>
   );

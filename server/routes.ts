@@ -842,6 +842,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ===== Integration Engine Routes =====
+
+  // Integration endpoint registration
+  app.post('/api/integration/register', async (req: Request, res: Response) => {
+    try {
+      const { path, config } = req.body;
+      
+      if (!path) {
+        return res.status(400).json({
+          success: false,
+          message: 'Path is required'
+        });
+      }
+      
+      // Validate the config
+      if (!config || !config.methods || !Array.isArray(config.methods)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Valid config with methods array is required'
+        });
+      }
+      
+      // Create a server-side handler based on the config
+      const { integrationEngine } = await import('./services/integrationEngine');
+      
+      // Dynamically create the handler function
+      const serverConfig = {
+        methods: config.methods,
+        workflowId: config.workflowId,
+        nodeId: config.nodeId,
+        description: config.description,
+        // The actual handler logic is created by the integration engine
+        handler: integrationEngine.createLazyHandler ? 
+          integrationEngine.createLazyHandler(
+            config.workflowId ? 'webhook' : 'custom', 
+            config.workflowId, 
+            config.nodeId
+          ) : 
+          async (req: Request, res: Response) => {
+            // Fallback handler if createLazyHandler isn't available
+            res.json({
+              success: true,
+              message: 'Integration endpoint called',
+              registered: true,
+              config: {
+                workflowId: config.workflowId,
+                nodeId: config.nodeId
+              }
+            });
+          }
+      };
+      
+      // Register the endpoint
+      const registeredPath = await integrationEngine.registerEndpoint(path, serverConfig);
+      
+      // Return the registered path
+      res.json({
+        success: true,
+        path: registeredPath
+      });
+    } catch (error) {
+      console.error('Error registering integration endpoint:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error registering integration endpoint',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Get all integration endpoints
+  app.get('/api/integration/endpoints', async (req: Request, res: Response) => {
+    try {
+      const { integrationEngine } = await import('./services/integrationEngine');
+      const endpoints = await integrationEngine.getEndpoints();
+      
+      res.json({
+        success: true,
+        endpoints
+      });
+    } catch (error) {
+      console.error('Error getting integration endpoints:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error getting integration endpoints',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Integration catch-all route
+  app.all('/api/integration/*', async (req: Request, res: Response) => {
+    try {
+      // Extract the path after /api/integration/
+      const path = req.path.substring('/api/integration/'.length);
+      
+      // Let the integration engine handle it
+      const { integrationEngine } = await import('./services/integrationEngine');
+      const handled = await integrationEngine.handleRequest(path, req, res);
+      
+      // If not handled, return 404
+      if (!handled && !res.headersSent) {
+        res.status(404).json({
+          success: false,
+          message: 'Integration endpoint not found'
+        });
+      }
+    } catch (error) {
+      console.error('Error in integration route handler:', error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          message: 'Error processing integration request',
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+    }
+  });
+
   // ===== Agent Tools and Coordination =====
 
   // Register all tools during server startup

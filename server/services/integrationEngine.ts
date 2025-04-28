@@ -135,8 +135,9 @@ export class IntegrationEngine {
   
   /**
    * Create a lazy-loading handler that will be initialized when needed
+   * This is public so it can be used by routes.ts
    */
-  private createLazyHandler(
+  createLazyHandler(
     type: string, 
     workflowId?: number, 
     nodeId?: string
@@ -213,7 +214,10 @@ export class IntegrationEngine {
       // Convert endpoints to storable format (exclude handlers)
       const registryData: Record<string, StorableEndpointConfig> = {};
       
-      for (const [path, config] of this.endpoints.entries()) {
+      // Using Object.keys with direct Map access to avoid TypeScript downlevelIteration issues
+      const keys = Array.from(this.endpoints.keys());
+      for (const path of keys) {
+        const config = this.endpoints.get(path)!;
         registryData[path] = {
           methods: config.methods,
           workflowId: config.workflowId,
@@ -279,15 +283,24 @@ export class IntegrationEngine {
   async getEndpoints(): Promise<{ path: string, config: Omit<EndpointConfig, 'handler'> }[]> {
     await this.ensureInitialized();
     
-    return Array.from(this.endpoints.entries()).map(([path, config]) => ({
-      path,
-      config: {
-        methods: config.methods,
-        workflowId: config.workflowId,
-        nodeId: config.nodeId,
-        description: config.description
-      }
-    }));
+    const result: { path: string, config: Omit<EndpointConfig, 'handler'> }[] = [];
+    
+    // Using Array.from(keys) to avoid TypeScript downlevelIteration issues
+    const keys = Array.from(this.endpoints.keys());
+    for (const path of keys) {
+      const config = this.endpoints.get(path)!;
+      result.push({
+        path,
+        config: {
+          methods: config.methods,
+          workflowId: config.workflowId,
+          nodeId: config.nodeId,
+          description: config.description
+        }
+      });
+    }
+    
+    return result;
   }
   
   /**
@@ -345,8 +358,11 @@ export class IntegrationEngine {
     }
     
     // Try providers (placeholder for MCP integration)
-    for (const [type, provider] of this.providers.entries()) {
+    // Using Array.from(keys) to avoid TypeScript downlevelIteration issues
+    const providerTypes = Array.from(this.providers.keys());
+    for (const type of providerTypes) {
       try {
+        const provider = this.providers.get(type)!;
         const handled = await provider.handleRequest(normalizedPath, req, res);
         if (handled) {
           return true;
