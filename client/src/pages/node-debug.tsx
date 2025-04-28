@@ -39,6 +39,7 @@ interface NodeType {
   category: string;
   status?: 'validated' | 'partial' | 'failed' | 'pending';
   testResults?: TestResult[];
+  customFolder?: string; // Path to custom folder for folder-based nodes
 }
 
 interface TestResult {
@@ -987,8 +988,39 @@ const NodeDebugPanel: React.FC = () => {
                 <Button variant="outline" onClick={() => setFolderDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleStartFolderTest}>
-                  Start Testing
+                <Button onClick={() => {
+                  // Load the node into the test suite instead of directly testing
+                  if (!nodeFolderPath) {
+                    toast({
+                      title: "Path required",
+                      description: "Please enter a valid node folder path",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+                  
+                  // Create a new node based on folder path
+                  const newNode: NodeType = {
+                    type: nodeTypeFromFolder,
+                    name: nodeTypeFromFolder.split('_').map(
+                      s => s.charAt(0).toUpperCase() + s.slice(1)
+                    ).join(' '),
+                    category: 'custom',
+                    status: 'pending',
+                    // Add a customFolder property to track this is a custom folder node
+                    customFolder: nodeFolderPath
+                  };
+                  
+                  // Select the new node for testing
+                  setSelectedNode(newNode);
+                  setFolderDialogOpen(false);
+                  
+                  toast({
+                    title: "Node loaded",
+                    description: `${nodeTypeFromFolder} loaded into testing suite. You can now run tests on it.`,
+                  });
+                }}>
+                  Load Node into Testing Suite
                 </Button>
               </DialogFooter>
             </DialogContent>
