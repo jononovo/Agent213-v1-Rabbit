@@ -494,8 +494,13 @@ export function StandaloneFunctionNode({ data, id, selected, isConnectable }: No
               {/* Code Preview */}
               <div className="mt-2 relative">
                 <div 
-                  className="text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 p-2 rounded border border-slate-300 dark:border-slate-700 overflow-y-auto max-h-[150px] shadow-inner"
+                  className="text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 p-2 rounded border border-slate-300 dark:border-slate-700 overflow-y-scroll max-h-[150px] shadow-inner custom-scrollbar"
                   onWheel={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ 
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: 'rgba(155,155,155,0.5) transparent'
+                  }}
                 >
                   {settingsData.selectedTemplate && settingsData.selectedTemplate !== 'basic' && (
                     <div className="mb-1 text-xs text-blue-500 dark:text-blue-400 font-semibold">
@@ -650,8 +655,13 @@ function FunctionNode(props: NodeProps<FunctionNodeData>) {
       {/* Code Preview */}
       <div className="mt-2 relative">
         <div 
-          className="text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 p-2 rounded border border-slate-300 dark:border-slate-700 overflow-y-auto max-h-[150px] shadow-inner"
+          className="text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 p-2 rounded border border-slate-300 dark:border-slate-700 overflow-y-scroll max-h-[150px] shadow-inner custom-scrollbar"
           onWheel={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          style={{ 
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'rgba(155,155,155,0.5) transparent'
+          }}
         >
           {settingsData.selectedTemplate && settingsData.selectedTemplate !== 'basic' && (
             <div className="mb-1 text-xs text-blue-500 dark:text-blue-400 font-semibold">
