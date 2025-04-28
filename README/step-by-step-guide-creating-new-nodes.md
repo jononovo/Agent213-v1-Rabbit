@@ -22,8 +22,24 @@ The node system is built around a folder-based architecture where each node type
 1. **Definition File**: Declares metadata, ports, settings, and validation rules
 2. **UI Component**: Renders the node in the workflow editor
 3. **Executor**: Handles the runtime logic when the node executes
+4. **Tests File (Optional)**: Contains custom tests for validating node functionality
 
-The system uses a central registry (`nodeRegistry.ts`) that discovers and loads node definitions dynamically, making them available throughout the application. This registry is the single source of truth for node information, ensuring consistency across the application.
+The system uses a central registry (`nodeRegistry.ts`) that discovers and loads node definitions dynamically, making them available throughout the application. This registry is the **single source of truth** for node information, ensuring consistency across the application.
+
+### Node Registry as Single Source of Truth
+
+It's critical to understand that the node registry (`client/src/lib/nodeRegistry.ts`) serves as the authoritative source for all node-related information. This means:
+
+1. **No Hardcoded Node Types**: Never maintain separate lists of node types or hardcode node identifiers
+2. **Always Use Registry APIs**: Access node information only through registry methods:
+   - `getAllNodeTypes()` - Get complete list of available nodes
+   - `getNodeUIPath()` - Get path to node UI component
+   - `getNodeExecutorPath()` - Get path to node executor
+   - `hasNodeType()` - Check if node type exists
+   - `getNodeInfo()` - Get metadata for a specific node type
+3. **Auto-Discovery**: The registry automatically finds nodes in the correct folders - no manual registration needed
+4. **Dynamic Loading**: Components are loaded on-demand for optimal performance
+5. **Programmatic Access**: For AI-driven operations, always query the registry for current state rather than caching node information
 
 ## File Structure
 
@@ -33,12 +49,15 @@ Each node should follow this standardized file structure:
 client/src/nodes/[Category]/[node_type]/
 ├── definition.ts  // Node definition, metadata, settings
 ├── ui.tsx         // Visual representation in the editor
-└── executor.ts    // Runtime execution logic
+├── executor.ts    // Runtime execution logic
+└── tests.ts       // (Optional) Custom tests for this node
 ```
 
 Where:
 - `[Category]` is either `System` (core nodes) or `Custom` (user-created)
 - `[node_type]` is a unique identifier for your node (e.g., `text_input`, `json_parser`)
+
+The `tests.ts` file is optional but highly recommended, especially for complex nodes. It contains custom tests that validate the specific functionality of your node beyond the standard tests that run for all nodes.
 
 ## Node Components
 
@@ -454,29 +473,56 @@ When implementing a node, consider these edge cases:
 
 ## Testing Your Node
 
-The system now includes a comprehensive testing framework for nodes. There are two primary ways to test your node:
+The system includes a comprehensive testing framework for nodes that's designed for both manual and programmatic testing. This is particularly useful for AI agents that need to verify node functionality.
 
 ### Using the Node Debug Panel
 
 The Node Debug Panel provides a dedicated interface for testing and validating nodes:
 
-1. Navigate to the Node Debug Panel in the application
-2. Select your node from the list of available nodes
-3. Run the standard tests to verify basic functionality 
-4. View detailed test results for each test case
+1. **For Manual Testing**:
+   - Navigate to the Node Debug Panel in the application
+   - Select your node from the dropdown list
+   - Click "Run Tests" to execute all standard and custom tests
+   - View test results in the visual dashboard
 
-The standard tests check:
-- Definition validation
-- Input/output interface
-- Execution testing
-- Error handling
-- UI rendering
-- Performance testing
-- Integration testing
+2. **For Programmatic Testing** (AI Agents):
+   - Use the `nodeTestLoader.ts` utility to find available tests:
+     ```typescript
+     import { loadNodeTests, getNodeTypesWithTests } from '@/lib/nodeTestLoader';
+     
+     // Get all node types that have tests
+     const nodeTypesWithTests = await getNodeTypesWithTests();
+     
+     // Load tests for a specific node type
+     const tests = await loadNodeTests('your_node_type');
+     ```
+   - Execute tests using the testRunner utility:
+     ```typescript
+     import { runStandardTests, runCustomTests, calculateTestStatus } from '@/pages/node-debug/utils/testRunner';
+     
+     // Run tests and get results
+     const standardResults = await runStandardTests('your_node_type');
+     const customResults = await runCustomTests('your_node_type');
+     
+     // Determine overall test status
+     const status = calculateTestStatus([...standardResults, ...customResults]);
+     ```
+
+### Standard Tests
+
+Every node undergoes these automated tests:
+
+1. **Definition Validation**: Verifies node definition has all required properties
+2. **Type Validation**: Checks types for inputs, outputs, and settings
+3. **Interface Tests**: Validates that UI components render correctly
+4. **Execution Tests**: Runs the node with test inputs to verify functionality
+5. **Error Handling**: Tests failure modes and error reporting
+6. **Performance**: Benchmarks execution speed and resource usage
+7. **Integration**: Verifies compatibility with the workflow system
 
 ### Creating Custom Tests
 
-For more thorough validation, you can create custom tests specific to your node:
+For thorough validation, you can create custom tests specific to your node:
 
 1. Create a `tests.ts` file in your node's directory:
 
@@ -487,6 +533,14 @@ client/src/nodes/[Category]/[node_type]/
 ├── executor.ts
 └── tests.ts    // Custom tests for your node
 ```
+
+When creating custom tests for AI-driven node development, follow these guidelines:
+
+1. **Comprehensive Coverage**: Test all key functionalities and edge cases
+2. **Isolated Tests**: Each test should be independent and not rely on other tests
+3. **Clear Naming**: Use descriptive names that explain exactly what's being tested
+4. **Detailed Messages**: Include informative success/failure messages
+5. **Categorization**: Group related tests using the `category` property
 
 2. Implement test cases in the `tests.ts` file following this structure:
 
@@ -709,5 +763,63 @@ For nodes with dynamic input/output ports:
 3. In the executor, process each input dynamically
 
 ---
+
+## Guidance for AI Agents
+
+For AI agents that are programmatically creating, testing, and publishing nodes, follow these additional principles:
+
+### 1. Node Development Process
+
+1. **Planning Phase**:
+   - Clearly identify the node's purpose and intended functionality
+   - Map required inputs, outputs, and settings
+   - Research any external APIs or services needed
+   - Define expected error states and handling strategies
+
+2. **Implementation Phase**:
+   - Create all required files following the structure in this guide
+   - Adhere strictly to type definitions and interfaces
+   - Implement proper error handling with informative messages
+   - Add comprehensive comments to explain complex logic
+
+3. **Testing Phase**:
+   - Create custom tests covering all core functionality
+   - Ensure tests verify both success and failure paths
+   - Test with different input permutations
+   - Verify edge cases and error conditions
+
+4. **Publishing Phase**:
+   - Verify final node against the node registry to confirm discovery
+   - Update documentation with node usage examples
+   - Ensure the node appears correctly in the node panel
+   - Confirm integration with the workflow system
+
+### 2. Critical Considerations
+
+1. **Registry-First Approach**: Always use the node registry as the single source of truth rather than maintaining separate lists of nodes or hardcoding references.
+
+2. **Always Use Standard Patterns**: Follow the established patterns for:
+   - Node folder structure
+   - File naming conventions
+   - Component exports
+   - Type definitions
+   - Test implementation
+
+3. **Avoid Side Effects**: Nodes should be self-contained and not create unexpected side effects in the system:
+   - Don't modify global state outside the node's scope
+   - Clean up any resources your node allocates
+   - Handle errors gracefully without crashing the application
+
+4. **Performance Awareness**: Consider performance implications:
+   - Include performance tests in your custom tests
+   - Handle large datasets appropriately
+   - Implement proper timeout handling for external services
+   - Use asynchronous code patterns correctly
+
+5. **Documentation Quality**: Generate clear, concise documentation:
+   - Provide examples of node usage
+   - Document all settings and their effects
+   - Include sample inputs and expected outputs
+   - Note any limitations or constraints
 
 By following this guide, you can create robust, maintainable nodes that integrate seamlessly with the workflow system. Remember that the key to a successful node implementation is thorough testing and comprehensive error handling.
