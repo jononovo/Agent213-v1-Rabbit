@@ -31,6 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import MainContent from '@/components/layout/MainContent';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import NodeListTable from '@/components/node-list-table';
 
 // Helper types
 interface NodeType {
@@ -770,37 +771,43 @@ const NodeDebugPanel: React.FC = () => {
               
               <ScrollArea className="h-[60vh]">
                 <TabsContent value="available" className="m-0">
-                  <div className="divide-y">
-                    {filteredNodes.map((node) => (
-                      <div 
-                        key={node.type} 
-                        className={`p-4 hover:bg-slate-50 cursor-pointer transition-colors ${selectedNode?.type === node.type ? 'bg-slate-100' : ''}`}
-                        onClick={() => handleViewNode(node)}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium">{node.name}</h3>
-                            <p className="text-sm text-slate-500 mt-1">{node.type}</p>
-                          </div>
-                          <Badge 
-                            className={`${getStatusColor(node.status)} border`}
-                          >
-                            {node.status || 'pending'}
-                          </Badge>
-                        </div>
-                        
-                        <div className="mt-2">
-                          <Badge variant="outline" className="mr-1 text-xs">{node.category}</Badge>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="overflow-hidden">
+                    {/* Table header */}
+                    <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-slate-100 text-xs font-medium text-slate-500 border-b">
+                      <div className="col-span-4">NAME</div>
+                      <div className="col-span-3">TYPE</div>
+                      <div className="col-span-3">CATEGORY</div>
+                      <div className="col-span-2">STATUS</div>
+                    </div>
                     
-                    {filteredNodes.length === 0 && (
-                      <div className="p-8 text-center text-slate-500">
-                        <AlertTriangle className="h-8 w-8 mx-auto text-slate-400 mb-2" />
-                        <p>No nodes found matching your criteria</p>
-                      </div>
-                    )}
+                    {/* Table rows */}
+                    <div className="divide-y">
+                      {filteredNodes.map((node) => (
+                        <div 
+                          key={node.type} 
+                          className={`grid grid-cols-12 gap-2 items-center px-4 py-3 hover:bg-slate-50 cursor-pointer transition-colors ${selectedNode?.type === node.type ? 'bg-slate-100' : ''}`}
+                          onClick={() => handleViewNode(node)}
+                        >
+                          <div className="col-span-4 font-medium truncate">{node.name}</div>
+                          <div className="col-span-3 text-sm text-slate-500 truncate">{node.type}</div>
+                          <div className="col-span-3">
+                            <Badge variant="outline" className="text-xs">{node.category}</Badge>
+                          </div>
+                          <div className="col-span-2">
+                            <Badge className={`${getStatusColor(node.status)} border text-xs`}>
+                              {node.status || 'pending'}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {filteredNodes.length === 0 && (
+                        <div className="p-8 text-center text-slate-500">
+                          <AlertTriangle className="h-8 w-8 mx-auto text-slate-400 mb-2" />
+                          <p>No nodes found matching your criteria</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </TabsContent>
                 
@@ -977,9 +984,9 @@ const NodeDebugPanel: React.FC = () => {
                 
                 {nodeTypeFromFolder && (
                   <div className="flex items-center px-4">
-                    <p className="text-sm">
+                    <div className="text-sm">
                       Detected node type: <Badge variant="outline">{nodeTypeFromFolder}</Badge>
-                    </p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1060,7 +1067,7 @@ const NodeDebugPanel: React.FC = () => {
                   <div className="mt-4">
                     <Label className="text-xs text-slate-500 mb-1 block">Test Progress</Label>
                     <Progress value={testProgress} />
-                    <p className="text-xs text-slate-500 mt-1">Running test suite: {testProgress}% complete</p>
+                    <div className="text-xs text-slate-500 mt-1">Running test suite: {testProgress}% complete</div>
                   </div>
                 )}
               </CardHeader>
