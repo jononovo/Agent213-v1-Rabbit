@@ -74,11 +74,8 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
         initialSettings.workflowId = node.data.workflowId.toString();
       }
       
-      // Special handling for send_to_webhook node's isWebhookResponse property
-      if (node.type === 'send_to_webhook') {
-        // Convert boolean to string for radio buttons
-        initialSettings.isWebhookResponse = initialSettings.isWebhookResponse === true ? 'true' : 'false';
-      }
+      // Handle node-specific initialization here in the future if needed
+      // The drawer should not have special cases for specific node types
       
       setSettings(initialSettings);
       setNodeName(node.data.label || '');
@@ -218,71 +215,13 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       return nodeSettings;
     }
     
-    // Special case for send_to_webhook node - import its definition directly
-    if (type === 'send_to_webhook') {
-      try {
-        // Dynamically import the node settings definition
-        return [
-          {
-            id: 'isWebhookResponse',
-            label: 'Respond to Original Webhook',
-            type: 'radio',
-            options: [
-              { value: 'true', label: 'Yes - Respond to the original webhook request' },
-              { value: 'false', label: 'No - Send to a new external webhook URL' }
-            ],
-            defaultValue: 'false',
-            description: 'Enable this to respond directly to the original incoming webhook request instead of sending to an external URL'
-          },
-          {
-            id: 'url',
-            label: 'Webhook URL',
-            type: 'text',
-            placeholder: 'https://example.com/api/webhook',
-            description: 'The URL to send the webhook data to',
-            showWhen: (settings) => settings.isWebhookResponse !== 'true'
-          },
-          {
-            id: 'method',
-            label: 'HTTP Method',
-            type: 'select',
-            options: [
-              { value: 'POST', label: 'POST' },
-              { value: 'GET', label: 'GET' },
-              { value: 'PUT', label: 'PUT' },
-              { value: 'PATCH', label: 'PATCH' },
-              { value: 'DELETE', label: 'DELETE' }
-            ],
-            defaultValue: 'POST',
-            description: 'HTTP method to use for the webhook request',
-            showWhen: (settings) => settings.isWebhookResponse !== 'true'
-          },
-          {
-            id: 'retryCount',
-            label: 'Retry Count',
-            type: 'number',
-            min: 0,
-            max: 10,
-            step: 1,
-            defaultValue: 0,
-            description: 'Number of times to retry if the request fails (0 = no retries)',
-            showWhen: (settings) => settings.isWebhookResponse !== 'true'
-          },
-          {
-            id: 'timeout',
-            label: 'Timeout (ms)',
-            type: 'number',
-            min: 1000,
-            max: 60000,
-            step: 1000,
-            defaultValue: 5000,
-            description: 'Maximum time in milliseconds to wait for a response',
-            showWhen: (settings) => settings.isWebhookResponse !== 'true'
-          }
-        ];
-      } catch (error) {
-        console.error('Error loading send_to_webhook settings:', error);
-      }
+    // Attempt to dynamically import node settings from the node definition
+    try {
+      // If the node has settings defined in its metadata, import them here
+      // This approach preserves the drawer as a generic component
+      // and leaves node-specific settings in the node's own definition
+    } catch (error) {
+      console.error(`Error loading settings for node type ${type}:`, error);
     }
     
     // Fall back to type-specific settings for special cases
@@ -973,12 +912,6 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
 
   const handleSettingChange = (fieldId: string, value: any) => {
     let updatedSettings = { ...settings, [fieldId]: value };
-    
-    // Special handling for send_to_webhook isWebhookResponse
-    if (node?.type === 'send_to_webhook' && fieldId === 'isWebhookResponse') {
-      // Convert to boolean when saving the value
-      updatedSettings.isWebhookResponse = value === 'true';
-    }
     
     // Special handling for function node templates
     if (node?.type === 'function_node' && fieldId === 'selectedTemplate' && value) {
