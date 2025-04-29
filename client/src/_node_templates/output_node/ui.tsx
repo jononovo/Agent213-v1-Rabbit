@@ -8,11 +8,19 @@
 import React from 'react';
 import { ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import BaseNode from '@/nodes/Base';
+import { BaseNode } from '@/nodes/Base';
 import { NodeProps } from 'reactflow';
-import { BaseNodeData } from '@/nodes/Base/ui';
 
-export default function MyOutputNode({ id, data, selected, isConnectable }: NodeProps) {
+// Node interface for typing
+interface OutputNodeData {
+  label?: string;
+  description?: string;
+  settingsData?: any;
+  hideDefaultHandles?: boolean;
+  [key: string]: any;
+}
+
+export default function MyOutputNode({ id, data, selected, isConnectable }: NodeProps<OutputNodeData>) {
   // Extract essential settings with defaults
   const settingsData = data?.settingsData || {};
   const destinationUrl = settingsData.destinationUrl || 'No destination configured';
@@ -59,7 +67,7 @@ export default function MyOutputNode({ id, data, selected, isConnectable }: Node
   );
   
   // Prepare the node data with the properties expected by BaseNode
-  const baseNodeData: BaseNodeData = {
+  const baseNodeData = {
     ...data,
     icon: ExternalLink,
     label: data.label || 'Output',

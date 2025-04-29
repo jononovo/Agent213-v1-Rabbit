@@ -8,11 +8,19 @@
 import React from 'react';
 import { Code } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import BaseNode from '@/nodes/Base';
+import { BaseNode } from '@/nodes/Base';
 import { NodeProps } from 'reactflow';
-import { BaseNodeData } from '@/nodes/Base/ui';
 
-export default function ProcessingNodeComponent({ id, data, selected, isConnectable }: NodeProps) {
+// Node interface for typing
+interface ProcessingNodeData {
+  label?: string;
+  description?: string;
+  settingsData?: any;
+  hideDefaultHandles?: boolean;
+  [key: string]: any;
+}
+
+export default function ProcessingNodeComponent({ id, data, selected, isConnectable }: NodeProps<ProcessingNodeData>) {
   // Extract essential settings with defaults
   const settingsData = data?.settingsData || {};
   const processingLogic = settingsData.processingLogic || 'function process(data, options) { return data; }';
@@ -35,7 +43,7 @@ export default function ProcessingNodeComponent({ id, data, selected, isConnecta
   );
   
   // Prepare the node data with the properties expected by BaseNode
-  const baseNodeData: BaseNodeData = {
+  const baseNodeData = {
     ...data,
     icon: Code,
     label: data.label || 'Process',
