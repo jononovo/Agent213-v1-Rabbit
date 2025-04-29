@@ -5,7 +5,7 @@
  * These tests help validate the node's integration functionality.
  */
 
-import { NodeTest } from '@/nodes/types/nodeTestsStandard';
+import { NodeTest } from '@/nodes/nodeTestsStandard';
 import { execute, defaultData, BaseIntegrationNodeData } from './executor';
 
 // Mock environment variables for testing
