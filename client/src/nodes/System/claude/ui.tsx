@@ -1,60 +1,58 @@
 /**
  * Claude API Node UI Component
  * 
- * This file contains the React component used to render the Claude API node
- * in the workflow editor.
+ * This is the BaseNode-based implementation of the Claude API node.
  */
 
-import React, { useState } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
-import { 
-  Computer, Key, Sliders, ArrowDownToLine, 
-  ArrowUpFromLine, Sparkles, Settings, Loader, Info 
-} from 'lucide-react';
-
-// Import the common node components
-import { NodeContainer } from '@/components/nodes/common/NodeContainer';
-import { NodeHeader } from '@/components/nodes/common/NodeHeader';
-import { NodeContent } from '@/components/nodes/common/NodeContent';
+import React, { useEffect } from 'react';
+import { NodeProps } from 'reactflow';
+import { Sparkles, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { BaseNode } from '@/nodes/Base';
 
-// Node interface
+// Check if ANTHROPIC_API_KEY exists in environment variables
+const hasClaudeApiKey = !!import.meta.env.VITE_ANTHROPIC_API_KEY;
+
+// Node data interface
 interface ClaudeNodeData {
   label?: string;
-  icon?: string;
-  inputText?: string;
+  description?: string;
+  icon?: string | React.ReactNode;
+  category?: string;
+  apiKey?: string;
   model?: string;
   temperature?: number;
   maxTokens?: number;
   systemPrompt?: string;
-  apiKey?: string;
-  _isProcessing?: boolean;
-  _hasError?: boolean;
-  _errorMessage?: string;
-  _generatedText?: string;
-  onSettingsClick?: () => void;
-  onChange?: (data: any) => void;
+  useSystemPrompt?: boolean;
+  inputText?: string;
+  settings?: any;
+  isProcessing?: boolean;
+  isComplete?: boolean;
+  hasError?: boolean;
+  errorMessage?: string;
   [key: string]: any;
 }
 
-// Default data for the node
+// Default data for the node (will be exported)
 export const defaultData: ClaudeNodeData = {
   label: 'Claude API',
-  model: 'claude-3-sonnet-20240229',
+  description: 'Generates text using the Claude AI model',
+  icon: 'sparkles',
+  category: 'ai',
+  model: 'claude-3-7-sonnet-20250219', // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
   temperature: 0.7,
-  maxTokens: 2000,
-  systemPrompt: '',
-  apiKey: '',
-  _isProcessing: false,
-  _hasError: false
+  maxTokens: 1000,
+  useSystemPrompt: false,
+  systemPrompt: ''
 };
 
 // Validator for the node data
 export const validator = (data: ClaudeNodeData) => {
-  const errors = [];
+  const errors: string[] = [];
   
-  if (!data.apiKey) {
+  // Skip API key validation if we have environment variable
+  if (!data.apiKey && !hasClaudeApiKey) {
     errors.push('API Key is not configured');
   }
   
@@ -64,263 +62,202 @@ export const validator = (data: ClaudeNodeData) => {
   };
 };
 
-// Claude API Node Component
-export const component = ({ data, isConnectable }: any) => {
-  const [isGenerating, setIsGenerating] = useState(false);
+// UI component for Claude API node
+export function component({ id, data, selected, isConnectable }: NodeProps<ClaudeNodeData>) {
+  // Merge incoming data with default data
+  const nodeData = { ...defaultData, ...data };
   
-  // Extract settings or use defaults
-  const apiKey = data.apiKey || '';
-  const model = data.model || 'claude-3-sonnet-20240229';
-  const temperature = data.temperature || 0.7;
-  const maxTokens = data.maxTokens || 2000;
-  
-  // Format model name for display
-  const modelDisplay = model.includes('claude-3-sonnet') 
-    ? 'CLAUDE SONNET'
-    : model.includes('claude-3-opus')
-    ? 'CLAUDE OPUS'
-    : model.includes('claude-3-haiku')
-    ? 'CLAUDE HAIKU'
-    : model.toUpperCase();
-  
-  // Check if node is processing
-  const isProcessing = data._isProcessing || isGenerating;
-  
-  // Handle text generation
-  const handleGenerate = async () => {
-    if (!data.inputText && !data._generatedText) {
-      // Skip if no input provided and not already generated
-      return;
-    }
-    
-    if (!apiKey) {
-      // Update node data with error info
-      if (data.onChange) {
-        data.onChange({
-          ...data,
-          _hasError: true,
-          _errorMessage: 'Claude API key is not configured'
-        });
-      }
-      return;
-    }
-    
-    setIsGenerating(true);
-    
-    try {
-      // Update node data to show processing state
-      if (data.onChange) {
-        data.onChange({
-          ...data,
-          _isProcessing: true,
-          _hasError: false,
-          _errorMessage: ''
-        });
-      }
+  // Register with global settings drawer
+  useEffect(() => {
+    if (typeof data?.onChange === 'function') {
+      // Create settings schema
+      const settings = {
+        title: 'Claude API Settings',
+        fields: [
+          {
+            key: 'model',
+            label: 'Model',
+            type: 'select',
+            description: 'Claude AI model to use',
+            options: [
+              { value: 'claude-3-7-sonnet-20250219', label: 'Claude 3.7 Sonnet (Feb 2025)' },
+              { value: 'claude-3-5-sonnet-20240620', label: 'Claude 3.5 Sonnet (June 2024)' },
+              { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' }, 
+              { value: 'claude-3-sonnet-20240229', label: 'Claude 3 Sonnet' },
+              { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku' }
+            ]
+          },
+          {
+            key: 'apiKey',
+            label: 'API Key',
+            type: 'password',
+            description: 'Your Claude API key (optional if using environment variable)'
+          },
+          {
+            key: 'temperature',
+            label: 'Temperature',
+            type: 'slider',
+            description: 'Controls randomness (0-1)',
+            min: 0,
+            max: 1,
+            step: 0.1
+          },
+          {
+            key: 'maxTokens',
+            label: 'Max Tokens',
+            type: 'number',
+            description: 'Maximum number of tokens to generate',
+            min: 100,
+            max: 100000
+          },
+          {
+            key: 'useSystemPrompt',
+            label: 'Use System Prompt',
+            type: 'checkbox',
+            description: 'Enable system prompt for more control'
+          },
+          {
+            key: 'systemPrompt',
+            label: 'System Prompt',
+            type: 'textarea',
+            description: 'Instructions for the AI assistant',
+            rows: 3,
+            depends: {
+              key: 'useSystemPrompt',
+              value: true
+            }
+          }
+        ]
+      };
       
-      // Actual generation happens in the executor
-      // This UI just shows the loading state
-      setTimeout(() => {
-        setIsGenerating(false);
-        if (data.onChange) {
-          data.onChange({
-            ...data,
-            _isProcessing: false
-          });
-        }
-      }, 500);
-    } catch (error) {
-      console.error('Generation error:', error);
-      setIsGenerating(false);
-      
-      // Update node data with error info
-      if (data.onChange) {
-        data.onChange({
-          ...data,
-          _isProcessing: false,
-          _hasError: true,
-          _errorMessage: error instanceof Error ? error.message : 'An unknown error occurred'
-        });
-      }
+      // Update node data with settings and ensure consistent label/description
+      data.onChange({
+        ...data,
+        settings,
+        label: "Claude API",
+        description: "Generates text using the Claude AI model",
+        useGlobalSettingsOnly: true  // Use the global settings drawer only
+      });
     }
+  }, [id, data]);
+  
+  // Create model badge display
+  const getModelBadge = () => {
+    const model = (nodeData.model || defaultData.model) as string;
+    let displayName = model;
+    
+    // Format the model name for display
+    if (model.includes('claude-3-7')) {
+      displayName = 'Claude 3.7 Sonnet';
+    } else if (model.includes('claude-3-5')) {
+      displayName = 'Claude 3.5 Sonnet';
+    } else if (model.includes('claude-3-opus')) {
+      displayName = 'Claude 3 Opus';
+    } else if (model.includes('claude-3-sonnet')) {
+      displayName = 'Claude 3 Sonnet';
+    } else if (model.includes('claude-3-haiku')) {
+      displayName = 'Claude 3 Haiku';
+    }
+    
+    return (
+      <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">
+        {displayName}
+      </Badge>
+    );
   };
   
-  // Open settings modal/drawer
-  const openSettings = () => {
-    if (typeof data.onSettingsClick === 'function') {
-      data.onSettingsClick();
-    }
-  };
-  
+  // Custom content for the node
+  const customContent = (
+    <div className="p-3 flex flex-col gap-2">
+      {/* API Status */}
+      {!nodeData.apiKey && !hasClaudeApiKey && (
+        <div className="mt-1 p-2 bg-amber-100/50 text-amber-800 text-xs rounded-md">
+          Claude API key required in settings
+        </div>
+      )}
+      {!nodeData.apiKey && hasClaudeApiKey && (
+        <div className="mt-1 p-2 bg-emerald-100/50 text-emerald-800 text-xs rounded-md">
+          Using Claude API key from environment variable
+        </div>
+      )}
+      
+      {/* Model Display */}
+      <div className="flex flex-col gap-1.5 mt-1">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Model:</span>
+          {getModelBadge()}
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Temperature:</span>
+          <span className="text-xs font-medium">{nodeData.temperature}</span>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Max Tokens:</span>
+          <span className="text-xs font-medium">{nodeData.maxTokens}</span>
+        </div>
+        
+        {nodeData.useSystemPrompt && (
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">System Prompt:</span>
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              Enabled
+            </Badge>
+          </div>
+        )}
+      </div>
+      
+      {/* Key Status */}
+      <div className="flex items-center justify-between mt-1">
+        <span className="text-xs text-muted-foreground">API Key:</span>
+        {nodeData.apiKey ? (
+          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+            Configured
+          </Badge>
+        ) : hasClaudeApiKey ? (
+          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+            <Lock size={10} className="mr-1" />
+            Environment
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+            <Lock size={10} className="mr-1" />
+            Missing
+          </Badge>
+        )}
+      </div>
+    </div>
+  );
+
   // Create icon element for the header
   const iconElement = (
     <div className="bg-indigo-100 p-1.5 rounded-md">
-      <Computer className="h-4 w-4 text-indigo-600" />
+      <Sparkles className="h-4 w-4 text-indigo-600" />
     </div>
   );
-  
-  // Create header actions
-  const headerActions = (
-    <Badge variant="outline" className="bg-indigo-100 text-indigo-800 text-xs">
-      LLM
-    </Badge>
-  );
+
+  // Prepare the node data with properties expected by BaseNode
+  const baseNodeData = {
+    ...data,
+    icon: iconElement,
+    label: (nodeData.label || defaultData.label) as string,
+    description: (nodeData.description || defaultData.description) as string,
+    settingsData: nodeData,
+    childrenContent: customContent,
+    // This is not a source node, it needs input
+    isSourceNode: false,
+    // No need to hide default handles
+    hideDefaultHandles: false
+  };
   
   return (
-    <NodeContainer selected={false} className={data._hasError ? 'border-red-300' : ''}>
-      <NodeHeader 
-        title="Claude API" 
-        description="Generates text using Claude"
-        icon={iconElement}
-        actions={headerActions}
-      />
-      
-      <NodeContent padding="normal">
-        {/* API key status */}
-        {!apiKey ? (
-          <div className="flex items-center text-red-500 text-xs mb-2 bg-red-50 p-1.5 rounded border border-red-100">
-            <Key size={12} className="mr-1" /> 
-            No API key configured
-          </div>
-        ) : null}
-        
-        {/* Model */}
-        <div className="flex items-center justify-between bg-white rounded p-1.5 border border-slate-200 mb-2">
-          <div className="flex items-center text-xs text-slate-600">
-            <Computer size={12} className="mr-1" /> 
-            Model:
-          </div>
-          <div className="text-xs font-medium text-slate-700">
-            {modelDisplay}
-          </div>
-        </div>
-        
-        {/* Parameters */}
-        <div className="flex items-center justify-between bg-white rounded p-1.5 border border-slate-200 mb-2">
-          <div className="flex items-center text-xs text-slate-600">
-            <Sliders size={12} className="mr-1" /> 
-            Parameters:
-          </div>
-          <div className="text-xs text-slate-700">
-            <span className="font-medium">{temperature}</span>
-            <span className="mx-1">|</span>
-            <span className="font-medium">{maxTokens}t</span>
-          </div>
-        </div>
-        
-        {/* Input summary */}
-        <div className="bg-white rounded p-1.5 border border-slate-200 mb-3">
-          <div className="flex items-center text-xs text-slate-600 mb-1">
-            <ArrowDownToLine size={12} className="mr-1" /> 
-            Input Prompt:
-          </div>
-          <div className="text-xs text-slate-600 min-h-[40px] max-h-[60px] overflow-hidden">
-            {data.inputText ? (
-              data.inputText.substring(0, 100) + (data.inputText.length > 100 ? '...' : '')
-            ) : (
-              <div className="text-slate-400 flex items-center justify-center h-[40px]">
-                Waiting for input from previous node...
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Action buttons */}
-        <div className="flex gap-2 mb-3">
-          <Button 
-            className="flex-1 flex items-center justify-center py-1 px-2 text-xs h-auto"
-            size="sm"
-            onClick={handleGenerate}
-            disabled={isGenerating || isProcessing}
-          >
-            {isGenerating || isProcessing ? (
-              <>
-                <Loader size={12} className="mr-1 animate-spin" />
-                {isProcessing ? "Processing..." : "Generating..."}
-              </>
-            ) : (
-              <>
-                <Sparkles size={12} className="mr-1" />
-                Generate
-              </>
-            )}
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            className="py-1 px-2 text-xs h-auto"
-            onClick={openSettings}
-          >
-            <Settings size={12} className="mr-1" />
-            Settings
-          </Button>
-        </div>
-        
-        {/* Output display */}
-        <div className={`bg-white border rounded p-1.5 min-h-[60px] ${
-          data._hasError ? 'border-red-300 bg-red-50' : 'border-slate-200'
-        }`}>
-          <div className="flex items-center text-xs text-slate-600 mb-1">
-            <ArrowUpFromLine size={12} className="mr-1" /> 
-            Generated Output:
-          </div>
-          
-          {data._hasError ? (
-            <div className="text-red-600 text-xs">
-              {data._errorMessage || 'An error occurred during generation'}
-            </div>
-          ) : data._generatedText ? (
-            <div className="text-xs text-slate-600 max-h-[60px] overflow-hidden">
-              {typeof data._generatedText === 'string' 
-                ? (data._generatedText.substring(0, 100) + 
-                   (data._generatedText.length > 100 ? '...' : ''))
-                : JSON.stringify(data._generatedText).substring(0, 100) + '...'}
-            </div>
-          ) : (
-            <div className="text-slate-400 text-xs flex items-center justify-center h-[40px]">
-              <Info size={12} className="mr-1" />
-              No response received yet. Click Generate to run this node.
-            </div>
-          )}
-        </div>
-      </NodeContent>
-      
-      {/* Input handle */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="input"
-        style={{ 
-          top: 60, 
-          width: '12px', 
-          height: '12px', 
-          background: 'white',
-          border: '2px solid #818cf8'
-        }}
-        isConnectable={true}
-      />
-      <div className="absolute left-2 top-[56px] text-xs text-slate-500">
-        In
-      </div>
-      
-      {/* Output handle */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="output"
-        style={{ 
-          top: 60, 
-          width: '12px', 
-          height: '12px', 
-          background: 'white',
-          border: '2px solid #818cf8'
-        }}
-        isConnectable={true}
-      />
-      <div className="absolute right-2 top-[56px] text-xs text-slate-500 text-right">
-        Out
-      </div>
-    </NodeContainer>
+    <BaseNode
+      id={id}
+      data={baseNodeData}
+      selected={selected}
+      isConnectable={isConnectable}
+      type="claude"
+    />
   );
-};
+}
