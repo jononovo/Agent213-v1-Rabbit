@@ -47,9 +47,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import { NodeContainer } from '@/components/nodes/base/NodeContainer';
-import { NodeHeader } from '@/components/nodes/base/NodeHeader';
-import { NodeContent } from '@/components/nodes/base/NodeContent';
+import { NodeContainer } from '@/nodes/components/base/NodeContainer';
+import { NodeHeader } from '@/nodes/components/base/NodeHeader';
+import { NodeContent } from '@/nodes/components/base/NodeContent';
 import NodeHoverMenu, { 
   createDuplicateAction, 
   createDeleteAction, 
@@ -57,7 +57,7 @@ import NodeHoverMenu, {
   createRunAction,
   createAddNoteAction,
   NodeHoverMenuAction
-} from '@/components/nodes/base/NodeHoverMenu';
+} from '@/nodes/components/base/NodeHoverMenu';
 
 interface SettingsField {
   key: string;

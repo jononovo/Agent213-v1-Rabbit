@@ -42,8 +42,8 @@ import {
   createSettingsAction,
   createRunAction,
   createAddNoteAction
-} from '@/components/nodes/base';
-import type { NodeHoverMenuAction } from '@/components/nodes/base/NodeHoverMenu';
+} from '@/nodes/components/base';
+import type { NodeHoverMenuAction } from '@/nodes/components/base/NodeHoverMenu';
 
 import { BaseNode } from '@/nodes/Base';
 
