@@ -80,6 +80,44 @@ export interface NodeDefinition {
   settings?: NodeSetting[];            // Settings for the NodeSettingsDrawer
   validation?: any;                    // Zod validation schema for settings
   defaultData?: Record<string, any>;   // Default data for node initialization
+  integrationConfig?: IntegrationConfig; // Integration Engine configuration
+}
+
+/**
+ * Integration Configuration
+ * Optional configuration for nodes that integrate with the Integration Engine
+ */
+export interface IntegrationConfig {
+  // What the node offers to the system
+  provides?: {
+    endpoint?: boolean;     // This node provides an HTTP endpoint
+    webhook?: boolean;      // This node acts as a webhook receiver
+    scheduler?: boolean;    // This node schedules actions
+    connector?: boolean;    // This node connects to external systems
+    ai?: boolean;           // This node provides AI capabilities
+  };
+  
+  // What the node needs from the system
+  requires?: {
+    storage?: boolean;        // Needs persistent storage
+    authentication?: boolean; // Requires authentication
+    proxy?: boolean;          // Can use system proxy
+  };
+  
+  // Endpoint configuration (when provides.endpoint = true)
+  endpoint?: {
+    pathTemplate?: string;    // URL path template with variables
+    methods?: string[];       // Supported HTTP methods
+    authTypes?: string[];     // Supported auth methods
+  };
+  
+  // External API configuration (when provides.connector = true)
+  externalApi?: {
+    baseUrl?: string;         // Base URL for the external API
+    defaultEndpoint?: string; // Default endpoint path
+    authType?: string;        // Authentication type
+    documentation?: string;   // Link to API documentation
+  };
 }
 
 /**

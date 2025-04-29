@@ -3,7 +3,7 @@
  * Defines the HTTP request node's properties, appearance, and behavior
  */
 
-import { NodeDefinition } from '../types';
+import { NodeDefinition } from '@/nodes/types';
 
 /**
  * HTTP Request Node Definition

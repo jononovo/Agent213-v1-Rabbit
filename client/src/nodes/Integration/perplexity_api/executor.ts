@@ -29,6 +29,7 @@ export const defaultData: PerplexityApiNodeData = {
 
 /**
  * Execute the Perplexity API node
+ * Integration with the Integration Engine Framework
  */
 export const execute = async (
   data: PerplexityApiNodeData, 
@@ -63,8 +64,12 @@ export const execute = async (
       { role: 'user', content: prompt }
     ];
 
-    // Call Perplexity API directly
-    const apiUrl = 'https://api.perplexity.ai/chat/completions';
+    // Integration Engine API configuration
+    const baseUrl = 'https://api.perplexity.ai';
+    const endpoint = '/chat/completions';
+    const url = `${baseUrl}${endpoint}`;
+    
+    // Build request body following Perplexity API specs
     const requestBody = {
       model: data.model || defaultData.model, // Ensure we always have a model
       messages: messages,
@@ -73,12 +78,17 @@ export const execute = async (
     };
     
     // Debug log to check what's being sent
-    console.log('Perplexity API request:', JSON.stringify(requestBody, null, 2));
+    console.log('Perplexity API request:', JSON.stringify({
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ***' // Masked for security
+      },
+      body: requestBody
+    }, null, 2));
 
-    // Use the model as entered by the user without any modifications
-    
-    // Make API request directly to Perplexity
-    const response = await fetch(apiUrl, {
+    // Make the API request with security headers
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

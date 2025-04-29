@@ -15,6 +15,32 @@ export const definition: NodeDefinition = {
   icon: 'brain',
   category: 'ai',
   version: '1.0.0',
+  
+  // Integration Engine configuration
+  integrationConfig: {
+    // What the node offers to the system
+    provides: {
+      endpoint: false,    // This node doesn't provide an HTTP endpoint
+      webhook: false,     // This node doesn't act as a webhook receiver
+      connector: true,    // This node connects to external API
+      ai: true            // This node provides AI capabilities
+    },
+    
+    // What the node needs from the system
+    requires: {
+      storage: false,        // Doesn't need persistent storage
+      authentication: true,  // Requires API key authentication
+      proxy: true            // Can use system proxy if available
+    },
+    
+    // External API configuration
+    externalApi: {
+      baseUrl: 'https://api.perplexity.ai',
+      defaultEndpoint: '/chat/completions',
+      authType: 'apiKey',
+      documentation: 'https://docs.perplexity.ai/reference/post_chat_completions'
+    }
+  },
   inputs: {
     prompt: {
       type: 'string',
