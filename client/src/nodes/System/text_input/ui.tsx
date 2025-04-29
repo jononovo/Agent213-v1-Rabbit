@@ -11,7 +11,7 @@ import { Handle, Position, NodeProps } from 'reactflow';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Type } from 'lucide-react';
-import { BaseNode } from '@/nodes/Base';
+import { BaseNode } from '@/nodes/Base_nodes/BaseNode';
 import { memo } from 'react';
 
 // Node interface
