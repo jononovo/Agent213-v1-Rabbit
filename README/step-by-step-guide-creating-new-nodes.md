@@ -24,6 +24,10 @@ The node system is built around a folder-based architecture where each node type
 3. **Executor**: Handles the runtime logic when the node executes
 4. **Tests File (Optional)**: Contains custom tests for validating node functionality
 
+For quick development, template base nodes are available:
+- **Base Standard Node**: Located at `client/src/nodes/Base_nodes/base_node_standard/`
+- **Base Integration Node**: Located at `client/src/nodes/Base_nodes/base_node_integration/`
+
 The system uses a central registry (`nodeRegistry.ts`) that discovers and loads node definitions dynamically, making them available throughout the application. This registry is the **single source of truth** for node information, ensuring consistency across the application.
 
 ### Node Registry as Single Source of Truth
@@ -54,7 +58,11 @@ client/src/nodes/[Category]/[node_type]/
 ```
 
 Where:
-- `[Category]` is either `System` (core nodes) or `Custom` (user-created)
+- `[Category]` can be:
+  - `System` - Core system nodes
+  - `Custom` - User-created nodes
+  - `Integration` - Nodes that connect with external services
+  - `Base_nodes` - Template nodes for extending (not used directly)
 - `[node_type]` is a unique identifier for your node (e.g., `text_input`, `json_parser`)
 
 The `tests.ts` file is optional but highly recommended, especially for complex nodes. It contains custom tests that validate the specific functionality of your node beyond the standard tests that run for all nodes.
@@ -474,6 +482,62 @@ When implementing a node, consider these edge cases:
 ## Testing Your Node
 
 The system includes a comprehensive testing framework for nodes that's designed for both manual and programmatic testing. This is particularly useful for AI agents that need to verify node functionality.
+
+### Creating Custom Node Tests
+
+To add custom tests for your node, create a `tests.ts` file in your node's directory:
+
+```typescript
+import { NodeTest } from '@/nodes/types/nodeTestsStandard';
+import { execute, defaultData } from './executor';
+
+// Define your test cases
+const tests: NodeTest[] = [
+  {
+    name: 'Basic functionality',
+    description: 'Tests the basic functioning of the node',
+    category: 'functionality',
+    run: async () => {
+      try {
+        // Set up test data
+        const nodeData = { ...defaultData };
+        
+        // Create test inputs
+        const inputs = {
+          input: {
+            items: [{ json: { text: 'test input' } }],
+            meta: { startTime: new Date() }
+          }
+        };
+        
+        // Execute the node
+        const result = await execute(nodeData, inputs);
+        
+        // Validate the result
+        if (!result.output?.items?.[0]?.json) {
+          return {
+            passed: false,
+            message: 'No output was produced'
+          };
+        }
+        
+        return {
+          passed: true,
+          message: 'Test passed successfully'
+        };
+      } catch (error) {
+        return {
+          passed: false,
+          message: `Test failed: ${error instanceof Error ? error.message : String(error)}`
+        };
+      }
+    }
+  }
+];
+
+// Important: export the tests as default
+export default tests;
+```
 
 ### Using the Node Debug Panel
 

@@ -1,10 +1,14 @@
 # Ultra-Simple Node Creation Guide
 
-## Standard Node
+## Using Base Node Templates
 
-1. Copy an existing node folder as a template:
+### Standard Node
+
+The fastest way to create a new node is to copy one of the base node templates:
+
+1. Copy the base_node_standard template:
    ```
-   cp -r client/src/nodes/Processing/text_input client/src/nodes/Processing/my_new_node
+   cp -r client/src/nodes/Base_nodes/base_node_standard client/src/nodes/Custom/my_new_node
    ```
 
 2. Update the node type in `definition.ts`:
@@ -89,11 +93,11 @@
    export default { definition, execute, component };
    ```
 
-## Integration Node
+### Integration Node
 
-1. Copy an existing integration node:
+1. Copy the base_node_integration template:
    ```
-   cp -r client/src/nodes/Integration/http_request client/src/nodes/Integration/my_api_node
+   cp -r client/src/nodes/Base_nodes/base_node_integration client/src/nodes/Integration/my_api_node
    ```
 
 2. Update the node type in `definition.ts`:
