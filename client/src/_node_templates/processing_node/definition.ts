@@ -44,6 +44,10 @@ const definition: NodeDefinition = {
     result: {
       type: 'any',
       description: 'Processed output data'
+    },
+    error: {
+      type: 'object',
+      description: 'Error information if processing fails'
     }
   },
   

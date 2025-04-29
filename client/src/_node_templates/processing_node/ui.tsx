@@ -41,6 +41,8 @@ export default function ProcessingNodeComponent({ id, data, selected, isConnecta
     label: data.label || 'Process',
     description: data.description || 'Processes data using JavaScript',
     settingsData,
+    // Add the custom content to the node data instead of using children prop
+    childrenContent: customContent,
     // Maintain the existing custom handles flag if present,
     // otherwise don't hide the default handles
     hideDefaultHandles: data.hideDefaultHandles
@@ -53,8 +55,6 @@ export default function ProcessingNodeComponent({ id, data, selected, isConnecta
       selected={selected}
       isConnectable={isConnectable}
       type="processing_node"
-    >
-      {customContent}
-    </BaseNode>
+    />
   );
 }

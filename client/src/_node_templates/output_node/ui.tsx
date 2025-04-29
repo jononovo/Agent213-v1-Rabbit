@@ -65,6 +65,8 @@ export default function MyOutputNode({ id, data, selected, isConnectable }: Node
     label: data.label || 'Output',
     description: data.description || 'Sends data to external system',
     settingsData,
+    // Add the custom content to the node data
+    childrenContent: customContent,
     // Maintain the existing custom handles flag if present,
     // otherwise don't hide the default handles
     hideDefaultHandles: data.hideDefaultHandles
@@ -77,8 +79,6 @@ export default function MyOutputNode({ id, data, selected, isConnectable }: Node
       selected={selected}
       isConnectable={isConnectable}
       type="output_node"
-    >
-      {customContent}
-    </BaseNode>
+    />
   );
 }

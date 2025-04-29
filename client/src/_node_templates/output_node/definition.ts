@@ -68,6 +68,10 @@ const definition = {
     status: {
       type: 'number',
       description: 'Status code or result indicator'
+    },
+    error: {
+      type: 'object',
+      description: 'Error information if the operation fails'
     }
   },
   
