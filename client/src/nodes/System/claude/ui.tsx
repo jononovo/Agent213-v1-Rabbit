@@ -63,7 +63,7 @@ export const validator = (data: ClaudeNodeData) => {
 };
 
 // UI component for Claude API node
-function ClaudeNode({ id, data, selected, isConnectable }: NodeProps<ClaudeNodeData>) {
+export function component({ id, data, selected, isConnectable }: NodeProps<ClaudeNodeData>) {
   // Merge incoming data with default data
   const nodeData = { ...defaultData, ...data };
   
@@ -261,6 +261,3 @@ function ClaudeNode({ id, data, selected, isConnectable }: NodeProps<ClaudeNodeD
     />
   );
 }
-
-// Export the component as default (standard pattern)
-export default ClaudeNode;

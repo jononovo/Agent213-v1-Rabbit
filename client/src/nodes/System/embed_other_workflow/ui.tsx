@@ -42,7 +42,7 @@ export const validator = (data: EmbedOtherWorkflowNodeData) => {
 };
 
 // UI component for the Embed Other Workflow node
-function EmbedOtherWorkflowNode({ 
+export const component = React.memo(function EmbedOtherWorkflowNode({ 
   id, 
   data,
   selected,

@@ -51,7 +51,7 @@ interface ExtendedPerplexityNodeData extends PerplexityApiNodeData {
 }
 
 // UI component for Perplexity API node
-function PerplexityApiNode({ id, data, selected, isConnectable }: NodeProps<ExtendedPerplexityNodeData>) {
+export function component({ id, data, selected, isConnectable }: NodeProps<ExtendedPerplexityNodeData>) {
   // Merge incoming data with default data
   const nodeData = { ...defaultData, ...data };
   
@@ -274,6 +274,3 @@ function PerplexityApiNode({ id, data, selected, isConnectable }: NodeProps<Exte
     />
   );
 }
-
-// Export the component as default (standard pattern)
-export default PerplexityApiNode;
