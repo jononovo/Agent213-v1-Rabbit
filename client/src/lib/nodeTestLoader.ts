@@ -1,114 +1,105 @@
 /**
  * Node Test Loader
  * 
- * A utility module to dynamically load test modules for different node types.
- * This approach centralizes test loading and eliminates the need for hardcoding test imports.
+ * This file dynamically discovers and loads test cases for all nodes in the system.
+ * It's used by the node-debug page to populate the test interface.
  */
-import { NodeTest } from '../nodes/types/nodeTestsStandard';
 
-// We'll initialize this lazily to avoid circular imports
-let nodeTestRegistry: Record<string, NodeTest[]> | null = null;
+import { NodeTest, NodeTestSuite } from '@/nodes/types';
 
-// Function to initialize the registry
-const initTestRegistry = async (): Promise<Record<string, NodeTest[]>> => {
-  if (nodeTestRegistry !== null) {
-    return nodeTestRegistry;
-  }
-  
-  // Create a new registry
-  nodeTestRegistry = {};
-  
-  return nodeTestRegistry;
+// Type definitions for dynamic imports
+type NodeModule = {
+  tests?: NodeTest[];
+  default?: NodeTest[];
 };
 
 /**
- * Loads test modules for a given node type
- * @param nodeType - The type of node to load tests for
- * @returns Array of tests if found, null otherwise
+ * Dynamically discover and load test cases for all nodes
+ * 
+ * This function:
+ * 1. Searches for test files in node directories
+ * 2. Imports the tests from those files
+ * 3. Organizes them by node type
+ * 
+ * @returns A promise resolving to an object with node types as keys and test arrays as values
  */
-export const loadNodeTests = async (nodeType: string): Promise<NodeTest[] | null> => {
+export async function loadNodeTests(): Promise<NodeTestSuite> {
+  const testSuite: NodeTestSuite = {};
+  
   try {
-    // Initialize registry if needed
-    const registry = await initTestRegistry();
+    // Use Vite's glob import to find all test files
+    // This finds any file named tests.ts in node directories
+    const testModules = import.meta.glob('../nodes/**/**/tests.ts');
     
-    // Check if we have registered tests for this node type
-    if (nodeType in registry) {
-      const tests = registry[nodeType];
-      console.log(`Loaded ${tests.length} tests for ${nodeType} from registry cache`);
-      return tests;
-    }
-    
-    // Otherwise try to dynamically import tests for this node type
-    try {
-      // First try Integration category
+    // Load each test file
+    const loadPromises = Object.entries(testModules).map(async ([path, importFn]) => {
       try {
-        // @vite-ignore
-        const testsModule = await import(`../nodes/Integration/${nodeType}/tests.ts`);
-        if (testsModule.default) {
-          // Cache the result
-          registry[nodeType] = testsModule.default;
-          console.log(`Loaded ${testsModule.default.length} tests for ${nodeType} from Integration folder`);
-          return testsModule.default;
+        // Extract node type from path
+        // Pattern: ../nodes/Category/node_type/tests.ts
+        const pathParts = path.split('/');
+        // Get the node type from the directory name (second to last part)
+        const nodeType = pathParts[pathParts.length - 2];
+        
+        // Skip if nodeType is invalid or doesn't look like a node type
+        if (!nodeType || nodeType === 'tests' || nodeType.includes('.')) {
+          return;
         }
-      } catch (e) {
-        // Not found in Integration category, try System category
-        try {
-          // @vite-ignore
-          const testsModule = await import(`../nodes/System/${nodeType}/tests.ts`);
-          if (testsModule.default) {
-            // Cache the result
-            registry[nodeType] = testsModule.default;
-            console.log(`Loaded ${testsModule.default.length} tests for ${nodeType} from System folder`);
-            return testsModule.default;
-          }
-        } catch (e) {
-          // Not found in System category, try Custom category
-          try {
-            // @vite-ignore
-            const testsModule = await import(`../nodes/Custom/${nodeType}/tests.ts`);
-            if (testsModule.default) {
-              // Cache the result
-              registry[nodeType] = testsModule.default;
-              console.log(`Loaded ${testsModule.default.length} tests for ${nodeType} from Custom folder`);
-              return testsModule.default;
-            }
-          } catch (e) {
-            // No tests found for this node type in any category
-            console.warn(`No tests found for node type: ${nodeType}`);
-            return null;
-          }
+        
+        // Import the test module
+        const module = await importFn() as NodeModule;
+        
+        // Get tests from the module (either as default export or named export)
+        const tests = module.default || module.tests;
+        
+        // Skip if no tests found
+        if (!tests || !Array.isArray(tests) || tests.length === 0) {
+          console.warn(`No tests found in ${path}`);
+          return;
         }
+        
+        // Add tests to the suite
+        testSuite[nodeType] = tests;
+        console.log(`Loaded ${tests.length} tests for node type: ${nodeType}`);
+      } catch (error) {
+        console.error(`Error loading tests from ${path}:`, error);
       }
-    } catch (importError) {
-      console.warn(`Error importing tests for node type ${nodeType}:`, importError);
-      return null;
-    }
+    });
     
-    // No tests found
-    return null;
+    // Wait for all imports to complete
+    await Promise.all(loadPromises);
+    
+    return testSuite;
   } catch (error) {
-    console.error(`Error loading tests for node type ${nodeType}:`, error);
-    return null;
+    console.error('Error loading node tests:', error);
+    return {};
   }
-};
+}
 
 /**
- * Returns a list of node types that have tests available
- * This implementation only returns what's already in the registry.
- * For a full scan of all available node types with tests, use scanForNodeTests.
+ * Get categories for grouping tests in the UI
+ * 
+ * @param tests Array of tests from a node
+ * @returns Array of unique categories
  */
-export const getNodeTypesWithTests = async (): Promise<string[]> => {
-  const registry = await initTestRegistry();
-  return Object.keys(registry || {});
-};
+export function getTestCategories(tests: NodeTest[]): string[] {
+  // Extract unique categories
+  const categories = new Set<string>();
+  tests.forEach(test => {
+    if (test.category) {
+      categories.add(test.category);
+    }
+  });
+  
+  return Array.from(categories);
+}
 
 /**
- * Returns the number of tests available for a given node type
+ * Filter tests by category
+ * 
+ * @param tests Array of tests
+ * @param category Category to filter by
+ * @returns Filtered array of tests
  */
-export const getTestCountForNodeType = async (nodeType: string): Promise<number> => {
-  const registry = await initTestRegistry();
-  if (registry && nodeType in registry && registry[nodeType]) {
-    return registry[nodeType].length;
-  }
-  return 0;
-};
+export function filterTestsByCategory(tests: NodeTest[], category: string): NodeTest[] {
+  return tests.filter(test => test.category === category);
+}

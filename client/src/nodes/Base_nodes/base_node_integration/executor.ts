@@ -5,7 +5,15 @@
  * It demonstrates how to register with the Integration Engine and make API requests.
  */
 
-import { NodeExecutionData } from '@/shared/nodeTypes';
+// Using a more generic type definition for NodeExecutionData since we can't directly
+// import from shared/nodeTypes
+export interface NodeExecutionData {
+  [key: string]: {
+    items: Array<{ json: any }>;
+    meta: Record<string, any>;
+  };
+}
+
 import { registerIntegration, makeIntegrationRequest } from '@/utils/integrationClient';
 
 // Define the node data interface
