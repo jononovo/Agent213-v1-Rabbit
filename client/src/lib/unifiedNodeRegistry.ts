@@ -9,6 +9,29 @@
 import { NodeDefinition, PortDefinition } from '../nodes/types';
 import { EnhancedNodeExecutor, NodeExecutionData } from './types/workflow';
 
+// Integration node capabilities
+interface IntegrationCapabilities {
+  // What the node offers to the system
+  provides?: {
+    endpoint?: boolean;    // This node provides an HTTP endpoint
+    webhook?: boolean;     // This node acts as a webhook receiver
+    scheduler?: boolean;   // This node provides scheduling capabilities
+  };
+  
+  // What the node needs from the system
+  requires?: {
+    storage?: boolean;       // Needs persistent storage for configuration
+    authentication?: boolean; // Requires authentication
+  };
+  
+  // Endpoint configuration (applicable when provides.endpoint=true)
+  endpoint?: {
+    pathTemplate?: string;   // URL path template
+    methods?: string[];      // Supported HTTP methods
+    authTypes?: string[];    // Supported auth methods
+  };
+}
+
 // Registry data structures
 interface RegisteredNode {
   // Core node info
@@ -18,13 +41,17 @@ interface RegisteredNode {
   category: string;
   icon: string;
   version: string;
-  folderPath: string; // 'System' or 'Custom'
+  folderPath: string; // 'System', 'Custom', or 'Integration'
   
   // Components
   definition: NodeDefinition;
   executor?: EnhancedNodeExecutor;
   uiComponent?: any;
   defaultData?: Record<string, any>;
+  
+  // Integration capabilities (only for integration nodes)
+  isIntegrationNode?: boolean;
+  integrationCapabilities?: IntegrationCapabilities;
   
   // Validation state
   isValid: boolean;
@@ -82,7 +109,7 @@ export async function initializeRegistry(): Promise<void> {
 }
 
 /**
- * Discover all node definitions from both System and Custom folders
+ * Discover all node definitions from System, Custom, and Integration folders
  */
 async function discoverNodeDefinitions(): Promise<void> {
   try {
@@ -91,6 +118,7 @@ async function discoverNodeDefinitions(): Promise<void> {
     // Import all definition files using Vite's import.meta.glob
     const systemDefinitionModules = import.meta.glob('../nodes/System/*/definition.ts', { eager: true });
     const customDefinitionModules = import.meta.glob('../nodes/Custom/*/definition.ts', { eager: true });
+    const integrationDefinitionModules = import.meta.glob('../nodes/Integration/**/*/definition.ts', { eager: true });
     
     // Process system nodes
     let count = 0;
@@ -109,6 +137,16 @@ async function discoverNodeDefinitions(): Promise<void> {
       const nodeDef = module.default as NodeDefinition;
       
       if (registerNodeDefinition(nodeDef, 'Custom')) {
+        count++;
+      }
+    }
+    
+    // Process integration nodes
+    for (const path in integrationDefinitionModules) {
+      const module = integrationDefinitionModules[path] as any;
+      const nodeDef = module.default as NodeDefinition;
+      
+      if (registerNodeDefinition(nodeDef, 'Integration')) {
         count++;
       }
     }
@@ -133,6 +171,14 @@ function registerNodeDefinition(definition: NodeDefinition, folderPath: string):
   // Validate the node definition
   const validation = validateNodeDefinition(definition);
   
+  // Determine if this is an integration node based on folder path
+  const isIntegrationNode = folderPath === 'Integration';
+  
+  // Extract integration capabilities if available
+  const integrationCapabilities = isIntegrationNode 
+    ? (definition as any).integrationConfig as IntegrationCapabilities
+    : undefined;
+    
   // Create registry entry if it doesn't exist
   if (!nodeRegistry.has(nodeType)) {
     nodeRegistry.set(nodeType, {
@@ -149,6 +195,10 @@ function registerNodeDefinition(definition: NodeDefinition, folderPath: string):
       uiComponent: undefined,
       defaultData: definition.defaultData,
       
+      // Integration-specific properties
+      isIntegrationNode,
+      integrationCapabilities,
+      
       isValid: validation.isValid,
       validationErrors: validation.errors,
       validationWarnings: validation.warnings,
@@ -157,7 +207,18 @@ function registerNodeDefinition(definition: NodeDefinition, folderPath: string):
       missingComponents: ['executor', 'uiComponent']
     });
     
-    console.log(`Registered node definition: ${nodeType} (${folderPath})`);
+    // Log registration with integration info if applicable
+    if (isIntegrationNode) {
+      console.log(`Registered integration node: ${nodeType} (${folderPath})`);
+      if (integrationCapabilities) {
+        console.log(`Integration capabilities for ${nodeType}:`, integrationCapabilities);
+      } else {
+        console.warn(`Integration node ${nodeType} does not define integrationConfig`);
+      }
+    } else {
+      console.log(`Registered node definition: ${nodeType} (${folderPath})`);
+    }
+    
     return true;
   } else {
     // Update existing entry with new definition
@@ -166,6 +227,18 @@ function registerNodeDefinition(definition: NodeDefinition, folderPath: string):
     node.isValid = validation.isValid;
     node.validationErrors = validation.errors;
     node.validationWarnings = validation.warnings;
+    
+    // Update integration properties if applicable
+    if (isIntegrationNode) {
+      node.isIntegrationNode = true;
+      node.integrationCapabilities = integrationCapabilities;
+      
+      if (integrationCapabilities) {
+        console.log(`Updated integration capabilities for ${nodeType}`);
+      } else {
+        console.warn(`Integration node ${nodeType} does not define integrationConfig`);
+      }
+    }
     
     // Check if defaultData is now available
     if (definition.defaultData && !node.defaultData) {
