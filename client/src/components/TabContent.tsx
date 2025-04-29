@@ -231,29 +231,7 @@ const TabContent = () => {
           </div>
         </div>
         
-        {/* My Optimization Agents */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-slate-900">My Optimization Agents</h2>
-            <button className="text-sm px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50 flex items-center space-x-1">
-              <i className="fas fa-plus text-xs"></i>
-              <span>Create Optimizer</span>
-            </button>
-          </div>
-          
-          <div className="bg-slate-50 rounded-lg border border-dashed border-slate-300 p-6 text-center">
-            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3">
-              <i className="fas fa-sliders"></i>
-            </div>
-            <h3 className="font-medium text-slate-700 mb-2">No Optimization Agents Yet</h3>
-            <p className="text-sm text-slate-600 mb-4 max-w-md mx-auto">
-              Optimization agents can analyze and improve your existing agents for better performance and accuracy.
-            </p>
-            <button className="text-sm px-4 py-2 bg-white text-primary border border-primary rounded-md hover:bg-primary hover:text-white transition-colors">
-              Create Your First Optimizer
-            </button>
-          </div>
-        </div>
+        {/* Optimization Agents section removed as requested */}
       </div>
     );
   }
