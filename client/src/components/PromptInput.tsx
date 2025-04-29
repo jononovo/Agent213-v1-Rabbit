@@ -224,7 +224,7 @@ const PromptInput = () => {
             <div className="relative">
               <textarea 
                 className="w-full border border-slate-300 rounded-lg p-3 pr-12 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none" 
-                rows={3} 
+                rows={2} 
                 placeholder={isLoading ? "Processing your request..." : "Describe what you want to build or ask for help..."}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
@@ -248,31 +248,10 @@ const PromptInput = () => {
               </Button>
             </div>
             
-            {/* Build button and suggestions */}
+            {/* Suggestions and Build button */}
             <div className="mt-4">
-              <div className="flex justify-end mb-4">
-                <Button 
-                  className="px-8 py-2 bg-primary text-white rounded-md font-medium"
-                  variant="default"
-                  size="default"
-                  onClick={handleSubmit}
-                  disabled={isLoading || prompt.trim() === ''}
-                >
-                  {isLoading ? (
-                    <span className="flex items-center">
-                      <span className="animate-spin h-4 w-4 mr-2 border-2 border-t-transparent border-white rounded-full"></span>
-                      Building...
-                    </span>
-                  ) : (
-                    <span className="flex items-center">
-                      <i className="fas fa-tools mr-2"></i>
-                      Build
-                    </span>
-                  )}
-                </Button>
-              </div>
-              
-              <div className="mt-2">
+              {/* Suggestion buttons */}
+              <div className="mb-4">
                 <div className="flex flex-wrap gap-2">
                   <button 
                     className={`px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-200'}`}
@@ -296,6 +275,29 @@ const PromptInput = () => {
                     Design a social media scheduler
                   </button>
                 </div>
+              </div>
+              
+              {/* Build button */}
+              <div className="flex justify-end">
+                <Button 
+                  className="px-8 py-2 bg-primary text-white rounded-md font-medium"
+                  variant="default"
+                  size="default"
+                  onClick={handleSubmit}
+                  disabled={isLoading || prompt.trim() === ''}
+                >
+                  {isLoading ? (
+                    <span className="flex items-center">
+                      <span className="animate-spin h-4 w-4 mr-2 border-2 border-t-transparent border-white rounded-full"></span>
+                      Building...
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <i className="fas fa-tools mr-2"></i>
+                      Build
+                    </span>
+                  )}
+                </Button>
               </div>
             </div>
           </div>
