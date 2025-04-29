@@ -34,7 +34,7 @@ import {
 import { NodeContainer } from '@/components/nodes/common/NodeContainer';
 import { NodeHeader } from '@/components/nodes/common/NodeHeader';
 import { NodeContent } from '@/components/nodes/common/NodeContent';
-import { NodeSettingsForm } from '@/components/nodes/common/NodeSettingsForm';
+import { NodeSettingsForm } from '@/components/nodes/base/NodeSettingsForm';
 import NodeHoverMenu, { 
   createDuplicateAction, 
   createDeleteAction, 
