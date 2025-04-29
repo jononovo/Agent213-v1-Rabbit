@@ -4,7 +4,7 @@
  * These tests validate actual webhook sending functionality
  * and error handling
  */
-import { NodeTest, NodeTestResult } from '../../types/nodeTestsStandard';
+import { NodeTest, NodeTestResult } from '../../nodeTestsStandard';
 
 /**
  * Webhook utility functions

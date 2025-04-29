@@ -5,7 +5,7 @@
  * These tests help validate the node's functionality.
  */
 
-import { NodeTest } from '@/nodes/types/nodeTestsStandard';
+import { NodeTest } from '@/nodes/nodeTestsStandard';
 import { execute, defaultData, BaseNodeData } from './executor';
 
 /**

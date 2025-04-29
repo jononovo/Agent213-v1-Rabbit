@@ -4,7 +4,7 @@
  * A utility module to dynamically load test modules for different node types.
  * This approach centralizes test loading and eliminates the need for hardcoding test imports.
  */
-import { NodeTest } from '../nodes/types/nodeTestsStandard';
+import { NodeTest } from '../nodes/nodeTestsStandard';
 
 // We'll initialize this lazily to avoid circular imports
 let nodeTestRegistry: Record<string, NodeTest[]> | null = null;

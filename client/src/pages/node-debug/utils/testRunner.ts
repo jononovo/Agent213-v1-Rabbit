@@ -5,7 +5,7 @@
  * for nodes in the system. It separates the test execution logic from the UI.
  */
 import { loadNodeTests } from '../../../lib/nodeTestLoader';
-import { NodeTest, NodeTestResult } from '../../../nodes/types/nodeTestsStandard';
+import { NodeTest, NodeTestResult } from '../../../nodes/nodeTestsStandard';
 
 // Types imported from the main page
 export interface NodeType {

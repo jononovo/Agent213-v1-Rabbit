@@ -6,7 +6,7 @@
  */
 
 import { PerplexityApiNodeData, defaultData } from './executor';
-import { NodeTest } from '../../../nodes/types/nodeTestsStandard';
+import { NodeTest } from '../../nodeTestsStandard';
 
 /**
  * Test cases for the Perplexity API node

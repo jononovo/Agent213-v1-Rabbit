@@ -3,7 +3,7 @@
  * 
  * These tests validate actual text formatting functionality
  */
-import { NodeTest, NodeTestResult } from '../../types/nodeTestsStandard';
+import { NodeTest, NodeTestResult } from '../../nodeTestsStandard';
 
 /**
  * Text formatting functions being tested
