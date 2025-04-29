@@ -411,7 +411,9 @@ export class IntegrationEngine {
           const [nodeType, config] = sortedNodeTypeEntries[i];
           
           // Check if template could potentially match this path
-          if (this.couldMatchPath(config.pathTemplate, normalizedPath)) {
+          // Use basic path prefix matching for now
+          const templatePrefix = config.pathTemplate.split('/')[0];
+          if (normalizedPath.startsWith(templatePrefix) || normalizedPath.startsWith('/' + templatePrefix)) {
             log(`Trying node type handler: ${nodeType} for path: ${normalizedPath}`, 'integration');
             
             // Try to handle with this node type
