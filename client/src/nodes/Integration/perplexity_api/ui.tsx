@@ -6,7 +6,7 @@
 
 import React, { useEffect } from 'react';
 import { NodeProps } from 'reactflow';
-import { Brain, Lock } from 'lucide-react';
+import { Brain, Lock, Zap, Thermometer, Lightbulb, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { BaseNode } from '@/nodes/Base';
 import { PerplexityApiNodeData, defaultData } from './executor';
@@ -124,85 +124,115 @@ export function component({ id, data, selected, isConnectable }: NodeProps<Exten
     }
   }, [id, data]);
   
-  // Create model badge display
-  const getModelBadge = () => {
+  // Get model icon and color based on model size
+  const getModelInfo = () => {
     const model = nodeData.model || defaultData.model;
     let displayName = model;
+    let icon = <Sparkles className="h-3 w-3" />;
+    let bgColor = "bg-purple-50";
+    let textColor = "text-purple-700";
+    let borderColor = "border-purple-200";
     
-    // Format the model name for display
+    // Format the model name for display and assign appropriate styling
     if (model.includes('small')) {
       displayName = 'Sonar Small';
+      icon = <Sparkles className="h-3 w-3" />;
+      bgColor = "bg-purple-50";
+      textColor = "text-purple-700";
+      borderColor = "border-purple-200";
     } else if (model.includes('large')) {
       displayName = 'Sonar Large';
+      icon = <Zap className="h-3 w-3" />;
+      bgColor = "bg-indigo-50";
+      textColor = "text-indigo-700";
+      borderColor = "border-indigo-200";
     } else if (model.includes('huge')) {
       displayName = 'Sonar Huge';
+      icon = <Lightbulb className="h-3 w-3" />;
+      bgColor = "bg-blue-50";
+      textColor = "text-blue-700";
+      borderColor = "border-blue-200";
     }
     
-    return (
-      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-        {displayName}
-      </Badge>
-    );
+    return {
+      displayName,
+      icon,
+      badgeClasses: `${bgColor} ${textColor} ${borderColor}`
+    };
   };
+  
+  const modelInfo = getModelInfo();
   
   // Custom content for the node
   const customContent = (
     <div className="p-3 flex flex-col gap-2">
-      {/* API Status */}
+      {/* API Status Alert */}
       {!nodeData.apiKey && !hasPerplexityApiKey && (
-        <div className="mt-1 p-2 bg-amber-100/50 text-amber-800 text-xs rounded-md">
-          Perplexity API key required in settings
+        <div className="mt-1 p-2 bg-amber-100/50 text-amber-800 text-xs rounded-md flex items-center gap-1.5">
+          <Lock size={12} />
+          <span>Perplexity API key required in settings</span>
         </div>
       )}
       {!nodeData.apiKey && hasPerplexityApiKey && (
-        <div className="mt-1 p-2 bg-emerald-100/50 text-emerald-800 text-xs rounded-md">
-          Using Perplexity API key from environment variable
+        <div className="mt-1 p-2 bg-emerald-100/50 text-emerald-800 text-xs rounded-md flex items-center gap-1.5">
+          <Zap size={12} />
+          <span>Using API key from environment variable</span>
         </div>
       )}
       
-      {/* Model Display */}
-      <div className="flex flex-col gap-1.5 mt-1">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Model:</span>
-          {getModelBadge()}
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Temperature:</span>
-          <span className="text-xs font-medium">{nodeData.temperature}</span>
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Max Tokens:</span>
-          <span className="text-xs font-medium">{nodeData.maxTokens || 'Default'}</span>
-        </div>
-        
-        {nodeData.useSystemPrompt && (
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">System Prompt:</span>
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-              Enabled
-            </Badge>
+      {/* Model Card */}
+      <div className={`p-2 rounded-md border ${modelInfo.badgeClasses.replace('bg-', 'bg-opacity-30 bg-')}`}>
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <div className={`p-1 rounded ${modelInfo.badgeClasses}`}>
+            {modelInfo.icon}
           </div>
-        )}
+          <span className="text-xs font-medium">{modelInfo.displayName}</span>
+        </div>
+        
+        {/* Parameters */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+          <div className="flex items-center gap-1">
+            <Thermometer size={10} className="text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Temp:</span>
+          </div>
+          <span className="text-xs font-medium text-right">{nodeData.temperature}</span>
+          
+          <div className="flex items-center gap-1">
+            <Zap size={10} className="text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Tokens:</span>
+          </div>
+          <span className="text-xs font-medium text-right">{nodeData.maxTokens || 'Default'}</span>
+        </div>
       </div>
       
-      {/* Key Status */}
-      <div className="flex items-center justify-between mt-1">
-        <span className="text-xs text-muted-foreground">API Key:</span>
-        {nodeData.apiKey ? (
-          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-            Configured
-          </Badge>
-        ) : hasPerplexityApiKey ? (
+      {/* System Prompt & API Key Status */}
+      <div className="flex items-center justify-between mt-1 gap-2">
+        {/* API Key Status */}
+        <div className="flex flex-1 items-center gap-1">
+          <Lock size={10} className="text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">API:</span>
+          {nodeData.apiKey ? (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 ml-auto">
+              Configured
+            </Badge>
+          ) : hasPerplexityApiKey ? (
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 ml-auto">
+              <Lock size={10} className="mr-1" />
+              Environment
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 ml-auto">
+              <Lock size={10} className="mr-1" />
+              Missing
+            </Badge>
+          )}
+        </div>
+        
+        {/* System Prompt Status */}
+        {nodeData.useSystemPrompt && (
           <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-            <Lock size={10} className="mr-1" />
-            Environment
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-            <Lock size={10} className="mr-1" />
-            Missing
+            <Sparkles size={10} className="mr-1" />
+            System Prompt
           </Badge>
         )}
       </div>
@@ -211,7 +241,7 @@ export function component({ id, data, selected, isConnectable }: NodeProps<Exten
 
   // Create icon element for the header
   const iconElement = (
-    <div className="bg-purple-100 p-1.5 rounded-md">
+    <div className="bg-gradient-to-br from-purple-100 to-indigo-100 p-1.5 rounded-md shadow-sm border border-purple-200">
       <Brain className="h-4 w-4 text-purple-600" />
     </div>
   );
