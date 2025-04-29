@@ -1320,6 +1320,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Node debug endpoint
+  app.post('/api/node-debug', async (req: Request, res: Response) => {
+    try {
+      const { handleNodeDebugRequest } = await import('./node-debug');
+      await handleNodeDebugRequest(req, res);
+    } catch (error) {
+      console.error('Error in node debug handler:', error);
+      res.status(500).json({ 
+        error: 'Node debug handler failed', 
+        details: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+  
   
   /**
    * Workflow Execution API - Proxy endpoints
