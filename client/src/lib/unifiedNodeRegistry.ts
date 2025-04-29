@@ -128,24 +128,9 @@ export async function loadNodeComponent(nodeType: string): Promise<any> {
   try {
     // Load UI component directly from ui.tsx using the folder from registry
     const uiModule = await import(/* @vite-ignore */ `../nodes/${node.folderPath}/${nodeType}/ui`);
-    
-    // Check for different export patterns:
-    // 1. First try default export (traditional pattern)
-    // 2. If no default, try named 'component' export (used by several nodes)
-    // 3. Fall back to BaseNode if neither exists
-    if (uiModule.default) {
-      console.log(`Found default export for ${nodeType}`);
-      return uiModule.default;
-    } else if (uiModule.component) {
-      console.log(`Found named component export for ${nodeType}`);
-      return uiModule.component;
-    } else {
-      console.warn(`No UI component exports found for ${nodeType}, using BaseNode`);
-      const { default: BaseNode } = await import('../nodes/Base/ui');
-      return BaseNode;
-    }
+    return uiModule.default;
   } catch (error) {
-    console.warn(`Failed to load UI for ${nodeType}, using BaseNode`, error);
+    console.warn(`Failed to load UI for ${nodeType}, using BaseNode`);
     const { default: BaseNode } = await import('../nodes/Base/ui');
     return BaseNode;
   }

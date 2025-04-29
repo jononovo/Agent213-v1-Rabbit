@@ -4,7 +4,7 @@
  * This is the BaseNode-based implementation of the Perplexity API node.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, memo } from 'react';
 import { NodeProps } from 'reactflow';
 import { Brain, Lock, Zap, Thermometer, Lightbulb, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -51,7 +51,7 @@ interface ExtendedPerplexityNodeData extends PerplexityApiNodeData {
 }
 
 // UI component for Perplexity API node
-export function component({ id, data, selected, isConnectable }: NodeProps<ExtendedPerplexityNodeData>) {
+function PerplexityApiNode({ id, data, selected, isConnectable }: NodeProps<ExtendedPerplexityNodeData>) {
   // Merge incoming data with default data
   const nodeData = { ...defaultData, ...data };
   
@@ -274,3 +274,6 @@ export function component({ id, data, selected, isConnectable }: NodeProps<Exten
     />
   );
 }
+
+// Export component with memo for optimization
+export default memo(PerplexityApiNode);

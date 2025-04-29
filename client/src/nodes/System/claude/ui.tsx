@@ -4,7 +4,7 @@
  * This is the BaseNode-based implementation of the Claude API node.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, memo } from 'react';
 import { NodeProps } from 'reactflow';
 import { Sparkles, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -63,7 +63,7 @@ export const validator = (data: ClaudeNodeData) => {
 };
 
 // UI component for Claude API node
-export function component({ id, data, selected, isConnectable }: NodeProps<ClaudeNodeData>) {
+function ClaudeNode({ id, data, selected, isConnectable }: NodeProps<ClaudeNodeData>) {
   // Merge incoming data with default data
   const nodeData = { ...defaultData, ...data };
   
@@ -261,3 +261,6 @@ export function component({ id, data, selected, isConnectable }: NodeProps<Claud
     />
   );
 }
+
+// Export the component with memo for optimization
+export default memo(ClaudeNode);
