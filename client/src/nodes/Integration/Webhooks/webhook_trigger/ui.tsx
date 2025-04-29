@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Globe, Link, CheckCircle } from 'lucide-react';
-import { BaseNode } from '@/nodes/Base';
+import { BaseNode } from '@/nodes/Base_nodes/BaseNode';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import * as integrationClient from '@/utils/integrationClient';
