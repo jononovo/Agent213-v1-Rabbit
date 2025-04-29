@@ -11,40 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { BaseNodeData } from './executor';
 
-// Interface validation result
-interface ValidationResult {
-  valid: boolean;
-  errors: string[];
-}
-
-/**
- * Validates node configuration
- * Customize this function for your node's specific validation requirements
- */
-export const validator = (data: BaseNodeData): ValidationResult => {
-  const errors: string[] = [];
-  
-  // Example validation - modify according to your node's needs
-  if (!data.setting1 || data.setting1.trim() === '') {
-    errors.push('Setting 1 cannot be empty');
-  }
-  
-  if (data.setting2 < 0) {
-    errors.push('Setting 2 must be a positive number');
-  }
-  
-  return {
-    valid: errors.length === 0,
-    errors
-  };
-};
-
-/**
- * Node configuration UI component
- * 
- * @param data Current node data
- * @param updateNodeData Function to update node data
- */
+// Node UI component
 export const component = ({ 
   data, 
   updateNodeData 

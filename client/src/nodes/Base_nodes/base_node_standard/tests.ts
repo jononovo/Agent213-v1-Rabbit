@@ -2,7 +2,7 @@
  * Base Standard Node Tests
  * 
  * This file contains test cases for the node-debug page.
- * These tests help validate the node's functionality without setting up a complete workflow.
+ * These tests help validate the node's functionality.
  */
 
 import { NodeTest } from '@/nodes/types/nodeTestsStandard';
@@ -20,7 +20,7 @@ const tests: NodeTest[] = [
     category: 'functionality',
     run: async () => {
       try {
-        // Set up node data for testing - typically use default data
+        // Set up node data for testing
         const nodeData: BaseNodeData = {
           ...defaultData
         };
@@ -37,15 +37,23 @@ const tests: NodeTest[] = [
         const result = await execute(nodeData, inputs);
         
         // Validate the results
-        const outputText = result.output?.items?.[0]?.json?.text;
-        if (!outputText) {
+        if (!result.output?.items?.[0]?.json) {
           return {
             passed: false,
-            message: 'No output text was returned'
+            message: 'No output data was returned'
           };
         }
         
-        // Check if output contains expected content
+        // Check if output is as expected
+        const outputJson = result.output.items[0].json;
+        if ('error' in outputJson) {
+          return {
+            passed: false,
+            message: `Error in output: ${outputJson.error}`
+          };
+        }
+        
+        const outputText = outputJson.text;
         if (!outputText.includes('test input')) {
           return {
             passed: false,
@@ -89,12 +97,20 @@ const tests: NodeTest[] = [
         // Execute the node
         const result = await execute(nodeData, inputs);
         
-        // Check that node handles empty input appropriately
-        const outputText = result.output?.items?.[0]?.json?.text;
-        if (!outputText) {
+        // Validate the results
+        if (!result.output?.items?.[0]?.json) {
           return {
             passed: false,
-            message: 'Node failed to handle empty input'
+            message: 'No output data was returned'
+          };
+        }
+        
+        // Check if output is as expected
+        const outputJson = result.output.items[0].json;
+        if ('error' in outputJson) {
+          return {
+            passed: false,
+            message: `Error in output: ${outputJson.error}`
           };
         }
         
@@ -136,15 +152,24 @@ const tests: NodeTest[] = [
         // Execute the node
         const result = await execute(nodeData, inputs);
         
-        // Check that configuration affected the output
-        const outputText = result.output?.items?.[0]?.json?.text;
-        if (!outputText) {
+        // Validate the results
+        if (!result.output?.items?.[0]?.json) {
           return {
             passed: false,
-            message: 'No output was returned'
+            message: 'No output data was returned'
           };
         }
         
+        // Check if output is as expected
+        const outputJson = result.output.items[0].json;
+        if ('error' in outputJson) {
+          return {
+            passed: false,
+            message: `Error in output: ${outputJson.error}`
+          };
+        }
+        
+        const outputText = outputJson.text;
         // With setting3=false, text should be lowercase
         if (!outputText.includes('test text')) {
           return {

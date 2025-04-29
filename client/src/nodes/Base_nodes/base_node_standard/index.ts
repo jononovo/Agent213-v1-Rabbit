@@ -7,7 +7,7 @@
 
 import { definition } from './definition';
 import { execute } from './executor';
-import { component, validator } from './ui';
+import { component } from './ui';
 import tests from './tests';
 
 // Export individual components
@@ -15,7 +15,6 @@ export {
   definition,
   execute,
   component,
-  validator,
   tests
 };
 
@@ -24,6 +23,5 @@ export default {
   definition,
   execute,
   component,
-  validator,
   tests
 };
