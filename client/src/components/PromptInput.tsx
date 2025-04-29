@@ -272,8 +272,7 @@ const PromptInput = () => {
                 </Button>
               </div>
               
-              <div className="mt-4">
-                <p className="text-sm text-slate-500 mb-2">Try one of these examples:</p>
+              <div className="mt-2">
                 <div className="flex flex-wrap gap-2">
                   <button 
                     className={`px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-200'}`}
