@@ -3,6 +3,9 @@
  * 
  * This module provides a client interface for working with workflows
  * that emphasizes client-side execution with minimal server dependencies.
+ * 
+ * Updated to support the isolated workflow execution server for improved
+ * stability and performance of workflow execution.
  */
 
 import { apiClient } from './apiClient';
@@ -300,5 +303,102 @@ export async function linkWorkflowToAgent(
     ...options,
     metadata: { source: 'api_client' },
     logToServer: true
+  });
+}
+
+/**
+ * Execute a workflow on the dedicated workflow execution server
+ * 
+ * This function provides a more stable execution environment by running
+ * workflows in a separate process with isolated resources.
+ * 
+ * @param workflowId ID of the workflow to execute
+ * @param input Input data for the workflow
+ * @param options Execution options
+ */
+export async function executeWorkflowIsolated(
+  workflowId: number,
+  input: any = {},
+  options: {
+    nodeId?: string; // Specific node to start from
+    pollingInterval?: number; // How often to check status (ms)
+    timeout?: number; // Total execution timeout (ms)
+  } = {}
+): Promise<any> {
+  try {
+    const { 
+      nodeId,
+      pollingInterval = 1000, 
+      timeout = 60000 // Default 1 minute timeout
+    } = options;
+    
+    // Submit the workflow execution job
+    const queueResponse = await apiClient.post('/api/workflow-execution/execute', {
+      workflowId,
+      input,
+      nodeId
+    });
+    
+    if (!queueResponse.success || !queueResponse.jobId) {
+      throw new Error(queueResponse.error || 'Failed to queue workflow execution');
+    }
+    
+    const jobId = queueResponse.jobId;
+    console.log(`Workflow ${workflowId} queued with job ID ${jobId}`);
+    
+    // Poll for job completion
+    const startTime = Date.now();
+    
+    // Helper function to check job status
+    const checkJobStatus = async (): Promise<any> => {
+      const statusResponse = await apiClient.get(`/api/workflow-execution/status/${jobId}`);
+      
+      if (!statusResponse.success) {
+        throw new Error(statusResponse.error || 'Failed to get job status');
+      }
+      
+      const job = statusResponse.job;
+      
+      // Check if job is complete
+      if (job.status === 'completed' || job.status === 'failed') {
+        // Return result or throw error
+        if (job.status === 'failed') {
+          throw new Error(job.error || 'Workflow execution failed');
+        }
+        return job.result;
+      }
+      
+      // Check for timeout
+      if (Date.now() - startTime >= timeout) {
+        throw new Error('Workflow execution timed out');
+      }
+      
+      // Wait for next poll
+      await new Promise(resolve => setTimeout(resolve, pollingInterval));
+      
+      // Recursively check again
+      return checkJobStatus();
+    };
+    
+    // Start polling for results
+    return await checkJobStatus();
+  } catch (error) {
+    console.error('Error executing isolated workflow:', error);
+    throw error;
+  }
+}
+
+/**
+ * Execute a critical workflow in the isolated execution server
+ * 
+ * This is a convenience method for executing workflows that are identified
+ * as critical and should be run with enhanced stability.
+ */
+export async function executeCriticalWorkflow(
+  workflowId: number,
+  input: any = {}
+): Promise<any> {
+  return executeWorkflowIsolated(workflowId, input, {
+    timeout: 120000 // Extended timeout for critical workflows (2 minutes)
   });
 }

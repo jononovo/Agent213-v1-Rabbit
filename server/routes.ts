@@ -1288,6 +1288,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   
+  /**
+   * Workflow Execution API - Proxy endpoints
+   * 
+   * These endpoints proxy requests to the dedicated workflow execution server
+   */
+  app.post('/api/workflow-execution/execute', async (req: Request, res: Response) => {
+    try {
+      const { workflowId, input, nodeId } = req.body;
+      
+      if (!workflowId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Workflow ID is required'
+        });
+      }
+      
+      // Forward request to workflow execution server
+      const response = await fetch('http://localhost:3002/api/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          workflowId,
+          input: input || {},
+          startNodeId: nodeId
+        })
+      });
+      
+      const result = await response.json();
+      res.status(response.status).json(result);
+    } catch (error) {
+      console.error('Error executing workflow:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  app.get('/api/workflow-execution/status/:jobId', async (req: Request, res: Response) => {
+    try {
+      const { jobId } = req.params;
+      
+      // Forward request to workflow execution server
+      const response = await fetch(`http://localhost:3002/api/status/${jobId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const result = await response.json();
+      res.status(response.status).json(result);
+    } catch (error) {
+      console.error('Error getting job status:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Execute a tool directly (for testing)
   app.post('/api/tools/execute', async (req: Request, res: Response) => {
     try {
