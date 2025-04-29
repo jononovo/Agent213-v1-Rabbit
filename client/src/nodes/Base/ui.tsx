@@ -76,28 +76,71 @@ interface NodeSettings {
 }
 
 export interface BaseNodeData {
+  // Core properties
   label: string;
   description?: string;
   type?: string;
   category?: string;
   settings?: NodeSettings;
   settingsData?: Record<string, any>;
+  
+  // Status indicators
   isProcessing?: boolean;
   isComplete?: boolean;
   hasError?: boolean;
   errorMessage?: string;
+  
+  // Visual customization
   icon?: string | React.ReactNode;
+  
+  // Event handlers
   onChange?: (data: any) => void;
+  
+  // Configuration flags
   useGlobalSettingsOnly?: boolean; // All nodes now use global drawer by default
+  hideDefaultHandles?: boolean;    // Whether to hide the default input/output handles
+  
+  // Enhanced customization options
+  childrenContent?: React.ReactNode;            // Main custom content
+  customHeaderContent?: React.ReactNode;        // Content to render above the main content
+  customFooterContent?: React.ReactNode;        // Content to render below the main content
+  customHandles?: React.ReactNode;              // Custom connection handles
+  fullCustomContent?: boolean;                  // Whether custom content should bypass standard layout
+  
+  // Note-related properties
+  note?: string;
+  showNote?: boolean;
+  
+  // Allows for additional properties
   [key: string]: any;
 }
 
 /**
- * Base Node - The foundation node with settings functionality
+ * Base Node - The foundation node with comprehensive customization options
  * 
  * This node type serves as the foundation for all other node types and
  * as a fallback for nodes that don't have specific UI implementations.
  * It provides core features like hover menu, status indicators, and node settings.
+ * 
+ * CUSTOMIZATION OPTIONS:
+ * 
+ * 1. Content Customization:
+ *    - data.childrenContent: Main custom content to be rendered inside the node
+ *    - data.customHeaderContent: Content to be rendered above the main content
+ *    - data.customFooterContent: Content to be rendered below the main content
+ *    - data.fullCustomContent: When true, custom content takes full control (bypasses structure)
+ * 
+ * 2. Visual Customization:
+ *    - data.icon: String icon name or React component to use as the node icon
+ *    - data.hideDefaultHandles: Whether to hide the default input/output handles
+ *    - data.customHandles: Custom handles to replace the default input/output handles
+ * 
+ * 3. Notes and Status:
+ *    - data.note: Text note attached to the node
+ *    - data.showNote: Whether to display the note on the node
+ *    - data.isProcessing/isComplete/hasError: Status indicators
+ * 
+ * SETTINGS SYSTEM:
  * 
  * IMPORTANT: All nodes now use the global settings drawer implementation.
  * The legacy local drawer approach has been removed to eliminate confusion
@@ -702,9 +745,29 @@ function BaseNode({
             
             <NodeContent padding="normal">
               <div className="flex flex-col gap-2">
-                {/* If custom content is provided, render it */}
+                {/* Enhanced custom content rendering with multiple placement options */}
                 {data.childrenContent ? (
-                  <div>{data.childrenContent}</div>
+                  <div className={data.fullCustomContent ? "w-full" : ""}>
+                    {/* If fullCustomContent is true, the custom content takes full control */}
+                    {data.fullCustomContent ? (
+                      data.childrenContent
+                    ) : (
+                      <>
+                        {/* Custom content with default header elements */}
+                        {data.customHeaderContent && (
+                          <div className="mb-2">{data.customHeaderContent}</div>
+                        )}
+                        
+                        {/* Insert custom content */}
+                        {data.childrenContent}
+                        
+                        {/* Custom content with default footer elements */}
+                        {data.customFooterContent && (
+                          <div className="mt-2">{data.customFooterContent}</div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 ) : (
                   <>
                     {/* Node Type Badge */}
@@ -761,8 +824,12 @@ function BaseNode({
               </div>
             </NodeContent>
             
-            {/* Input and output handles - only render if not explicitly hidden */}
-            {!data.hideDefaultHandles && (
+            {/* Render either custom handles or default handles */}
+            {data.customHandles ? (
+              // Custom handles provided by the node
+              <>{data.customHandles}</>
+            ) : !data.hideDefaultHandles ? (
+              // Default handles if not hidden
               <>
                 {/* Input handle for triggering the node */}
                 <Handle
@@ -800,7 +867,7 @@ function BaseNode({
                   Out
                 </div>
               </>
-            )}
+            ) : null}
           </NodeContainer>
         </div>
       </div>

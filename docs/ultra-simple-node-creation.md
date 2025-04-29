@@ -15,7 +15,7 @@ Before creating nodes, it's important to understand the core architecture:
 
 2. **Node Registry**: All nodes are automatically discovered and registered by the `unifiedNodeRegistry`. This handles validation, executor loading, and UI component discovery.
 
-3. **BaseNode Component**: All node UIs are built on the `BaseNode` component, which provides consistent behavior, styling, and interaction patterns.
+3. **BaseNode Component**: All node UIs are built on the `BaseNode` component, which provides consistent behavior, styling, and interaction patterns. The BaseNode component offers extensive customization options including custom content, custom header/footer elements, and custom handles.
 
 4. **Component Hierarchy**:
    - `NodeContainer`: Wrapper providing consistent styling
