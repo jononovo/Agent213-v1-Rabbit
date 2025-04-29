@@ -7,6 +7,8 @@ import { storage } from "./storage";
 import { importWebhookTestWorkflow } from "./importTestWorkflow";
 // Import the Integration Engine server
 import { startIntegrationServer } from './integration';
+// Import the Workflow Execution server
+import { startWorkflowExecutionServer } from './workflow-execution';
 
 const app = express();
 app.use(express.json());
@@ -58,6 +60,10 @@ app.use((req, res, next) => {
     // Start the Integration Engine server
     startIntegrationServer();
     log('Integration Engine server started');
+    
+    // Start the Workflow Execution server
+    startWorkflowExecutionServer();
+    log('Workflow Execution server started');
     
     // Setup error handler
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
