@@ -65,6 +65,9 @@ export class IntegrationEngine {
   // Store integration providers (for future MCP integration)
   private providers: Map<string, IntegrationProvider> = new Map();
   
+  // Store node type handlers (used for nodes in the Integration folder)
+  private nodeTypeHandlers: Map<string, NodeTypeConfig> = new Map();
+  
   // Track initialization state
   private initialized: boolean = false;
   private initializing: Promise<void> | null = null;
@@ -370,6 +373,40 @@ export class IntegrationEngine {
       }
     }
     
+    // Try to match based on node type handlers
+    // This checks if the path matches a node type's path template
+    if (this.nodeTypeHandlers.size > 0) {
+      // Parse path segments to match against templates
+      const pathSegments = normalizedPath.split('/');
+      
+      // Check if the first segment matches a node type path pattern
+      // For example, if path is "webhooks/my-hook" and we have a node handler for "webhooks/:path"
+      if (pathSegments.length >= 1) {
+        const firstSegment = pathSegments[0];
+        
+        // Check for node handlers that might match this path pattern
+        for (const [nodeType, config] of this.nodeTypeHandlers.entries()) {
+          // Simple template matching - extract path template prefix
+          const templateSegments = config.pathTemplate.split('/');
+          if (templateSegments.length > 0 && templateSegments[0] === firstSegment) {
+            log(`Trying node type handler: ${nodeType} for path: ${normalizedPath}`, 'integration');
+            
+            // Try to handle with this node type
+            const handled = await this.handleNodeTypeRequest(
+              nodeType,
+              normalizedPath,
+              req,
+              res
+            );
+            
+            if (handled) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    
     // Try providers (placeholder for MCP integration)
     // Using Array.from(keys) to avoid TypeScript downlevelIteration issues
     const providerTypes = Array.from(this.providers.keys());
@@ -394,6 +431,98 @@ export class IntegrationEngine {
    */
   private generateRequestId(): string {
     return `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+  }
+  
+  /**
+   * Register a node type handler for integration nodes
+   * This enables registration of integration capabilities by node types
+   */
+  async registerNodeType(
+    nodeType: string,
+    config: NodeTypeConfig
+  ): Promise<void> {
+    await this.ensureInitialized();
+    
+    this.nodeTypeHandlers.set(nodeType, config);
+    log(`Registered integration node type: ${nodeType}`, 'integration');
+    
+    // Log the path template for debugging
+    log(`Node ${nodeType} handles path template: ${config.pathTemplate}`, 'integration');
+  }
+  
+  /**
+   * Unregister a node type handler
+   */
+  async unregisterNodeType(nodeType: string): Promise<boolean> {
+    await this.ensureInitialized();
+    
+    if (this.nodeTypeHandlers.has(nodeType)) {
+      this.nodeTypeHandlers.delete(nodeType);
+      log(`Unregistered integration node type: ${nodeType}`, 'integration');
+      return true;
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Get all registered node type handlers
+   */
+  async getNodeTypes(): Promise<string[]> {
+    await this.ensureInitialized();
+    return Array.from(this.nodeTypeHandlers.keys());
+  }
+  
+  /**
+   * Create a workflow instance for a node type
+   * This method handles dynamic integration requests based on node types
+   */
+  async handleNodeTypeRequest(
+    nodeType: string,
+    path: string,
+    req: Request, 
+    res: Response
+  ): Promise<boolean> {
+    await this.ensureInitialized();
+    
+    // Check if we have a handler for this node type
+    if (!this.nodeTypeHandlers.has(nodeType)) {
+      return false;
+    }
+    
+    const config = this.nodeTypeHandlers.get(nodeType)!;
+    
+    // Check if the HTTP method is allowed
+    if (!config.methods.includes('*') && !config.methods.includes(req.method)) {
+      res.status(405).json({
+        success: false,
+        message: `Method ${req.method} not allowed for this node type`
+      });
+      return true;
+    }
+    
+    try {
+      // Extract path parameters from the URL
+      // This would match parameters like :id, :path in URL templates
+      const pathParams: Record<string, string> = {};
+      
+      // Execute the handler with path parameters
+      await config.nodeTypeHandler(req, res, pathParams);
+      return true;
+    } catch (error) {
+      console.error(`Error handling node type request for ${nodeType}:`, error);
+      
+      // Only send response if it hasn't been sent already
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          message: `Error processing ${nodeType} request`,
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+      
+      return true;
+    }
   }
   
   /**
