@@ -588,14 +588,93 @@ export default tests;
 
 ### Test Discovery System
 
-The application uses a dynamic test discovery system that:
+The application uses a dynamic test discovery system with these technical requirements:
 
-1. Automatically detects and loads tests for each node type
-2. Displays available tests in the Node Debug Panel
-3. Provides a consistent interface for running tests
-4. Reports results in a standardized format
+1. **Required File Structure**: Create `tests.ts` in your node directory with exactly this export format:
+   ```typescript
+   // Must use default export
+   export default tests: NodeTest[];
+   ```
 
-This approach eliminates the need for hardcoded relationships between nodes and their tests, making the system more maintainable and extensible.
+2. **Test Loading Process**:
+   - `nodeTestLoader.ts` dynamically imports test modules at runtime 
+   - Test discovery scans all category folders for node types
+   - Tests are cached to avoid redundant imports
+   - File path pattern: `client/src/nodes/*/[node_type]/tests.ts`
+
+3. **Integration Requirements**:
+   - Import your node's executor to use in tests
+   - Ensure tests are properly typed with `NodeTest` interface
+   - Include timeout handling in long-running tests
+   - Return explicit `passed` and `message` properties
+
+4. **Debugging Test Discovery**:
+   - Check browser console for test loading logs
+   - Verify tests appear under "Custom Tests" tab in node-debug UI
+   - Each test should display with name, category label, and description
+
+### Real Example: Perplexity API Tests
+
+Here's a minimal example of a working test file for the Perplexity API node:
+
+```typescript
+/**
+ * Tests for the Perplexity API Node
+ */
+import { NodeTest } from '@/nodes/types/nodeTestsStandard';
+import { execute } from './executor';
+
+const tests: NodeTest[] = [
+  {
+    name: 'Basic text generation',
+    description: 'Generate a response to a simple prompt',
+    category: 'functionality',
+    run: async () => {
+      try {
+        // Setup minimal input data
+        const nodeData = {
+          system_prompt: '',
+          model: 'llama-3.1-sonar-small-128k-online',
+          temperature: 0.2,
+          max_tokens: 100
+        };
+
+        // Create input with a simple query
+        const inputs = {
+          prompt: {
+            items: [{ json: { text: 'What is TypeScript?' } }],
+            meta: { startTime: new Date() }
+          }
+        };
+
+        // Call the node's executor
+        const result = await execute(nodeData, inputs);
+
+        // Check if we got a valid response
+        if (!result.response?.items?.[0]?.json?.text) {
+          return {
+            passed: false,
+            message: 'No valid text response returned'
+          };
+        }
+
+        return {
+          passed: true,
+          message: 'Successfully generated text response'
+        };
+      } catch (error) {
+        return {
+          passed: false,
+          message: `Test failed: ${error instanceof Error ? error.message : String(error)}`
+        };
+      }
+    }
+  }
+];
+
+// Must use default export for automatic discovery
+export default tests;
+```
 
 ### Node Debug Panel Architecture
 
