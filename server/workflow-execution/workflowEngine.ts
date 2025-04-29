@@ -70,7 +70,28 @@ export async function executeWorkflow(job: Job): Promise<any> {
     // Validate workflow before execution
     const validation = await validateWorkflow(flowData);
     if (!validation.valid) {
-      throw new Error(`Workflow validation failed. Missing node executors: ${validation.missingExecutors.join(', ')}`);
+      const errorMessage = `Workflow validation failed. Missing node executors: ${validation.missingExecutors.join(', ')}`;
+      
+      // Create a log entry for the failed validation
+      try {
+        await storage.createLog({
+          workflowId,
+          agentId: job.data?.agentId || null,
+          status: 'failed',
+          input: job.data?.input || {},
+          output: {},
+          error: errorMessage,
+          executionPath: {
+            validationError: true,
+            missingExecutors: validation.missingExecutors,
+            timestamp: new Date().toISOString()
+          }
+        });
+      } catch (logError) {
+        console.error(`[Workflow Engine] Error creating validation failure log for workflow ${workflowId}:`, logError);
+      }
+      
+      throw new Error(errorMessage);
     }
     
     // Create execution context
@@ -128,6 +149,33 @@ export async function executeWorkflow(job: Job): Promise<any> {
     };
     
     console.log(`[Workflow Engine] Workflow ${workflowId} executed in ${output.executionTime}ms with status ${output.status}`);
+    
+    // Create a log entry for the workflow execution
+    try {
+      await storage.createLog({
+        workflowId,
+        agentId: job.data?.agentId || null,
+        status: output.status,
+        input: job.data?.input || {},
+        output: { results: output.results },
+        error: Object.keys(output.errors).length > 0 ? JSON.stringify(output.errors) : null,
+        executionPath: {
+          executionTime: output.executionTime,
+          nodeResults: Array.from(context.nodeResults.entries()).reduce((acc: Record<string, any>, [nodeId, result]) => {
+            acc[nodeId] = { 
+              type: flowData.nodes.find((n: any) => n.id === nodeId)?.type || 'unknown',
+              success: !context.errors.has(nodeId)
+            };
+            return acc;
+          }, {}),
+          startedAt: context.startedAt.toISOString(),
+          completedAt: new Date().toISOString()
+        }
+      });
+    } catch (logError) {
+      console.error(`[Workflow Engine] Error creating log for workflow ${workflowId}:`, logError);
+      // Don't fail the workflow execution if log creation fails
+    }
     
     return output;
   } catch (error) {
