@@ -419,10 +419,10 @@ export default { definition, execute, component };
 You can create more advanced UIs using the custom UI components from the `custom_node_ui` folder:
 
 ```typescript
-import { InputSelect } from '@/components/nodes/custom_node_ui/input_select';
-import { InputText } from '@/components/nodes/custom_node_ui/input_text';
-import { InputToggle } from '@/components/nodes/custom_node_ui/input_toggle';
-import { HandleEditable } from '@/components/nodes/custom_node_ui/handle_editable';
+import { InputSelect } from '@/nodes/components/custom_node_ui/input_select';
+import { InputText } from '@/nodes/components/custom_node_ui/input_text';
+import { InputToggle } from '@/nodes/components/custom_node_ui/input_toggle';
+import { HandleEditable } from '@/nodes/components/custom_node_ui/handle_editable';
 ```
 
 Example of creating an advanced node content with interactive controls:
@@ -497,7 +497,7 @@ For nodes that need to dynamically add or remove handles:
 ```typescript
 // In ui.tsx
 import React, { useState, useEffect, memo } from 'react';
-import { HandleEditable } from '@/components/nodes/custom_node_ui/handle_editable';
+import { HandleEditable } from '@/nodes/components/custom_node_ui/handle_editable';
 
 function DynamicHandlesComponent({ id, data, selected, isConnectable }: NodeProps) {
   // Track dynamic handles

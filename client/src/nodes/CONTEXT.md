@@ -23,8 +23,8 @@ When working with nodes, these are the key file locations to be aware of:
 
 - **Base Node**: `client/src/nodes/Base/ui.tsx`
 - **Node Templates**: `client/src/nodes/_node_templates/`
-- **Core UI Components**: `client/src/components/nodes/base/`
-- **Custom UI Components**: `client/src/components/nodes/custom_node_ui/`
+- **Core UI Components**: `client/src/nodes/components/base/`
+- **Custom UI Components**: `client/src/nodes/components/custom_node_ui/`
 - **Node Registry**: `client/src/lib/unifiedNodeRegistry.ts`
 - **Node Documentation**: `docs/ultra-simple-node-creation.md`
 
@@ -259,7 +259,7 @@ import React from 'react';
 import { NodeProps } from 'reactflow';
 import { Type, ArrowRight } from 'lucide-react';
 import { BaseNode } from '@/nodes/Base';
-import { HandleWithLabel } from '@/components/nodes/custom_node_ui/handle_with_label';
+import { HandleWithLabel } from '@/nodes/components/custom_node_ui/handle_with_label';
 import { Position } from 'reactflow';
 import { defaultData, TextProcessorData } from './definition';
 
