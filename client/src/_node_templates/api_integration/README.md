@@ -1,63 +1,86 @@
-# API Integration Node Template
+# API Integration Node
 
-This template provides a foundation for creating nodes that connect to external APIs.
+This node provides a standardized interface for making external API requests through the Integration Engine. It handles various HTTP methods, authentication, error handling, and response processing.
 
-## How to Use This Template
+## Features
 
-1. **Copy the Template**: Copy this entire folder to your target location (e.g., `client/src/nodes/Integration/my_api`)
-2. **Update Node Information**: 
-   - In `definition.ts`, change the node type, name, and API configuration
-   - Set appropriate defaults for your specific API service
-3. **Customize Logic**:
-   - Update `executor.ts` to implement your API's specific request formatting and response handling
-   - Modify the interface to match your node's settings and requirements
-4. **Update UI**:
-   - In `ui.tsx`, change the component name and customize the display
-   - Make sure to update all node type references
-5. **Test Your Node**:
-   - Update `tests.ts` with test cases specific to your API
+- Supports all standard HTTP methods (GET, POST, PUT, DELETE, PATCH)
+- Configurable request headers, body, and query parameters
+- Optional proxy support through the Integration Engine
+- Timeout and retry configuration
+- Pagination support for handling large result sets
+- Multiple authentication options (None, Basic, Bearer Token, OAuth, etc.)
+- Comprehensive error handling with detailed error reporting
 
-## Key Files
+## How It Works
 
-- **definition.ts**: Defines the node's properties, settings, and API configuration
-- **executor.ts**: Contains the execution logic for making API requests
-- **ui.tsx**: Renders the node in the workflow editor
-- **tests.ts**: Contains tests to verify the node's functionality
+1. **Configuration**: Set up the API request details (URL, method, headers, etc.)
+2. **Execution**: When the node runs, it sends the API request through the Integration Engine proxy
+3. **Processing**: The response is processed and made available to downstream nodes
+4. **Error Handling**: Any errors are captured and passed to the error output port
 
-## Important Customization Points
+## Node Configuration
 
-Look for the following comments in the code:
+- **URL**: The API endpoint URL to request
+- **Method**: HTTP method to use (GET, POST, PUT, DELETE, PATCH)
+- **Headers**: HTTP headers to include in the request
+- **Authentication**: Optional authentication configuration
+  - **Auth Type**: The type of authentication (None, Basic, Bearer, OAuth, etc.)
+  - **Auth Config**: Authentication details (credentials, tokens, etc.)
+- **Advanced Options**:
+  - **Use Proxy**: Whether to route requests through the Integration Engine proxy
+  - **Timeout**: Request timeout in milliseconds
+  - **Retries**: Number of retry attempts for failed requests
+  - **Pagination**: Options for handling paginated responses
 
-- `CHANGE THIS`: Indicates a value that must be changed (like the node type)
-- `CUSTOMIZE THIS`: Indicates a section you might want to customize based on your needs
+## Input Ports
 
-## API Integration Features
+- **url**: Optional URL override (string)
+- **headers**: Additional headers to merge with the configured headers (object)
+- **body**: Request body for POST, PUT, etc. (any)
+- **params**: URL query parameters (object)
 
-This template provides:
+## Output Ports
 
-1. **Authentication** handling with API keys
-2. **Error management** for API responses
-3. **Timeout handling** for long-running requests
-4. **Parameter handling** for different HTTP methods
-5. **Header management** for API calls
+- **response**: The API response data (object)
+- **status**: HTTP status code (number)
+- **headers**: Response headers (object)
+- **error**: Error details if the request fails (object)
 
-## Security Considerations
+## Example Usage
 
-- API keys are stored securely and never exposed in the UI
-- The template supports environment variables for API keys
-- Authentication headers are properly set for API requests
+```json
+{
+  "label": "GitHub API",
+  "description": "Fetch data from GitHub API",
+  "url": "https://api.github.com/repos/owner/repo",
+  "method": "GET",
+  "headers": {
+    "Accept": "application/vnd.github.v3+json",
+    "User-Agent": "WorkflowApp"
+  },
+  "authType": "bearer",
+  "authConfig": {
+    "token": "github_token_here"
+  },
+  "useProxy": true,
+  "timeout": 10000,
+  "retries": 3
+}
+```
 
-## Testing
+## Integration Notes
 
-The tests in `tests.ts` verify:
-1. Basic API requests
-2. Different HTTP methods (GET, POST)
-3. Error handling (missing API key, timeouts)
-4. Parameter handling
+- For sensitive API keys or tokens, consider using environment variables or secrets
+- The Integration Engine proxy provides additional benefits like:
+  - Hiding API keys from client-side code
+  - Rate limiting
+  - Response caching
+  - Error normalization
+  - Consistent logging
+- For complex API integrations, consider chaining with Function nodes for pre/post-processing
 
-## Next Steps
+## Additional Resources
 
-After implementing your API node:
-1. Test it with real API credentials
-2. Document any specific API limitations or requirements
-3. Consider adding more specialized settings for your API's features
+- See the Integration Engine documentation for more details on API proxying
+- For custom API handling logic, consider using a Function node after this node
