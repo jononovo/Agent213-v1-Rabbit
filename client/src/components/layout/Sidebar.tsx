@@ -34,7 +34,7 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
         <Link key={index} href={item.path}>
           <div className={`flex items-center space-x-3 px-3 py-2 rounded-md cursor-pointer ${location === item.path ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
             <div className={`flex items-center ${collapsed ? "w-full justify-center" : ""}`}>
-              <IconComponent className={`${collapsed ? "h-8 w-8" : "h-5 w-5"}`} />
+              <IconComponent className={`${collapsed ? "h-10 w-10" : "h-5 w-5"}`} />
             </div>
             {!collapsed && <span>{item.label}</span>}
           </div>
@@ -44,12 +44,12 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
   };
 
   return (
-    <div className={`${collapsed ? 'w-16' : 'w-64'} flex-shrink-0 bg-slate-900 text-white transition-all duration-300`}>
+    <div className={`${collapsed ? 'w-20' : 'w-64'} flex-shrink-0 bg-slate-900 text-white transition-all duration-300`}>
       <div className="p-4 flex flex-col h-full">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-3">
-            <div className={`${collapsed ? "w-10 h-10" : "w-8 h-8"} rounded-md bg-primary flex items-center justify-center`}>
-              <Bot className={`${collapsed ? "h-8 w-8" : "h-5 w-5"}`} />
+            <div className={`${collapsed ? "w-12 h-12" : "w-8 h-8"} rounded-md bg-primary flex items-center justify-center`}>
+              <Bot className={`${collapsed ? "h-10 w-10" : "h-5 w-5"}`} />
             </div>
             {!collapsed && <h1 className="font-bold text-xl">Agent Builder</h1>}
           </div>
@@ -88,14 +88,14 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
           <Link href="/help">
             <div className={`flex items-center space-x-3 px-3 py-2 rounded-md cursor-pointer ${location === '/help' ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
               <div className={`flex items-center ${collapsed ? "w-full justify-center" : ""}`}>
-                <HelpCircle className={`${collapsed ? "h-8 w-8" : "h-5 w-5"}`} />
+                <HelpCircle className={`${collapsed ? "h-10 w-10" : "h-5 w-5"}`} />
               </div>
               {!collapsed && <span>Help & Resources</span>}
             </div>
           </Link>
           <div className="flex items-center space-x-3 px-3 py-2 mt-2">
-            <div className={`${collapsed ? "w-10 h-10" : "w-8 h-8"} rounded-full bg-slate-700 flex items-center justify-center text-white`}>
-              <User className={`${collapsed ? "h-8 w-8" : "h-5 w-5"}`} />
+            <div className={`${collapsed ? "w-12 h-12" : "w-8 h-8"} rounded-full bg-slate-700 flex items-center justify-center text-white`}>
+              <User className={`${collapsed ? "h-10 w-10" : "h-5 w-5"}`} />
             </div>
             {!collapsed && (
               <div className="text-sm">
