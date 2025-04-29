@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import { apiClient } from '@/lib/apiClient';
 import MainContent from '@/components/layout/MainContent';
 import Sidebar from '@/components/layout/Sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useToast } from '@/hooks/use-toast';
 import {
   Table,
   TableBody,
@@ -23,6 +24,17 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -144,10 +156,14 @@ function formatDate(dateString: string): string {
 
 export default function Library() {
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('workflows');
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('_all');
   const [statusFilter, setStatusFilter] = useState<string>('_all');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ id: number, name: string, type: string } | null>(null);
   
   // Pagination state
   const [page, setPage] = useState(1);
@@ -320,6 +336,52 @@ export default function Library() {
       setPage(1);
     }
   }, [activeTab, searchQuery, typeFilter, statusFilter, workflows, agents, nodes, itemsPerPage, page]);
+  
+  // Delete item function
+  const deleteItem = async () => {
+    if (!itemToDelete) return;
+    
+    setIsDeleting(true);
+    
+    try {
+      const endpoint = 
+        itemToDelete.type === 'workflow' ? `/api/workflows/${itemToDelete.id}` :
+        itemToDelete.type === 'agent' ? `/api/agents/${itemToDelete.id}` :
+        `/api/nodes/${itemToDelete.id}`;
+      
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to delete ${itemToDelete.type}: ${response.statusText}`);
+      }
+      
+      // Invalidate the relevant query to refresh the data
+      const queryKey = 
+        itemToDelete.type === 'workflow' ? '/api/workflows' :
+        itemToDelete.type === 'agent' ? '/api/agents' :
+        '/api/nodes';
+      
+      queryClient.invalidateQueries({ queryKey: [queryKey] });
+      
+      toast({
+        title: "Success",
+        description: `The ${itemToDelete.type} "${itemToDelete.name}" has been deleted.`,
+      });
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setItemToDelete(null);
+    }
+  };
   
   // Pagination controls
   const PaginationControls = ({ itemsCount }: { itemsCount: number }) => {
