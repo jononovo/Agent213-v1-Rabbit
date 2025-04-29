@@ -19,6 +19,31 @@ interface WorkflowExecutionContext {
 }
 
 /**
+ * Validate a workflow before execution
+ * This checks that all required node executors exist
+ */
+async function validateWorkflow(flowData: any): Promise<{ valid: boolean, missingExecutors: string[] }> {
+  const missingExecutors: string[] = [];
+  
+  // Check all nodes to ensure their executors can be loaded
+  for (const node of flowData.nodes) {
+    const nodeType = node.type;
+    
+    try {
+      // Attempt to import the executor module to verify it exists
+      await import(`../../../client/src/nodes/${getNodeCategory(nodeType)}/${nodeType}/executor`);
+    } catch (error) {
+      missingExecutors.push(`${node.id} (${nodeType})`);
+    }
+  }
+  
+  return {
+    valid: missingExecutors.length === 0,
+    missingExecutors
+  };
+}
+
+/**
  * Execute a workflow with the given input
  */
 export async function executeWorkflow(job: Job): Promise<any> {
@@ -40,6 +65,12 @@ export async function executeWorkflow(job: Job): Promise<any> {
     
     if (!flowData || !flowData.nodes || !flowData.edges) {
       throw new Error('Invalid workflow data: Missing nodes or edges');
+    }
+    
+    // Validate workflow before execution
+    const validation = await validateWorkflow(flowData);
+    if (!validation.valid) {
+      throw new Error(`Workflow validation failed. Missing node executors: ${validation.missingExecutors.join(', ')}`);
     }
     
     // Create execution context
@@ -183,40 +214,29 @@ async function executeNode(
       };
     }
     
-    // Execute the node
-    // In a full implementation, we would use the node's executor
-    // For this simplified version, we'll use a mock executor based on node type
+    // Execute the node without fallback to mock implementations
     let result;
     
-    // Try to get the node's executor dynamically
     try {
       // Find registered executor for this node type
       const { execute } = await import(`../../../client/src/nodes/${getNodeCategory(nodeType)}/${nodeType}/executor`);
       
-      if (typeof execute === 'function') {
-        result = await execute(nodeData, nodeInputs);
-      } else {
-        throw new Error(`Invalid executor for node type: ${nodeType}`);
+      if (typeof execute !== 'function') {
+        throw new Error(`Invalid executor for node type: ${nodeType} - execute function not found`);
       }
-    } catch (error) {
-      console.error(`[Workflow Engine] Error loading executor for ${nodeType}:`, error);
       
-      // Use a simple passthrough executor
-      result = {
-        default: {
-          items: [{ 
-            json: { 
-              input: nodeInputs,
-              nodeType,
-              message: `Mock execution for ${nodeType}` 
-            } 
-          }],
-          meta: {
-            startTime: new Date(),
-            endTime: new Date()
-          }
-        }
-      };
+      // Execute the node with its inputs
+      result = await execute(nodeData, nodeInputs);
+    } catch (error) {
+      // Provide detailed error information and fail the node execution
+      const errorMessage = error instanceof Error 
+        ? `Error executing node ${nodeId} (${nodeType}): ${error.message}` 
+        : `Unknown error executing node ${nodeId} (${nodeType})`;
+      
+      console.error(`[Workflow Engine] ${errorMessage}`, error);
+      
+      // Re-throw the error to properly fail this node execution
+      throw new Error(errorMessage);
     }
     
     // Store result in context
