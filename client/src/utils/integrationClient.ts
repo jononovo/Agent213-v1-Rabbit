@@ -5,7 +5,7 @@
  * This provides a clean interface for registering and managing integrations.
  */
 
-import { apiRequest } from '@lib/queryClient';
+import { apiRequest } from '../lib/queryClient';
 
 // Integration capability type definitions
 export interface IntegrationCapabilities {
@@ -159,4 +159,61 @@ export function parsePathTemplate(pathTemplate: string, params: Record<string, s
   });
   
   return path;
+}
+
+/**
+ * Interface for API request options
+ */
+export interface ApiRequestOptions {
+  method: string;
+  url: string;
+  headers?: Record<string, string>;
+  body?: any;
+  timeout?: number;
+  params?: Record<string, string>;
+}
+
+/**
+ * Make an outgoing API request through the Integration Engine
+ * 
+ * This function handles external API requests, leveraging the Integration Engine's
+ * proxy capabilities, error handling, and logging.
+ * 
+ * @param options The API request options
+ * @returns The API response
+ */
+export async function makeApiRequest(options: ApiRequestOptions): Promise<any> {
+  try {
+    // Format request body based on content type
+    let formattedBody = options.body;
+    const contentType = options.headers?.['Content-Type'] || 'application/json';
+    
+    if (typeof options.body === 'object' && contentType.includes('application/json')) {
+      formattedBody = JSON.stringify(options.body);
+    }
+    
+    // Create the request payload
+    const requestPayload = {
+      method: options.method,
+      url: options.url,
+      headers: options.headers || {},
+      body: formattedBody,
+      timeout: options.timeout || 30000,
+      params: options.params || {}
+    };
+    
+    // Make the request through our proxy endpoint
+    const response = await apiRequest('/api/integration/request', {
+      method: 'POST',
+      body: JSON.stringify(requestPayload),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return response;
+  } catch (error) {
+    console.error('API request error:', error);
+    throw error;
+  }
 }

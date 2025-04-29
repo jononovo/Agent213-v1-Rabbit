@@ -1146,6 +1146,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /**
+   * Integration Engine API Request Proxy
+   * 
+   * This endpoint handles outgoing API requests from integration nodes
+   * It proxies the request to external APIs and returns the response
+   */
+  app.post('/api/integration/request', async (req: Request, res: Response) => {
+    try {
+      // Extract request parameters
+      const { method, url, headers = {}, body, timeout = 30000 } = req.body;
+      
+      if (!url) {
+        return res.status(400).json({ error: 'URL is required' });
+      }
+      
+      if (!method) {
+        return res.status(400).json({ error: 'HTTP method is required' });
+      }
+      
+      console.log(`Integration Engine: Outgoing ${method} request to ${url}`);
+      
+      // Add trace headers for debugging
+      const requestHeaders = {
+        ...headers,
+        'X-Integration-Engine': 'true',
+        'X-Request-Source': 'lead-gen-rabbit'
+      };
+      
+      // Build fetch options
+      const fetchOptions: RequestInit = {
+        method,
+        headers: requestHeaders,
+        body: body || undefined,
+        // @ts-ignore - timeout is not in the standard RequestInit type
+        timeout: timeout
+      };
+      
+      // Make the external API request
+      const apiResponse = await fetch(url, fetchOptions);
+      
+      // Get response data
+      let responseData: any;
+      const contentType = apiResponse.headers.get('content-type') || '';
+      
+      if (contentType.includes('application/json')) {
+        responseData = await apiResponse.json();
+      } else {
+        responseData = await apiResponse.text();
+      }
+      
+      // Build the response object
+      const response = {
+        status: apiResponse.status,
+        statusText: apiResponse.statusText,
+        headers: Object.fromEntries(apiResponse.headers.entries()),
+        data: responseData,
+        ok: apiResponse.ok
+      };
+      
+      // Return the response
+      res.json(response);
+      
+    } catch (error) {
+      console.error('Integration Engine API request error:', error);
+      res.status(500).json({ 
+        error: `Error making API request: ${error instanceof Error ? error.message : String(error)}`,
+        ok: false 
+      });
+    }
+  });
+  
   // Integration catch-all route
   app.all('/api/integration/*', async (req: Request, res: Response) => {
     try {
