@@ -539,7 +539,7 @@ export function getAllNodeTypes(): string[] {
 /**
  * Get all node types by category (System or Custom)
  */
-export function getNodeTypesByCategory(category: 'System' | 'Custom'): string[] {
+export function getNodeTypesByCategory(category: 'System' | 'Custom' | 'Integration'): string[] {
   return Array.from(nodeRegistry.values())
     .filter(node => node.folderPath === category)
     .map(node => node.type);
@@ -557,6 +557,63 @@ export function getSystemNodeTypes(): string[] {
  */
 export function getCustomNodeTypes(): string[] {
   return getNodeTypesByCategory('Custom');
+}
+
+/**
+ * Get all Integration node types
+ */
+export function getIntegrationNodeTypes(): string[] {
+  return getNodeTypesByCategory('Integration');
+}
+
+/**
+ * Get all integration nodes
+ */
+export function getAllIntegrationNodes(): RegisteredNode[] {
+  return Array.from(nodeRegistry.values())
+    .filter(node => node.isIntegrationNode);
+}
+
+/**
+ * Get integration nodes by capability
+ * 
+ * @param capability The integration capability to filter by
+ * @returns Array of nodes that provide the specified capability
+ */
+export function getIntegrationNodesByCapability(capability: string): RegisteredNode[] {
+  return Array.from(nodeRegistry.values())
+    .filter(node => 
+      node.isIntegrationNode && 
+      node.integrationCapabilities?.provides && 
+      node.integrationCapabilities.provides[capability as keyof typeof node.integrationCapabilities.provides]
+    );
+}
+
+/**
+ * Get all endpoint providers
+ * 
+ * @returns Array of nodes that provide HTTP endpoints
+ */
+export function getEndpointProviders(): RegisteredNode[] {
+  return getIntegrationNodesByCapability('endpoint');
+}
+
+/**
+ * Get all webhook providers
+ * 
+ * @returns Array of nodes that provide webhook functionality
+ */
+export function getWebhookProviders(): RegisteredNode[] {
+  return getIntegrationNodesByCapability('webhook');
+}
+
+/**
+ * Get all scheduler providers
+ * 
+ * @returns Array of nodes that provide scheduling capabilities
+ */
+export function getSchedulerProviders(): RegisteredNode[] {
+  return getIntegrationNodesByCapability('scheduler');
 }
 
 /**

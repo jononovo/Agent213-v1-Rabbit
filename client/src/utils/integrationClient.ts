@@ -1,17 +1,47 @@
 /**
  * Integration Client
  * 
- * Client-side utility for interacting with the Integration Engine.
- * This handles registration of integrations from the client/node side.
+ * A client-side utility to communicate with the integration engine service.
+ * This provides a clean interface for registering and managing integrations.
  */
 
-// Simple logger function that doesn't break in browser
-const log = (message: string, ...args: any[]) => {
-  console.log(`[Integration] ${message}`, ...args);
-};
+import { apiRequest } from '@lib/queryClient';
 
-// Types
-interface EndpointConfig {
+// Integration capability type definitions
+export interface IntegrationCapabilities {
+  // What the node offers to the system
+  provides?: {
+    endpoint?: boolean;    // This node provides an HTTP endpoint
+    webhook?: boolean;     // This node acts as a webhook receiver
+    scheduler?: boolean;   // This node provides scheduling capabilities
+  };
+  
+  // What the node needs from the system
+  requires?: {
+    storage?: boolean;       // Needs persistent storage for configuration
+    authentication?: boolean; // Requires authentication
+  };
+  
+  // Endpoint configuration (applicable when provides.endpoint=true)
+  endpoint?: {
+    pathTemplate?: string;   // URL path template
+    methods?: string[];      // Supported HTTP methods
+    authTypes?: string[];    // Supported auth methods
+  };
+}
+
+// Integration node registration request
+export interface IntegrationRegistrationRequest {
+  nodeType: string;
+  capabilities: IntegrationCapabilities;
+  workflowId?: number;
+  nodeId?: string;
+  description?: string;
+}
+
+// Integration endpoint information
+export interface EndpointInfo {
+  path: string;
   methods: string[];
   workflowId?: number;
   nodeId?: string;
@@ -19,92 +49,114 @@ interface EndpointConfig {
 }
 
 /**
- * Client-side integration engine interface
+ * Register a node as an integration with the Integration Engine
+ * 
+ * @param registrationData The registration data for the integration
+ * @returns The registered endpoint information
  */
-class IntegrationClient {
-  private static instance: IntegrationClient;
-  
-  private constructor() {}
-  
-  /**
-   * Get the singleton instance
-   */
-  static getInstance(): IntegrationClient {
-    if (!IntegrationClient.instance) {
-      IntegrationClient.instance = new IntegrationClient();
-    }
-    return IntegrationClient.instance;
-  }
-  
-  /**
-   * Register an endpoint with the server-side integration engine
-   */
-  async registerEndpoint(path: string, config: EndpointConfig): Promise<string> {
-    try {
-      log(`Registering endpoint: ${path}`);
-      
-      const response = await fetch('/api/integration/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ path, config })
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to register endpoint: ${response.status} ${errorText}`);
+export async function registerIntegration(
+  registrationData: IntegrationRegistrationRequest
+): Promise<EndpointInfo> {
+  try {
+    const response = await apiRequest('/api/integration/register', {
+      method: 'POST',
+      body: JSON.stringify(registrationData),
+      headers: {
+        'Content-Type': 'application/json'
       }
-      
-      const data = await response.json();
-      log(`Endpoint registered successfully: ${data.path}`);
-      return data.path;
-    } catch (error) {
-      console.error('Error registering integration endpoint:', error);
-      // Return the path anyway to allow the UI to show something
-      return path;
-    }
-  }
-  
-  /**
-   * Get all registered integration endpoints
-   */
-  async getEndpoints(): Promise<{ path: string, config: EndpointConfig }[]> {
-    try {
-      const response = await fetch('/api/integration/endpoints');
-      
-      if (!response.ok) {
-        throw new Error(`Failed to get endpoints: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      return data.endpoints;
-    } catch (error) {
-      console.error('Error getting integration endpoints:', error);
-      return [];
-    }
-  }
-  
-  /**
-   * Generate a URL for a webhook endpoint
-   */
-  generateWebhookUrl(path: string): string {
-    // Use window.location if available, otherwise fallback
-    let baseUrl = '';
+    });
     
-    if (typeof window !== 'undefined') {
-      const protocol = window.location.protocol;
-      const host = window.location.host;
-      baseUrl = `${protocol}//${host}`;
-    } else {
-      baseUrl = '[YOUR-APPLICATION-URL]';
-    }
-    
-    // Normalize path
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    
-    return `${baseUrl}/api/integration${normalizedPath}`;
+    return response;
+  } catch (error) {
+    console.error('Error registering integration:', error);
+    throw error;
   }
 }
 
-export const integrationClient = IntegrationClient.getInstance();
+/**
+ * Unregister an integration endpoint
+ * 
+ * @param path The path of the endpoint to unregister
+ * @returns Success status
+ */
+export async function unregisterIntegration(path: string): Promise<{ success: boolean }> {
+  try {
+    const response = await apiRequest('/api/integration/unregister', {
+      method: 'POST',
+      body: JSON.stringify({ path }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return response;
+  } catch (error) {
+    console.error('Error unregistering integration:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all registered integration endpoints
+ * 
+ * @returns Array of endpoint information
+ */
+export async function getIntegrationEndpoints(): Promise<EndpointInfo[]> {
+  try {
+    const response = await apiRequest('/api/integration/endpoints', {
+      method: 'GET'
+    });
+    
+    return response;
+  } catch (error) {
+    console.error('Error fetching integration endpoints:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get the base URL for webhooks or API endpoints
+ * 
+ * @returns The base URL for constructing webhook or API endpoints
+ */
+export function getIntegrationBaseUrl(): string {
+  // Default to current host if in browser
+  if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol;
+    const host = window.location.host;
+    return `${protocol}//${host}/api/integration`;
+  }
+  
+  // Fallback for non-browser environments (unlikely to be needed)
+  return '/api/integration';
+}
+
+/**
+ * Get the full URL for a specific integration endpoint
+ * 
+ * @param path The endpoint path
+ * @returns The full URL for the endpoint
+ */
+export function getIntegrationUrl(path: string): string {
+  const baseUrl = getIntegrationBaseUrl();
+  const normalizedPath = path.startsWith('/') ? path.substring(1) : path;
+  return `${baseUrl}/${normalizedPath}`;
+}
+
+/**
+ * Parse a dynamic path template with variables
+ * 
+ * @param pathTemplate The path template with placeholders (e.g., 'webhooks/:path')
+ * @param params The parameters to substitute in the template
+ * @returns The parsed path
+ */
+export function parsePathTemplate(pathTemplate: string, params: Record<string, string>): string {
+  let path = pathTemplate;
+  
+  // Replace each variable with its value
+  Object.entries(params).forEach(([key, value]) => {
+    path = path.replace(`:${key}`, encodeURIComponent(value));
+  });
+  
+  return path;
+}

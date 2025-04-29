@@ -24,6 +24,7 @@ export interface EndpointConfig {
   methods: string[];
   workflowId?: number;
   nodeId?: string;
+  nodeType?: string;
   description?: string;
   handler: EndpointHandler;
 }
@@ -32,8 +33,20 @@ export interface StorableEndpointConfig {
   methods: string[];
   workflowId?: number;
   nodeId?: string;
+  nodeType?: string;
   description?: string;
   type: string; // 'webhook', 'api', etc.
+}
+
+export interface NodeTypeHandler {
+  (req: Request, res: Response, params: Record<string, string>): Promise<void>;
+}
+
+export interface NodeTypeConfig {
+  pathTemplate: string;
+  methods: string[];
+  description?: string;
+  nodeTypeHandler: NodeTypeHandler;
 }
 
 export interface IntegrationProvider {
