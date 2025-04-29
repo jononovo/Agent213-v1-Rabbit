@@ -40,6 +40,28 @@ const definition = {
       description: 'HTTP method used in the webhook request'
     }
   },
+  // Integration Engine configuration
+  integrationConfig: {
+    // What the node offers to the system
+    provides: {
+      endpoint: true,     // This node provides an HTTP endpoint
+      webhook: true,      // This node acts as a webhook receiver
+      scheduler: false    // This node doesn't provide scheduling
+    },
+    
+    // What the node needs from the system
+    requires: {
+      storage: true,       // Needs persistent storage for webhook configuration
+      authentication: false // Authentication is optional
+    },
+    
+    // Endpoint configuration
+    endpoint: {
+      pathTemplate: 'webhooks/:path',  // URL path template with parameters
+      methods: ['GET', 'POST', 'PUT', 'DELETE'],  // Supported HTTP methods
+      authTypes: ['none', 'apiKey', 'bearer']     // Supported auth methods
+    }
+  },
   settings: [
     {
       key: 'path',

@@ -8,8 +8,8 @@
  * ENHANCED VERSION: Now using the Integration Engine for more autonomous operation.
  */
 
-import { createNodeOutput, createErrorOutput } from '../../nodeOutputUtils';
-import { integrationClient } from '../../../utils/integrationClient';
+import { createNodeOutput, createErrorOutput } from '@/nodes/nodeOutputUtils';
+import * as integrationClient from '@/utils/integrationClient';
 
 // Define the webhook trigger node data interface
 interface WebhookTriggerNodeData {
@@ -78,31 +78,47 @@ export const execute = async (
 /**
  * Register the webhook with the Integration Engine
  */
-async function registerWithIntegrationEngine(nodeData: WebhookTriggerNodeData): Promise<void> {
+async function registerWithIntegrationEngine(nodeData: WebhookTriggerNodeData): Promise<any> {
   try {
-    const { path, methods, workflowId, nodeId } = nodeData;
+    const { path, methods, workflowId, nodeId, authType } = nodeData;
     
     if (!workflowId || !nodeId) {
       console.warn('Cannot register webhook: Missing workflowId or nodeId');
-      return;
+      return null;
     }
     
-    // Determine the endpoint path
-    const endpointPath = path || `workflow/${workflowId}/node/${nodeId}`;
+    // Create a webhook path pattern
+    // If custom path is provided, use it; otherwise use workflowId/nodeId
+    const webhookPath = path 
+      ? `webhooks/${path}` 
+      : `webhooks/workflow/${workflowId}/node/${nodeId}`;
     
-    // Register with the integration engine
-    await integrationClient.registerEndpoint(endpointPath, {
-      methods: methods || ['POST'],
-      workflowId,
-      nodeId,
-      description: `Webhook trigger for workflow ${workflowId}, node ${nodeId}`
+    // Register the integration with the engine
+    const registration = await integrationClient.registerIntegration({
+      nodeType: 'webhook_trigger',
+      capabilities: {
+        provides: {
+          endpoint: true,
+          webhook: true
+        },
+        endpoint: {
+          pathTemplate: webhookPath,
+          methods: methods || ['POST'],
+          authTypes: [authType || 'none']
+        }
+      },
+      workflowId: Number(workflowId),
+      nodeId: nodeId,
+      description: `Webhook trigger for workflow ${workflowId}`
     });
     
-    console.log(`Webhook registered with integration engine: ${endpointPath}`);
+    console.log(`Webhook registered with integration engine: ${webhookPath}`);
+    return registration;
   } catch (error) {
     console.error('Error registering webhook with integration engine:', error);
     // Continue execution even if registration fails
     // The webhook can still work through the traditional webhookService
+    return null;
   }
 }
 
@@ -113,8 +129,11 @@ function generateWebhookUrl(nodeData: WebhookTriggerNodeData): string {
   const { path, workflowId, nodeId } = nodeData;
   
   // Generate the integration endpoint path
-  const endpointPath = path || `workflow/${workflowId}/node/${nodeId}`;
+  // Use webhooks/ prefix for consistent path structure
+  const endpointPath = path 
+    ? `webhooks/${path}` 
+    : `webhooks/workflow/${workflowId}/node/${nodeId}`;
   
   // Use the integration client to generate the URL
-  return integrationClient.generateWebhookUrl(endpointPath);
+  return integrationClient.getIntegrationUrl(endpointPath);
 }

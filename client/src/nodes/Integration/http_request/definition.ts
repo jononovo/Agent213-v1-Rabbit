@@ -90,6 +90,23 @@ const definition: NodeDefinition = {
     headers: { 'Content-Type': 'application/json' },
     body: '',
     timeout: 10000
+  },
+  
+  // Integration Engine configuration
+  integrationConfig: {
+    // What the node offers to the system
+    provides: {
+      endpoint: false,  // This node doesn't provide an endpoint
+      webhook: false,   // This node doesn't act as a webhook
+      connector: true   // This node connects to external systems
+    },
+    
+    // What the node needs from the system
+    requires: {
+      storage: false,        // Doesn't need persistent storage
+      authentication: false, // Authentication is handled per request
+      proxy: true            // Can use system proxy if available
+    }
   }
 };
 

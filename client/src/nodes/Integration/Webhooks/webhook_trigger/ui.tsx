@@ -10,7 +10,7 @@ import { Globe, Link, CheckCircle } from 'lucide-react';
 import { BaseNode } from '@/nodes/Base';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { integrationClient } from '../../../utils/integrationClient';
+import * as integrationClient from '@/utils/integrationClient';
 
 export default function WebhookTriggerNode({ id, data }: { id: string, data: any }) {
   const [webhookUrl, setWebhookUrl] = useState<string>('');
@@ -24,19 +24,30 @@ export default function WebhookTriggerNode({ id, data }: { id: string, data: any
     const workflowId = data?.workflowId || 'unknown';
     const methods = data?.settings?.methods || ['POST'];
     
-    const endpointPath = path 
-      ? path 
-      : `workflow/${workflowId}/node/${id}`;
+    // Create a webhook path pattern with webhooks/ prefix
+    const webhookPath = path 
+      ? `webhooks/${path}` 
+      : `webhooks/workflow/${workflowId}/node/${id}`;
     
     // Update the webhook URL
-    const generatedUrl = integrationClient.generateWebhookUrl(endpointPath);
+    const generatedUrl = integrationClient.getIntegrationUrl(webhookPath);
     setWebhookUrl(generatedUrl);
     
     // Register the webhook with the integration engine if it's a real workflow
     if (workflowId && workflowId !== 'unknown') {
       // Register with integration engine
-      integrationClient.registerEndpoint(endpointPath, {
-        methods,
+      integrationClient.registerIntegration({
+        nodeType: 'webhook_trigger',
+        capabilities: {
+          provides: {
+            endpoint: true,
+            webhook: true
+          },
+          endpoint: {
+            pathTemplate: webhookPath,
+            methods: methods || ['POST']
+          }
+        },
         workflowId: typeof workflowId === 'string' ? parseInt(workflowId, 10) : workflowId,
         nodeId: id,
         description: `Webhook trigger for workflow ${workflowId}, node ${id}`
