@@ -7,7 +7,7 @@
 import { definition } from './definition';
 import { component } from './ui';
 import { execute } from './executor';
-import { tests } from './tests';
+import tests from './tests';
 
 export { 
   definition,

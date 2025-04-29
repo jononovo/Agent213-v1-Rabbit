@@ -2,7 +2,7 @@
  * Node Test Loader
  * 
  * A utility module to dynamically load test modules for different node types.
- * This approach centralizes test loading and makes it easy to add tests for new nodes.
+ * This approach centralizes test loading and eliminates the need for hardcoding test imports.
  */
 import { NodeTest } from '../nodes/types/nodeTestsStandard';
 
@@ -18,52 +18,7 @@ const initTestRegistry = async (): Promise<Record<string, NodeTest[]>> => {
   // Create a new registry
   nodeTestRegistry = {};
   
-  try {
-    // Attempt to load send_to_webhook tests
-    try {
-      const sendToWebhookModule = await import('../nodes/System/send_to_webhook/tests');
-      if (sendToWebhookModule.default) {
-        nodeTestRegistry['send_to_webhook'] = sendToWebhookModule.default;
-      }
-    } catch (e) {
-      console.warn('Could not load send_to_webhook tests:', e);
-    }
-    
-    // Attempt to load text_formatter tests
-    try {
-      const textFormatterModule = await import('../nodes/System/text_formatter/tests');
-      if (textFormatterModule.default) {
-        nodeTestRegistry['text_formatter'] = textFormatterModule.default;
-      }
-    } catch (e) {
-      console.warn('Could not load text_formatter tests:', e);
-    }
-    
-    // Attempt to load http_request tests
-    try {
-      const httpRequestModule = await import('../nodes/Integration/http_request/tests');
-      if (httpRequestModule.default) {
-        nodeTestRegistry['http_request'] = httpRequestModule.default;
-      }
-    } catch (e) {
-      console.warn('Could not load http_request tests:', e);
-    }
-    
-    // Attempt to load perplexity_api tests
-    try {
-      const perplexityApiModule = await import('../nodes/Integration/perplexity_api/tests');
-      if (perplexityApiModule.default) {
-        nodeTestRegistry['perplexity_api'] = perplexityApiModule.default;
-      }
-    } catch (e) {
-      console.warn('Could not load perplexity_api tests:', e);
-    }
-    
-    return nodeTestRegistry;
-  } catch (e) {
-    console.error('Error initializing test registry:', e);
-    return {};
-  }
+  return nodeTestRegistry;
 };
 
 /**
@@ -79,12 +34,57 @@ export const loadNodeTests = async (nodeType: string): Promise<NodeTest[] | null
     // Check if we have registered tests for this node type
     if (nodeType in registry) {
       const tests = registry[nodeType];
-      console.log(`Loaded ${tests.length} tests for ${nodeType} from registry`);
+      console.log(`Loaded ${tests.length} tests for ${nodeType} from registry cache`);
       return tests;
     }
     
-    // No tests found for this node type
-    console.warn(`No tests found for node type: ${nodeType}`);
+    // Otherwise try to dynamically import tests for this node type
+    try {
+      // First try Integration category
+      try {
+        // @vite-ignore
+        const testsModule = await import(`../nodes/Integration/${nodeType}/tests.ts`);
+        if (testsModule.default) {
+          // Cache the result
+          registry[nodeType] = testsModule.default;
+          console.log(`Loaded ${testsModule.default.length} tests for ${nodeType} from Integration folder`);
+          return testsModule.default;
+        }
+      } catch (e) {
+        // Not found in Integration category, try System category
+        try {
+          // @vite-ignore
+          const testsModule = await import(`../nodes/System/${nodeType}/tests.ts`);
+          if (testsModule.default) {
+            // Cache the result
+            registry[nodeType] = testsModule.default;
+            console.log(`Loaded ${testsModule.default.length} tests for ${nodeType} from System folder`);
+            return testsModule.default;
+          }
+        } catch (e) {
+          // Not found in System category, try Custom category
+          try {
+            // @vite-ignore
+            const testsModule = await import(`../nodes/Custom/${nodeType}/tests.ts`);
+            if (testsModule.default) {
+              // Cache the result
+              registry[nodeType] = testsModule.default;
+              console.log(`Loaded ${testsModule.default.length} tests for ${nodeType} from Custom folder`);
+              return testsModule.default;
+            }
+          } catch (e) {
+            // No tests found for this node type in any category
+            console.warn(`No tests found for node type: ${nodeType}`);
+            return null;
+          }
+        }
+      }
+    } catch (importError) {
+      console.warn(`Error importing tests for node type ${nodeType}:`, importError);
+      return null;
+    }
+    
+    // No tests found
     return null;
   } catch (error) {
     console.error(`Error loading tests for node type ${nodeType}:`, error);
@@ -94,6 +94,8 @@ export const loadNodeTests = async (nodeType: string): Promise<NodeTest[] | null
 
 /**
  * Returns a list of node types that have tests available
+ * This implementation only returns what's already in the registry.
+ * For a full scan of all available node types with tests, use scanForNodeTests.
  */
 export const getNodeTypesWithTests = async (): Promise<string[]> => {
   const registry = await initTestRegistry();
