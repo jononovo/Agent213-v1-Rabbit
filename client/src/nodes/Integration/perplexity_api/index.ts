@@ -7,15 +7,18 @@
 import { definition } from './definition';
 import { component } from './ui';
 import { execute } from './executor';
+import { tests } from './tests';
 
 export { 
   definition,
   component,
-  execute
+  execute,
+  tests
 };
 
 export default {
   definition,
   component,
-  execute
+  execute,
+  tests
 };

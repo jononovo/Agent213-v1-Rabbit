@@ -32,6 +32,36 @@ Integration nodes can register specialized handlers for HTTP requests:
 
 ## Architecture Components
 
+### Dedicated Integration Engine Server
+
+The Integration Engine now runs as a dedicated Express server to isolate API and workflow concerns:
+
+```typescript
+// Create the express app
+const app = express();
+const PORT = process.env.INTEGRATION_PORT || 3001;
+
+// API routes
+router.get('/health', (_req, res) => {...});
+router.post('/integration/perplexity', async (req, res) => {...});
+router.post('/integration/request', async (req, res) => {...});
+router.all('/integration/webhook/:id', async (req, res) => {...});
+
+// Start the server
+export function startIntegrationServer() {
+  server.listen(PORT, () => {
+    console.log(`[Integration Engine] Server running on port ${PORT}`);
+  });
+  return server;
+}
+```
+
+Key benefits of the dedicated server approach:
+- **Separation of Concerns**: Integration logic is isolated from the main application
+- **Independent Scaling**: The Integration Engine can be scaled separately
+- **Enhanced Reliability**: Issues in one server won't affect the other
+- **Simplified Architecture**: Clearer boundaries between components
+
 ### IntegrationEngine Class
 
 The core service that manages the integration registry and handles requests:
@@ -96,13 +126,24 @@ const definition: NodeDefinition = {
 
 ### API Routes
 
-The Integration Engine is integrated with the Express application through these routes:
+#### Main Application Routes
+These routes are available in the main Express application (port 5000):
 
 - **`POST /api/integration/register`**: Register an integration endpoint
 - **`POST /api/integration/register-node-type`**: Register a node type handler
 - **`GET /api/integration/node-types`**: Get all registered node types
 - **`GET /api/integration/endpoints`**: Get all registered endpoints
+- **`POST /api/integration/request`**: Make an outgoing API request
 - **`ALL /api/integration/*`**: Handle integration requests
+
+#### Dedicated Integration Engine Routes
+These routes are available in the dedicated Integration Engine server (port 3001):
+
+- **`GET /health`**: Health check endpoint for the Integration Engine
+- **`GET /api/health`**: API-specific health check endpoint
+- **`POST /api/integration/perplexity`**: Proxy requests to Perplexity AI API
+- **`POST /api/integration/request`**: Make outgoing API requests to external services
+- **`ALL /api/integration/webhook/:id`**: Handle incoming webhook requests
 
 ## Client-Side Integration
 
@@ -159,7 +200,13 @@ The Integration Engine includes built-in testing tools:
 
 - **test-integration-engine.ts**: A test script for verifying engine functionality
 - **test-integration.sh**: A bash script for testing integration endpoints
+- **test-perplexity-integration.sh**: A script specifically for testing Perplexity API integration
+- **test-webhook.ts**: A test script for webhook callbacks
 - **API route**: `POST /api/test-integration-engine` for triggering tests
+
+### Node Debug Testing
+
+Each integration node should include a `tests.ts` file in its folder structure that provides sample data for testing the node in the node-debug UI. This allows for rapid development and verification of node functionality without requiring a complete workflow setup.
 
 ## Future Development
 
