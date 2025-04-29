@@ -73,14 +73,21 @@ const loadNodeComponentStatic = (nodeType: string) => {
         return import(/* @vite-ignore */ `../../nodes/System/${nodeType}/ui`)
           .then(module => module.component || module.default)
           .catch(systemError => {
-            console.log(`Node ${nodeType} not found in System directory, trying root path`);
+            console.log(`Node ${nodeType} not found in System directory, trying Integration directory`);
             
-            // Finally try the root directory as a fallback
-            return import(/* @vite-ignore */ `../../nodes/${nodeType}/ui`)
+            // If not found in System directory, try the Integration directory
+            return import(/* @vite-ignore */ `../../nodes/Integration/${nodeType}/ui`)
               .then(module => module.component || module.default)
-              .catch(rootError => {
-                console.warn(`Failed to load component for node type ${nodeType}:`, rootError);
-                return BaseNode;
+              .catch(integrationError => {
+                console.log(`Node ${nodeType} not found in Integration directory, trying root path`);
+                
+                // Finally try the root directory as a fallback
+                return import(/* @vite-ignore */ `../../nodes/${nodeType}/ui`)
+                  .then(module => module.component || module.default)
+                  .catch(rootError => {
+                    console.warn(`Failed to load component for node type ${nodeType}:`, rootError);
+                    return BaseNode;
+                  });
               });
           });
       });
@@ -331,8 +338,39 @@ const FlowEditor = ({
             return;
           }
         } catch (systemError) {
-          // If not in System directory, try the root directory
-          console.log(`Node ${type} not found in System directory, trying root path`);
+          // If not in System directory, try the Integration directory
+          console.log(`Node ${type} not found in System directory, trying Integration directory`);
+        }
+      }
+      
+      // Try the Integration directory using index.ts
+      try {
+        const integrationIndexModule = await import(/* @vite-ignore */ `../../nodes/Integration/${type}/index`);
+        if (integrationIndexModule && integrationIndexModule.component) {
+          // Update the loadedComponents with the loaded component
+          setLoadedComponents((prev: Record<string, any>) => ({
+            ...prev,
+            [type]: integrationIndexModule.component
+          }));
+          console.log(`Successfully loaded component for ${type} from Integration directory (index.ts)`);
+          return;
+        }
+      } catch (integrationIndexError) {
+        // If not found in index.ts, try ui.tsx directly
+        try {
+          const integrationModule = await import(/* @vite-ignore */ `../../nodes/Integration/${type}/ui`);
+          if (integrationModule && integrationModule.default) {
+            // Update the loadedComponents with the loaded component
+            setLoadedComponents((prev: Record<string, any>) => ({
+              ...prev,
+              [type]: integrationModule.default
+            }));
+            console.log(`Successfully loaded component for ${type} from Integration directory (ui.tsx)`);
+            return;
+          }
+        } catch (integrationError) {
+          // If not in Integration directory, try the root directory
+          console.log(`Node ${type} not found in Integration directory, trying root path`);
         }
       }
       
