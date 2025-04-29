@@ -33,7 +33,7 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
       return (
         <Link key={index} href={item.path}>
           <div className={`flex items-center space-x-3 px-3 py-2 rounded-md cursor-pointer ${location === item.path ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
-            <div className={`flex items-center justify-center ${collapsed ? "w-8 min-w-[2rem]" : ""}`}>
+            <div className={`flex items-center ${collapsed ? "w-full justify-center" : ""}`}>
               <IconComponent className="h-5 w-5" />
             </div>
             {!collapsed && <span>{item.label}</span>}
@@ -87,7 +87,7 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
         <div className="mt-auto">
           <Link href="/help">
             <div className={`flex items-center space-x-3 px-3 py-2 rounded-md cursor-pointer ${location === '/help' ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
-              <div className={`flex items-center justify-center ${collapsed ? "w-8 min-w-[2rem]" : ""}`}>
+              <div className={`flex items-center ${collapsed ? "w-full justify-center" : ""}`}>
                 <HelpCircle className="h-5 w-5" />
               </div>
               {!collapsed && <span>Help & Resources</span>}
