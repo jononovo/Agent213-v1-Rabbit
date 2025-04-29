@@ -623,6 +623,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Test Integration Engine
+  app.post('/api/test-integration-engine', async (req: Request, res: Response) => {
+    try {
+      log('Starting Integration Engine test', 'test');
+      
+      // Run the integration engine test
+      const { testIntegrationEngine } = await import('./test-integration-engine');
+      
+      // Execute test (returns a promise)
+      testIntegrationEngine()
+        .then(() => {
+          log('Integration Engine test completed successfully', 'test');
+        })
+        .catch(error => {
+          console.error('Error in Integration Engine test:', error);
+        });
+      
+      // Return immediate response (test runs in background)
+      res.json({
+        success: true,
+        message: "Integration Engine test started",
+        note: "Check server logs for test results"
+      });
+    } catch (error) {
+      console.error("Integration Engine test error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error starting Integration Engine test",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   // Endpoint to manually trigger saving of all data
   app.post('/api/admin/save-all-data', async (req: Request, res: Response) => {
     try {
