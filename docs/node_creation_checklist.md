@@ -308,7 +308,229 @@ Follow this decision tree:
   export default { definition, execute, component };
   ```
 
-## Step 7: Testing Your Node
+## Step 7: Additional Steps for Integration Nodes
+
+If you are creating an Integration Node (for third-party APIs), these additional steps are required:
+
+### A. API Configuration
+
+- [ ] Define API connection details in `definition.ts`:
+  ```typescript
+  export const definition: NodeDefinition = {
+    // Standard node properties...
+    
+    // Integration-specific properties
+    integration: {
+      service: 'your_service_name', // e.g., 'openai', 'google', 'slack'
+      apiVersion: 'v1',
+      defaultEndpoint: 'https://api.service.com/v1',
+      authType: 'api_key', // or 'oauth', 'bearer', etc.
+      
+      // Define available operations
+      operations: [
+        {
+          id: 'list_items',
+          name: 'List Items',
+          description: 'Get a list of items from the service',
+          endpoint: '/items',
+          method: 'GET',
+          inputSchema: {
+            // Zod or JSON schema for inputs
+          },
+          outputSchema: {
+            // Zod or JSON schema for outputs
+          }
+        },
+        // Add more operations...
+      ]
+    },
+    
+    // Integration nodes typically have these settings
+    settings: {
+      title: 'API Settings',
+      fields: [
+        {
+          key: 'apiKey',
+          label: 'API Key',
+          type: 'password',
+          description: 'Your service API key'
+        },
+        {
+          key: 'operation',
+          label: 'Operation',
+          type: 'select',
+          options: [
+            { label: 'List Items', value: 'list_items' },
+            // Add more operations...
+          ],
+          description: 'Operation to perform'
+        },
+        // Operation-specific settings...
+      ]
+    }
+  };
+  ```
+
+### B. Integration Registry Registration
+
+- [ ] Register your integration with the Integration Engine:
+  ```typescript
+  // In executor.ts or a separate file
+  import { integrationRegistry } from '@/services/integrationEngine';
+  
+  // Register the integration
+  export function registerIntegration() {
+    integrationRegistry.register({
+      id: 'your_service_name',
+      name: 'Your Service Name',
+      description: 'Integration with Your Service API',
+      icon: 'your-service-icon',
+      version: '1.0.0',
+      
+      // Define authentication handler
+      authenticate: async (credentials) => {
+        // Verify credentials and return auth info
+        return {
+          isValid: true,
+          credentials: {
+            // Processed credentials
+          }
+        };
+      },
+      
+      // Define request handler
+      makeRequest: async (operation, params, credentials) => {
+        // Make request to external API
+        // Return response
+      }
+    });
+  }
+  
+  // Call this in your executor or elsewhere
+  registerIntegration();
+  ```
+
+### C. Credentials Handling
+
+- [ ] Implement secure credential handling:
+  ```typescript
+  // In executor.ts
+  export const execute = async (
+    nodeData: Record<string, any>,
+    inputs: Record<string, NodeExecutionData> = {}
+  ): Promise<Record<string, NodeExecutionData>> => {
+    try {
+      // Get credentials
+      const apiKey = nodeData.apiKey || nodeData.settingsData?.apiKey;
+      
+      // IMPORTANT: Always validate credentials
+      if (!apiKey) {
+        throw new Error('API Key is required');
+      }
+      
+      // Use the Integration Engine for requests
+      const response = await integrationEngine.request({
+        service: 'your_service_name',
+        operation: nodeData.operation,
+        params: {
+          // Operation parameters from settings or inputs
+        },
+        credentials: {
+          apiKey
+        }
+      });
+      
+      // Process and return results
+      // ...
+    } catch (error) {
+      // Error handling
+    }
+  };
+  ```
+
+### D. UI Enhancements for Integration Nodes
+
+- [ ] Create integration-specific UI elements:
+  ```typescript
+  // In ui.tsx
+  const customContent = (
+    <div className="flex flex-col gap-3 p-3">
+      {/* API connection status indicator */}
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium">API Status:</span>
+        <div className="flex items-center gap-1.5">
+          <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+          <span className="text-xs">{isConnected ? 'Connected' : 'Not Connected'}</span>
+        </div>
+      </div>
+      
+      {/* Operation details */}
+      <div className="px-3 py-2 bg-muted/30 rounded text-xs">
+        <div className="font-medium mb-1">Operation: {getOperationName(operation)}</div>
+        <div className="text-muted-foreground">
+          {getOperationDescription(operation)}
+        </div>
+      </div>
+      
+      {/* Authentication warnings if needed */}
+      {!hasValidCredentials && (
+        <div className="flex items-center gap-1.5 text-amber-500 text-xs">
+          <AlertTriangle className="h-3 w-3" />
+          <span>Missing API credentials</span>
+        </div>
+      )}
+    </div>
+  );
+  ```
+
+### E. Rate Limiting and Error Handling
+
+- [ ] Implement proper rate limiting and error handling:
+  ```typescript
+  // In executor.ts
+  import { rateLimiter } from '@/utils/rateLimiter';
+  
+  export const execute = async (/*...*/) => {
+    try {
+      // Check rate limits before making request
+      const canProceed = await rateLimiter.check('your_service_name');
+      if (!canProceed) {
+        throw new Error('Rate limit exceeded. Please try again later.');
+      }
+      
+      // Make the API request
+      // ...
+      
+      // Handle specific API errors
+      if (response.status === 429) {
+        throw new Error('Service rate limit exceeded');
+      }
+      
+      if (response.status === 401) {
+        throw new Error('Invalid API credentials');
+      }
+      
+      // Process successful response
+      // ...
+    } catch (error) {
+      // Enhanced error reporting for integration errors
+      return {
+        output: {
+          items: [{ json: null }],
+          meta: {
+            error: true,
+            errorMessage: error.message,
+            errorCode: error.code || 'UNKNOWN_ERROR',
+            errorDetails: error.details || null,
+            integrationError: true
+          }
+        }
+      };
+    }
+  };
+  ```
+
+## Step 8: Testing Your Node
 
 - [ ] Verify your node appears in the node palette
 - [ ] Test adding it to a workflow
