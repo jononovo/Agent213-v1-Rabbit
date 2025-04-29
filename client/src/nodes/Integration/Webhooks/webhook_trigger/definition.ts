@@ -1,58 +1,94 @@
 /**
  * Webhook Trigger Node Definition
  * 
- * This node provides a webhook endpoint that can trigger a workflow
- * based on external HTTP requests.
+ * This node creates a webhook endpoint that can be called by external systems
+ * to trigger the workflow.
  */
 
-import { NodeDefinition } from '@nodes/types';
+import { z } from 'zod';
 
-const definition: NodeDefinition = {
-  type: 'webhook_trigger_integration',
-  name: 'Webhook Trigger (Integration)',
-  description: 'Triggers a workflow when an external HTTP webhook is received',
-  category: 'triggers',
-  icon: 'webhook',
+import { Webhook } from 'lucide-react';
+
+// Default configuration for the node
+const defaultData = {
+  path: '',
+  secret: '',
+  authType: 'none',
+  methods: ['POST']
+};
+
+const definition = {
+  type: 'webhook_trigger',
+  name: 'Webhook Trigger',
+  description: 'Creates a webhook URL that can trigger this workflow when called from external systems',
+  category: 'actions',
+  icon: Webhook,
   version: '1.0.0',
-  
+  defaultData: defaultData,
   inputs: {},
-  
   outputs: {
-    trigger: {
+    payload: {
       type: 'object',
-      description: 'The webhook data that triggered the workflow'
+      description: 'The payload received from the webhook call'
+    },
+    headers: {
+      type: 'object',
+      description: 'HTTP headers from the webhook request'
+    },
+    method: {
+      type: 'string',
+      description: 'HTTP method used in the webhook request'
     }
   },
-  
-  defaultData: {
-    webhookPath: '',
-    description: 'Webhook endpoint',
-    methods: ['POST'],
-    authType: 'none'
-  },
-  
-  // Integration-specific configuration
-  integrationConfig: {
-    // What the node offers to the system
-    provides: {
-      endpoint: true,     // This node provides an HTTP endpoint
-      webhook: true,      // This node acts as a webhook receiver
-      scheduler: false    // This node doesn't schedule anything
+  settings: [
+    {
+      key: 'path',
+      type: 'string',
+      label: 'Webhook Path',
+      description: 'Custom path for the webhook URL (optional)',
+      placeholder: 'my-custom-endpoint',
+      required: false
     },
-    
-    // What the node needs from the system
-    requires: {
-      storage: true,       // Needs persistent storage for configuration
-      authentication: false // Doesn't require authentication by default
+    {
+      key: 'secret',
+      type: 'string',
+      label: 'Secret Key',
+      description: 'Secret key for validating webhook requests',
+      placeholder: 'your-secret-key',
+      required: false
     },
-    
-    // Endpoint configuration
-    endpoint: {
-      pathTemplate: 'webhooks/:path',  // URL path template
-      methods: ['POST', 'GET'],        // Supported HTTP methods
-      authTypes: ['none', 'apiKey'],   // Supported auth methods
+    {
+      key: 'authType',
+      type: 'select',
+      label: 'Authentication Type',
+      description: 'Method of authentication for the webhook',
+      options: [
+        { label: 'None', value: 'none' },
+        { label: 'API Key', value: 'apiKey' },
+        { label: 'Bearer Token', value: 'bearer' }
+      ],
+      default: 'none'
+    },
+    {
+      key: 'methods',
+      type: 'multiselect',
+      label: 'Allowed HTTP Methods',
+      description: 'HTTP methods this webhook will accept',
+      options: [
+        { label: 'GET', value: 'GET' },
+        { label: 'POST', value: 'POST' },
+        { label: 'PUT', value: 'PUT' },
+        { label: 'DELETE', value: 'DELETE' }
+      ],
+      default: ['POST']
     }
-  }
+  ],
+  validation: z.object({
+    path: z.string().optional(),
+    secret: z.string().optional(),
+    authType: z.enum(['none', 'apiKey', 'bearer']).default('none'),
+    methods: z.array(z.enum(['GET', 'POST', 'PUT', 'DELETE'])).default(['POST'])
+  })
 };
 
 export default definition;

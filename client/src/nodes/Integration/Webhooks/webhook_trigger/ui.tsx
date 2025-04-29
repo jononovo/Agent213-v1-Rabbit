@@ -1,149 +1,125 @@
 /**
  * Webhook Trigger Node UI Component
  * 
- * This component provides the settings UI for the webhook trigger node
+ * This component renders the webhook trigger node in the workflow editor.
+ * ENHANCED VERSION: Now using the Integration Engine for more autonomous operation.
  */
 
-import React, { useCallback } from 'react';
-import { Input } from '@components/ui/input';
-import { Label } from '@components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
-import { getIntegrationBaseUrl } from '@utils/integrationClient';
+import React, { useState, useEffect } from 'react';
+import { Globe, Link, CheckCircle } from 'lucide-react';
+import { BaseNode } from '@/nodes/Base';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { integrationClient } from '../../../utils/integrationClient';
 
-// HTTP methods for webhook
-const HTTP_METHODS = ['POST', 'GET', 'PUT', 'DELETE', 'PATCH'];
-
-// Auth types for webhook
-const AUTH_TYPES = [
-  { id: 'none', name: 'None' },
-  { id: 'apiKey', name: 'API Key' },
-  { id: 'bearer', name: 'Bearer Token' }
-];
-
-/**
- * Webhook Trigger Node Settings Component
- */
-export default function WebhookTriggerNodeSettings({ 
-  data, 
-  updateNodeData 
-}: { 
-  data: any; 
-  updateNodeData: (data: any) => void;
-}) {
-  // Get base URL for displaying preview
-  const baseUrl = getIntegrationBaseUrl();
+export default function WebhookTriggerNode({ id, data }: { id: string, data: any }) {
+  const [webhookUrl, setWebhookUrl] = useState<string>('');
+  const [copied, setCopied] = useState(false);
+  const [registered, setRegistered] = useState(false);
   
-  // Update node data
-  const handleChange = useCallback((field: string, value: any) => {
-    updateNodeData({
-      ...data,
-      [field]: value
+  // Register and generate the webhook URL when the component mounts or settings change
+  useEffect(() => {
+    // Use the custom path if provided, otherwise generate a URL with workflowId and nodeId
+    const path = data?.settings?.path;
+    const workflowId = data?.workflowId || 'unknown';
+    const methods = data?.settings?.methods || ['POST'];
+    
+    const endpointPath = path 
+      ? path 
+      : `workflow/${workflowId}/node/${id}`;
+    
+    // Update the webhook URL
+    const generatedUrl = integrationClient.generateWebhookUrl(endpointPath);
+    setWebhookUrl(generatedUrl);
+    
+    // Register the webhook with the integration engine if it's a real workflow
+    if (workflowId && workflowId !== 'unknown') {
+      // Register with integration engine
+      integrationClient.registerEndpoint(endpointPath, {
+        methods,
+        workflowId: typeof workflowId === 'string' ? parseInt(workflowId, 10) : workflowId,
+        nodeId: id,
+        description: `Webhook trigger for workflow ${workflowId}, node ${id}`
+      }).then(() => {
+        setRegistered(true);
+      }).catch(error => {
+        console.error('Error registering webhook during UI mount:', error);
+        setRegistered(false);
+      });
+    }
+  }, [id, data?.settings?.path, data?.workflowId, data?.settings?.methods]);
+  
+  // Function to copy the webhook URL to clipboard
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(webhookUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     });
-  }, [data, updateNodeData]);
+  };
   
-  // Handle webhook path change
-  const handlePathChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    handleChange('webhookPath', value);
-  }, [handleChange]);
+  // Get the allowed methods as a string
+  const allowedMethods = data?.settings?.methods 
+    ? data.settings.methods.join(', ') 
+    : 'POST';
   
-  // Handle description change
-  const handleDescriptionChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    handleChange('description', value);
-  }, [handleChange]);
-  
-  // Handle method selection (single method for now)
-  const handleMethodChange = useCallback((value: string) => {
-    handleChange('methods', [value]);
-  }, [handleChange]);
-  
-  // Handle auth type change
-  const handleAuthTypeChange = useCallback((value: string) => {
-    handleChange('authType', value);
-  }, [handleChange]);
-  
-  // Get the current values with defaults
-  const webhookPath = data.webhookPath || '';
-  const description = data.description || 'Webhook endpoint';
-  const methods = data.methods || ['POST'];
-  const authType = data.authType || 'none';
-  
-  // Calculate the full webhook URL preview
-  const webhookUrlPreview = `${baseUrl}/webhooks/${webhookPath || ':path'}`;
-  
-  return (
-    <div className="space-y-4 p-2">
-      <div className="space-y-2">
-        <Label htmlFor="webhookPath">Webhook Path</Label>
-        <Input
-          id="webhookPath"
-          value={webhookPath}
-          onChange={handlePathChange}
-          placeholder="my-webhook"
-        />
-        <p className="text-xs text-gray-500">
-          Unique path for this webhook endpoint
-        </p>
+  // Node content with webhook URL display
+  const nodeContent = (
+    <div className="p-4 flex flex-col gap-3">
+      {/* Badge moved to header in BaseNode */}
+      
+      <div className="bg-muted/80 p-2 rounded-md flex flex-col gap-1">
+        <div className="flex justify-between items-center mb-1">
+          <div className="text-xs text-muted-foreground">Webhook URL:</div>
+          {registered && (
+            <div className="flex items-center gap-1 text-green-500 text-xs">
+              <CheckCircle className="h-3 w-3" />
+              <span>Registered</span>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="text-xs font-mono bg-background p-1.5 rounded border flex-1 truncate">
+            {webhookUrl}
+          </div>
+          <button 
+            onClick={copyToClipboard}
+            className="p-1 hover:bg-muted rounded"
+            title="Copy webhook URL"
+          >
+            {copied ? (
+              <span className="text-xs text-green-500">Copied!</span>
+            ) : (
+              <Link className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+        <div className="text-xs text-muted-foreground mt-1">
+          Allowed methods: <span className="font-semibold">{allowedMethods}</span>
+        </div>
       </div>
       
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Input
-          id="description"
-          value={description}
-          onChange={handleDescriptionChange}
-          placeholder="Webhook endpoint"
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="method">HTTP Method</Label>
-        <Select
-          value={methods[0]}
-          onValueChange={handleMethodChange}
-        >
-          <SelectTrigger id="method">
-            <SelectValue placeholder="Select method" />
-          </SelectTrigger>
-          <SelectContent>
-            {HTTP_METHODS.map(method => (
-              <SelectItem key={method} value={method}>
-                {method}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="authType">Authentication</Label>
-        <Select
-          value={authType}
-          onValueChange={handleAuthTypeChange}
-        >
-          <SelectTrigger id="authType">
-            <SelectValue placeholder="Select authentication type" />
-          </SelectTrigger>
-          <SelectContent>
-            {AUTH_TYPES.map(type => (
-              <SelectItem key={type.id} value={type.id}>
-                {type.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
-        <Label>Webhook URL Preview</Label>
-        <p className="text-sm font-mono mt-1 break-all">
-          {webhookUrlPreview}
-        </p>
-        <p className="text-xs text-gray-500 mt-1">
-          This URL will be generated when the workflow is saved and run
-        </p>
+      <div className="text-xs text-muted-foreground">
+        <p>This webhook is immediately available through the Integration Engine.</p>
       </div>
     </div>
+  );
+  
+  // Render using the BaseNode wrapper
+  return (
+    <BaseNode 
+      id={id} 
+      data={{
+        ...data,
+        hideInputHandles: true, // No inputs for trigger nodes
+        type: 'webhook_trigger',
+        icon: 'webhook', // Explicitly set the icon
+        childrenContent: nodeContent, // Use childrenContent instead of children
+        // Pass through note properties
+        note: data.note,
+        showNote: data.showNote,
+        // Use global settings drawer only
+        useGlobalSettingsOnly: true
+      }}
+    />
   );
 }
