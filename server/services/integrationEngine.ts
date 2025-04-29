@@ -385,10 +385,33 @@ export class IntegrationEngine {
         const firstSegment = pathSegments[0];
         
         // Check for node handlers that might match this path pattern
-        for (const [nodeType, config] of this.nodeTypeHandlers.entries()) {
-          // Simple template matching - extract path template prefix
-          const templateSegments = config.pathTemplate.split('/');
-          if (templateSegments.length > 0 && templateSegments[0] === firstSegment) {
+        // Convert to array first to avoid TypeScript downlevelIteration issues
+        const nodeTypeEntries = Array.from(this.nodeTypeHandlers.entries());
+        
+        // Sort node type entries by specificity (longest and most specific template first)
+        const sortedNodeTypeEntries = nodeTypeEntries.sort((a, b) => {
+          const aTemplate = a[1].pathTemplate;
+          const bTemplate = b[1].pathTemplate;
+          
+          // Count static segments (not parameters)
+          const aStaticSegments = aTemplate.split('/').filter(seg => !seg.startsWith(':')).length;
+          const bStaticSegments = bTemplate.split('/').filter(seg => !seg.startsWith(':')).length;
+          
+          // If different number of static segments, prefer more static segments
+          if (aStaticSegments !== bStaticSegments) {
+            return bStaticSegments - aStaticSegments; // Descending order
+          }
+          
+          // Otherwise prefer longer templates
+          return bTemplate.length - aTemplate.length; // Descending order
+        });
+        
+        // Try each node type handler
+        for (let i = 0; i < sortedNodeTypeEntries.length; i++) {
+          const [nodeType, config] = sortedNodeTypeEntries[i];
+          
+          // Check if template could potentially match this path
+          if (this.couldMatchPath(config.pathTemplate, normalizedPath)) {
             log(`Trying node type handler: ${nodeType} for path: ${normalizedPath}`, 'integration');
             
             // Try to handle with this node type
@@ -504,7 +527,10 @@ export class IntegrationEngine {
     try {
       // Extract path parameters from the URL
       // This would match parameters like :id, :path in URL templates
-      const pathParams: Record<string, string> = {};
+      const pathParams: Record<string, string> = this.extractPathParams(config.pathTemplate, path);
+      
+      // Log extracted parameters for debugging
+      log(`Extracted path params for ${nodeType}: ${JSON.stringify(pathParams)}`, 'integration');
       
       // Execute the handler with path parameters
       await config.nodeTypeHandler(req, res, pathParams);
@@ -523,6 +549,83 @@ export class IntegrationEngine {
       
       return true;
     }
+  }
+  
+  /**
+   * Check if a path could potentially match a template
+   * This is a quick check to filter out obviously non-matching templates
+   * before doing more expensive param extraction
+   */
+  private couldMatchPath(template: string, path: string): boolean {
+    // Normalize paths
+    const normalizedTemplate = template.startsWith('/') ? template : `/${template}`;
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    
+    // Split into segments
+    const templateSegments = normalizedTemplate.split('/').filter(Boolean);
+    const pathSegments = normalizedPath.split('/').filter(Boolean);
+    
+    // Can't match if path is shorter than template's static parts
+    const staticTemplateSegments = templateSegments.filter(seg => !seg.startsWith(':'));
+    if (pathSegments.length < staticTemplateSegments.length) {
+      return false;
+    }
+    
+    // Check that template's static segments match corresponding path segments
+    for (let i = 0; i < templateSegments.length && i < pathSegments.length; i++) {
+      const templateSegment = templateSegments[i];
+      const pathSegment = pathSegments[i];
+      
+      // Skip param segments (they'll match anything)
+      if (templateSegment.startsWith(':')) {
+        continue;
+      }
+      
+      // Static segment must match exactly
+      if (templateSegment !== pathSegment) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
+  /**
+   * Extract path parameters from a URL based on a template
+   * Simple utility to extract named parameters from paths
+   * 
+   * Example:
+   * Template: /webhooks/:hookId/events/:eventType
+   * Path: /webhooks/1234/events/update
+   * Result: { hookId: '1234', eventType: 'update' }
+   */
+  private extractPathParams(template: string, path: string): Record<string, string> {
+    const params: Record<string, string> = {};
+    
+    // Normalize paths
+    const normalizedTemplate = template.startsWith('/') ? template : `/${template}`;
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    
+    // Split into segments
+    const templateSegments = normalizedTemplate.split('/').filter(Boolean);
+    const pathSegments = normalizedPath.split('/').filter(Boolean);
+    
+    // Match segments and extract params
+    for (let i = 0; i < templateSegments.length && i < pathSegments.length; i++) {
+      const templateSegment = templateSegments[i];
+      const pathSegment = pathSegments[i];
+      
+      // Check if this is a named parameter
+      if (templateSegment.startsWith(':')) {
+        const paramName = templateSegment.substring(1);
+        params[paramName] = pathSegment;
+      } else if (templateSegment !== pathSegment) {
+        // If not a param and segments don't match, we're on the wrong path
+        return {};
+      }
+    }
+    
+    return params;
   }
   
   /**

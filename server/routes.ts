@@ -18,6 +18,11 @@ import { createAgentCoordinator } from "./services/agentCoordinator";
 import { registerAllTools } from "./tools/implementations";
 import { registerWorkflowExecution, clearWorkflowExecution, checkForTimedOutWorkflows } from "./utils/timeoutManager";
 
+// Define interface for node type handler
+interface NodeTypeHandler {
+  (req: Request, res: Response, params: Record<string, string>): Promise<void>;
+}
+
 /**
  * Utility function to execute a workflow
  * This is exported for use in tools and other modules
@@ -847,66 +852,242 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Integration endpoint registration
   app.post('/api/integration/register', async (req: Request, res: Response) => {
     try {
-      const { path, config } = req.body;
+      const { nodeType, capabilities, workflowId, nodeId, description, path } = req.body;
       
-      if (!path) {
-        return res.status(400).json({
-          success: false,
-          message: 'Path is required'
+      // If path is directly provided, use the legacy registration method
+      if (path) {
+        const { config } = req.body;
+        
+        // Validate the config
+        if (!config || !config.methods || !Array.isArray(config.methods)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Valid config with methods array is required'
+          });
+        }
+        
+        // Create a server-side handler based on the config
+        const { integrationEngine } = await import('./services/integrationEngine');
+        
+        // Dynamically create the handler function
+        const serverConfig = {
+          methods: config.methods,
+          workflowId: config.workflowId,
+          nodeId: config.nodeId,
+          nodeType: config.nodeType,
+          description: config.description,
+          // The actual handler logic is created by the integration engine
+          handler: integrationEngine.createLazyHandler ? 
+            integrationEngine.createLazyHandler(
+              config.workflowId ? 'webhook' : 'custom', 
+              config.workflowId, 
+              config.nodeId
+            ) : 
+            async (req: Request, res: Response) => {
+              // Fallback handler if createLazyHandler isn't available
+              res.json({
+                success: true,
+                message: 'Integration endpoint called',
+                registered: true,
+                config: {
+                  workflowId: config.workflowId,
+                  nodeId: config.nodeId
+                }
+              });
+            }
+        };
+        
+        // Register the endpoint
+        const registeredPath = await integrationEngine.registerEndpoint(path, serverConfig);
+        
+        // Return the registered path
+        return res.json({
+          success: true,
+          path: registeredPath,
+          methods: config.methods,
+          workflowId: config.workflowId,
+          nodeId: config.nodeId,
+          description: config.description || 'Integration endpoint'
         });
       }
       
-      // Validate the config
-      if (!config || !config.methods || !Array.isArray(config.methods)) {
+      // New node-based registration method
+      if (!nodeType) {
         return res.status(400).json({
           success: false,
-          message: 'Valid config with methods array is required'
+          message: 'Missing required field: nodeType'
         });
       }
       
-      // Create a server-side handler based on the config
+      // Load the integration engine
       const { integrationEngine } = await import('./services/integrationEngine');
       
-      // Dynamically create the handler function
-      const serverConfig = {
-        methods: config.methods,
-        workflowId: config.workflowId,
-        nodeId: config.nodeId,
-        description: config.description,
-        // The actual handler logic is created by the integration engine
-        handler: integrationEngine.createLazyHandler ? 
-          integrationEngine.createLazyHandler(
-            config.workflowId ? 'webhook' : 'custom', 
-            config.workflowId, 
-            config.nodeId
-          ) : 
-          async (req: Request, res: Response) => {
-            // Fallback handler if createLazyHandler isn't available
-            res.json({
-              success: true,
-              message: 'Integration endpoint called',
-              registered: true,
-              config: {
-                workflowId: config.workflowId,
-                nodeId: config.nodeId
-              }
-            });
-          }
-      };
+      // Check if the node provides an endpoint
+      if (!capabilities?.provides?.endpoint) {
+        // If no endpoint capability, try to register as a node type handler
+        if (workflowId && nodeId) {
+          // Generate a custom path for this registration
+          const customPath = `custom/${nodeType}/${workflowId}-${nodeId}-${Date.now()}`;
+          
+          // Create a handler
+          const handler = integrationEngine.createLazyHandler(
+            'webhook', 
+            workflowId, 
+            nodeId
+          );
+          
+          // Register with integration engine
+          const registeredPath = await integrationEngine.registerEndpoint(customPath, {
+            methods: ['POST', 'GET'],
+            workflowId,
+            nodeId,
+            nodeType,
+            description: description || `${nodeType} integration endpoint`,
+            handler
+          });
+          
+          // Return the registered endpoint info
+          return res.json({
+            success: true,
+            path: registeredPath,
+            methods: ['POST', 'GET'],
+            workflowId,
+            nodeId,
+            description: description || `${nodeType} integration endpoint`
+          });
+        }
+        
+        return res.status(400).json({
+          success: false,
+          message: 'Node must provide endpoint capability or include workflowId and nodeId'
+        });
+      }
       
-      // Register the endpoint
-      const registeredPath = await integrationEngine.registerEndpoint(path, serverConfig);
+      // Extract endpoint configuration
+      const pathTemplate = capabilities.endpoint?.pathTemplate || 'integration/:path';
+      const methods = capabilities.endpoint?.methods || ['POST'];
       
-      // Return the registered path
+      // Generate a path for this registration
+      // If workflowId and nodeId are provided, use them to create a unique path
+      // Otherwise, use a generated ID based on the node type
+      const pathId = workflowId && nodeId
+        ? `${workflowId}-${nodeId}-${Date.now()}`
+        : `${nodeType}-${Date.now()}`;
+        
+      // Parse template to create path - naive implementation for now
+      const integrationPath = pathTemplate.replace(/:path|:id/g, pathId);
+      
+      // Create the handler for this endpoint
+      const handler = integrationEngine.createLazyHandler(
+        'webhook', 
+        workflowId, 
+        nodeId
+      );
+      
+      // Register with integration engine
+      const registeredPath = await integrationEngine.registerEndpoint(integrationPath, {
+        methods,
+        workflowId,
+        nodeId,
+        nodeType,
+        description: description || `${nodeType} integration endpoint`,
+        handler
+      });
+      
+      // Return the registered endpoint info
       res.json({
         success: true,
-        path: registeredPath
+        path: registeredPath,
+        methods,
+        workflowId,
+        nodeId,
+        description: description || `${nodeType} integration endpoint`
       });
     } catch (error) {
-      console.error('Error registering integration endpoint:', error);
+      console.error('Error registering integration:', error);
       res.status(500).json({
         success: false,
-        message: 'Error registering integration endpoint',
+        message: 'Error registering integration',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Register node type integration
+  app.post('/api/integration/register-node-type', async (req: Request, res: Response) => {
+    try {
+      const { nodeType, pathTemplate, methods, description } = req.body;
+      
+      if (!nodeType) {
+        return res.status(400).json({
+          success: false,
+          message: 'Node type is required'
+        });
+      }
+      
+      if (!pathTemplate) {
+        return res.status(400).json({
+          success: false,
+          message: 'Path template is required'
+        });
+      }
+      
+      // Create handler for the node type
+      const { integrationEngine } = await import('./services/integrationEngine');
+      
+      // Create a handler function for this node type
+      const nodeTypeHandler: NodeTypeHandler = async (req: Request, res: Response, params: Record<string, string>) => {
+        // Default implementation - can be customized further
+        res.json({
+          success: true,
+          message: `Node type ${nodeType} handler called`,
+          params,
+          query: req.query,
+          body: req.body
+        });
+      };
+      
+      // Register the node type handler
+      await integrationEngine.registerNodeType(nodeType, {
+        pathTemplate: pathTemplate,
+        methods: methods || ['POST', 'GET'],
+        description: description || `${nodeType} handler`,
+        nodeTypeHandler
+      });
+      
+      // Return success
+      res.json({
+        success: true,
+        nodeType,
+        pathTemplate,
+        methods: methods || ['POST', 'GET'],
+        description: description || `${nodeType} handler`
+      });
+    } catch (error) {
+      console.error('Error registering node type:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error registering node type',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Get all registered node types
+  app.get('/api/integration/node-types', async (req: Request, res: Response) => {
+    try {
+      const { integrationEngine } = await import('./services/integrationEngine');
+      const nodeTypes = await integrationEngine.getNodeTypes();
+      
+      res.json({
+        success: true,
+        nodeTypes
+      });
+    } catch (error) {
+      console.error('Error getting integration node types:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error getting integration node types',
         error: error instanceof Error ? error.message : String(error)
       });
     }
