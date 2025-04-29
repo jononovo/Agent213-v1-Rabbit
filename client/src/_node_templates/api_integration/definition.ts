@@ -1,134 +1,118 @@
 /**
- * API Integration Node Template
+ * API Integration Node Definition
  * 
- * This template provides a foundation for creating nodes that integrate with external APIs.
- * It includes configurations for authentication, request handling, and error management.
+ * This node provides a standard interface for making external API requests.
+ * It's a key component of the Integration Engine system, allowing workflows to
+ * interact with external APIs.
  */
 
-import { NodeDefinition } from '@/nodes/types';
-import { z } from 'zod';
-import { defaultData } from './executor';
+// We're using a simplified interface here for the template
+// In a real implementation, import from the correct path
+interface NodeDefinition {
+  type: string;
+  name: string;
+  description: string;
+  category: string;
+  defaultData: any;
+  integrationConfig?: {
+    provides: string[];
+    requires: string[];
+  };
+  inputs: Record<string, {
+    type: string;
+    description: string;
+  }>;
+  outputs: Record<string, {
+    type: string;
+    description: string;
+  }>;
+}
 
-/**
- * Node definition
- * CUSTOMIZE THIS: Update all properties to match your specific API integration
- */
+// Define the structure of node data
+export interface ApiIntegrationData {
+  label: string;
+  description: string;
+  url: string;               // API endpoint URL
+  method: string;            // HTTP method (GET, POST, etc.)
+  headers: Record<string, string>; // HTTP headers
+  body?: string | object;    // Request body (for POST, PUT, etc.)
+  useProxy: boolean;         // Whether to use the Integration Engine proxy
+  timeout: number;           // Request timeout in milliseconds
+  retries: number;           // Number of retries on failure
+  usePagination: boolean;    // Whether to handle pagination
+  paginationStrategy?: string; // Pagination strategy (offset, cursor, etc.)
+  authType?: string;         // Authentication type (none, basic, oauth, etc.)
+  authConfig?: Record<string, any>; // Authentication configuration
+}
+
+// Default data for this node type
+export const defaultData: ApiIntegrationData = {
+  label: 'API Request',
+  description: 'Makes external API requests',
+  url: 'https://api.example.com',
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  useProxy: true,
+  timeout: 30000,
+  retries: 3,
+  usePagination: false
+};
+
+// Node definition for registration in the node registry
 export const definition: NodeDefinition = {
-  type: 'my_api_node',              // CHANGE THIS: Set a unique node type identifier
-  name: 'My API Integration',       // CHANGE THIS: Set a human-readable name
-  description: 'Connect with an external API service',
-  icon: 'globe',                    // You can change to a different icon from lucide-react
-  category: 'integration',          // Recommended to keep this as 'integration' for API nodes
-  version: '1.0.0',
+  type: 'api_integration',
+  name: 'API Request',
+  description: 'Makes external API requests through the Integration Engine',
+  category: 'integration',
+  defaultData,
   
-  // Integration Engine configuration - REQUIRED for integration nodes
+  // Integration nodes have special integration configuration
   integrationConfig: {
-    // What the node offers to the system
-    provides: {
-      endpoint: false,    // This node doesn't provide an HTTP endpoint
-      webhook: false,     // This node doesn't act as a webhook receiver
-      connector: true,    // This node connects to external API
-      ai: false           // CUSTOMIZE THIS: Set to true if this is an AI service
-    },
-    
-    // What the node needs from the system
-    requires: {
-      storage: false,        // CUSTOMIZE THIS: Set to true if you need persistent storage
-      authentication: true,  // Most API nodes require authentication
-      proxy: true            // Can use system proxy if available
-    },
-    
-    // External API configuration
-    externalApi: {
-      baseUrl: 'https://api.example.com',  // CHANGE THIS: Set your API base URL
-      defaultEndpoint: '/v1/resource',     // CHANGE THIS: Set default endpoint
-      authType: 'apiKey',                  // Options: apiKey, bearer, basic, oauth
-      documentation: 'https://docs.example.com'  // CHANGE THIS: Link to API docs
-    }
+    // This node provides an API client
+    provides: ['api_client'],
+    // This node requires the Integration Engine request proxy
+    requires: ['integration_proxy']
   },
   
-  // Define inputs for this node
-  // CUSTOMIZE THIS: Define what inputs your API node accepts
+  // Input ports
   inputs: {
-    data: {
-      type: 'object',
-      description: 'Data to send to the API'
+    url: {
+      type: 'string',
+      description: 'API endpoint URL (overrides configured URL)'
     },
-    parameters: {
+    headers: {
       type: 'object',
-      description: 'Additional parameters for the API request',
-      optional: true
+      description: 'Additional HTTP headers to include in the request'
+    },
+    body: {
+      type: 'any',
+      description: 'Request body for POST, PUT, etc.'
+    },
+    params: {
+      type: 'object',
+      description: 'URL query parameters'
     }
   },
   
-  // Define outputs for this node
-  // CUSTOMIZE THIS: Define what outputs your API node produces
+  // Output ports
   outputs: {
     response: {
       type: 'object',
-      description: 'API response data'
+      description: 'The API response data'
     },
-    metadata: {
-      type: 'object',
-      description: 'Response metadata',
-      optional: true
-    }
-  },
-  
-  // Add defaultData property required by the validator
-  defaultData: defaultData,
-  
-  // Define settings for configuration panel
-  // CUSTOMIZE THIS: Define settings specific to your API
-  settings: [
-    {
-      key: 'apiKey',
-      type: 'password',
-      label: 'API Key',
-      description: 'Your API key is securely stored and used only for this node.',
-      placeholder: 'Enter your API key',
-      required: false  // Set to true if it's always required
-    },
-    {
-      key: 'endpoint',
-      type: 'text',
-      label: 'API Endpoint',
-      description: 'The specific API endpoint to call',
-      placeholder: '/v1/resource',
-      default: '/v1/resource'
-    },
-    {
-      key: 'method',
-      type: 'select',
-      label: 'HTTP Method',
-      description: 'The HTTP method to use for the request',
-      options: [
-        { value: 'GET', label: 'GET' },
-        { value: 'POST', label: 'POST' },
-        { value: 'PUT', label: 'PUT' },
-        { value: 'DELETE', label: 'DELETE' }
-      ],
-      default: 'POST'
-    },
-    {
-      key: 'timeout',
+    status: {
       type: 'number',
-      label: 'Timeout (ms)',
-      description: 'Request timeout in milliseconds',
-      min: 1000,
-      max: 60000,
-      default: 10000
+      description: 'HTTP status code'
+    },
+    headers: {
+      type: 'object',
+      description: 'Response headers'
+    },
+    error: {
+      type: 'object',
+      description: 'Error details (if any)'
     }
-  ],
-  
-  // Validation schema using Zod
-  // CUSTOMIZE THIS: Update validation to match your settings
-  validation: z.object({
-    apiKey: z.string().optional(),
-    endpoint: z.string().default('/v1/resource'),
-    method: z.enum(['GET', 'POST', 'PUT', 'DELETE']).default('POST'),
-    timeout: z.number().min(1000).max(60000).default(10000),
-  })
+  }
 };
-
-export default definition;

@@ -5,7 +5,12 @@
  * and processes incoming webhook data when the endpoint is triggered.
  */
 
-import { NodeExecutor } from '@/types';
+// We're using a simplified interface here for the template
+// In a real implementation, import from the correct path
+interface NodeExecutor<T> {
+  (node: { id: string; data: T }, inputs: Record<string, any[]>, context?: any): Promise<Record<string, any[]> & { meta?: any }>;
+}
+
 import { WebhookIntegrationData, defaultData } from './definition';
 
 // Re-export the default data for use in UI

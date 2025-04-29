@@ -1,135 +1,95 @@
 /**
- * Webhook Integration Node Template - UI Component
+ * Webhook Integration Node UI Component
  * 
- * This component renders the webhook node in the workflow editor.
- * It shows the webhook URL and registration status.
+ * This component renders the webhook integration node in the workflow editor.
+ * It displays the webhook configuration and status.
  */
 
-import React, { useState, useEffect } from 'react';
-import { Link, CheckCircle } from 'lucide-react';
-import { BaseNode } from '@/nodes/Base';
-import * as integrationClient from '@/utils/integrationClient';
+import React from 'react';
+import { NodeProps } from 'reactflow';
+import { Globe } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
-// CUSTOMIZE THIS: Update the component name to match your node type
-export default function MyWebhookNode({ id, data }: { id: string, data: any }) {
-  const [webhookUrl, setWebhookUrl] = useState<string>('');
-  const [copied, setCopied] = useState(false);
-  const [registered, setRegistered] = useState(false);
+// This would be a real import in production
+// import { BaseNode } from '@/nodes/Base';
+// For the template we'll simulate it
+const BaseNode = (props: any) => <div>{JSON.stringify(props)}</div>;
+
+import { WebhookIntegrationData, defaultData } from './definition';
+
+// Re-export the default data for use elsewhere
+export { defaultData };
+
+// Node UI component
+export function component({ id, data, selected, isConnectable }: NodeProps<WebhookIntegrationData>) {
+  // Merge incoming data with default data
+  const nodeData = { ...defaultData, ...data };
   
-  // Register and generate the webhook URL when the component mounts or settings change
-  useEffect(() => {
-    // Use the custom path if provided, otherwise generate a URL with workflowId and nodeId
-    const path = data?.settings?.path;
-    const workflowId = data?.workflowId || 'unknown';
-    const methods = data?.settings?.methods || ['POST'];
-    
-    // Create a webhook path pattern with webhooks/ prefix
-    // CUSTOMIZE THIS: You can modify the URL structure to match your requirements
-    const webhookPath = path 
-      ? `webhooks/${path}` 
-      : `webhooks/workflow/${workflowId}/node/${id}`;
-    
-    // Update the webhook URL
-    const generatedUrl = integrationClient.getIntegrationUrl(webhookPath);
-    setWebhookUrl(generatedUrl);
-    
-    // Register the webhook with the integration engine if it's a real workflow
-    if (workflowId && workflowId !== 'unknown') {
-      // Register with integration engine
-      integrationClient.registerIntegration({
-        nodeType: 'my_webhook_node', // CHANGE THIS to match your node type in definition.ts
-        capabilities: {
-          provides: {
-            endpoint: true,
-            webhook: true
-          },
-          endpoint: {
-            pathTemplate: webhookPath,
-            methods: methods || ['POST']
-          }
-        },
-        workflowId: typeof workflowId === 'string' ? parseInt(workflowId, 10) : workflowId,
-        nodeId: id,
-        description: `Webhook for workflow ${workflowId}, node ${id}`
-      }).then(() => {
-        setRegistered(true);
-      }).catch(error => {
-        console.error('Error registering webhook during UI mount:', error);
-        setRegistered(false);
-      });
-    }
-  }, [id, data?.settings?.path, data?.workflowId, data?.settings?.methods]);
+  // Format webhook URL for display
+  const webhookUrl = nodeData.webhookUrl || '(Generated when workflow is deployed)';
   
-  // Function to copy the webhook URL to clipboard
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(webhookUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-  
-  // Get the allowed methods as a string
-  const allowedMethods = data?.settings?.methods 
-    ? data.settings.methods.join(', ') 
-    : 'POST';
-  
-  // Node content with webhook URL display
-  // CUSTOMIZE THIS: You can modify this UI to match your node's requirements
-  const nodeContent = (
-    <div className="p-4 flex flex-col gap-3">
-      <div className="bg-muted/80 p-2 rounded-md flex flex-col gap-1">
-        <div className="flex justify-between items-center mb-1">
-          <div className="text-xs text-muted-foreground">Webhook URL:</div>
-          {registered && (
-            <div className="flex items-center gap-1 text-green-500 text-xs">
-              <CheckCircle className="h-3 w-3" />
-              <span>Registered</span>
-            </div>
+  // Create a custom content element for the node
+  const customContent = (
+    <div className="p-3 flex flex-col gap-2">
+      <div className="text-sm">
+        {/* Display webhook endpoint details */}
+        <div className="rounded-md bg-secondary/30 p-2 mb-2">
+          <p className="text-xs font-medium mb-1">Webhook Endpoint</p>
+          <code className="text-xs block overflow-hidden text-ellipsis whitespace-nowrap">
+            {nodeData.method} {nodeData.path}
+          </code>
+          {nodeData.webhookUrl && (
+            <code className="text-xs block overflow-hidden text-ellipsis whitespace-nowrap mt-1">
+              URL: {webhookUrl}
+            </code>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="text-xs font-mono bg-background p-1.5 rounded border flex-1 truncate">
-            {webhookUrl}
-          </div>
-          <button 
-            onClick={copyToClipboard}
-            className="p-1 hover:bg-muted rounded"
-            title="Copy webhook URL"
-          >
-            {copied ? (
-              <span className="text-xs text-green-500">Copied!</span>
-            ) : (
-              <Link className="h-4 w-4" />
-            )}
-          </button>
+        
+        {/* Authentication status */}
+        <div className="flex items-center mt-2">
+          <span className="text-xs mr-2">Authentication:</span>
+          {nodeData.requireAuth ? (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+              Required ({nodeData.authType || 'token'})
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">
+              Not Required
+            </Badge>
+          )}
         </div>
-        <div className="text-xs text-muted-foreground mt-1">
-          Allowed methods: <span className="font-semibold">{allowedMethods}</span>
-        </div>
-      </div>
-      
-      <div className="text-xs text-muted-foreground">
-        <p>This webhook is immediately available through the Integration Engine.</p>
       </div>
     </div>
   );
+
+  // Create icon element for the node header
+  const iconElement = (
+    <div className="bg-blue-100 p-1.5 rounded-md">
+      <Globe className="h-4 w-4 text-blue-600" />
+    </div>
+  );
+
+  // Prepare the node data with the properties expected by BaseNode
+  const baseNodeData = {
+    ...data,
+    icon: iconElement,
+    label: nodeData.label || defaultData.label,
+    description: nodeData.description || defaultData.description,
+    settingsData: nodeData,
+    childrenContent: customContent,
+    // Specify that this is a source node (no inputs)
+    isSourceNode: true,
+    // Hide default handles for custom positioning
+    hideDefaultHandles: true
+  };
   
-  // Render using the BaseNode wrapper
   return (
-    <BaseNode 
-      id={id} 
-      data={{
-        ...data,
-        hideInputHandles: true, // No inputs for trigger nodes
-        type: 'my_webhook_node', // CHANGE THIS to match your node type in definition.ts
-        icon: 'webhook', // Explicitly set the icon
-        childrenContent: nodeContent, // Use childrenContent instead of children
-        // Pass through note properties
-        note: data.note,
-        showNote: data.showNote,
-        // Use global settings drawer only
-        useGlobalSettingsOnly: true
-      }}
+    <BaseNode
+      id={id}
+      data={baseNodeData}
+      selected={selected}
+      isConnectable={isConnectable}
+      type="webhook_integration"
     />
   );
 }

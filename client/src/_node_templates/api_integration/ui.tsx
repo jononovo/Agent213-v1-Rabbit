@@ -1,112 +1,117 @@
 /**
- * API Integration Node Template - UI Component
+ * API Integration Node UI Component
  * 
- * This component renders the API node in the workflow editor.
- * It provides a user interface for configuring the API connection.
+ * This component renders the API integration node in the workflow editor.
+ * It displays the API configuration and request details.
  */
 
-import React, { useState, useEffect } from 'react';
-import { BaseNode } from '@/nodes/Base';
+import React from 'react';
+import { NodeProps } from 'reactflow';
+import { Globe, ArrowUpDown } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
-// CUSTOMIZE THIS: Update component name and types to match your node
-export default function MyApiNode({ id, data }: { id: string, data: any }) {
-  // Implement your UI component logic here
+// This would be a real import in production
+// import { BaseNode } from '@/nodes/Base';
+// For the template we'll simulate it
+const BaseNode = (props: any) => <div>{JSON.stringify(props)}</div>;
+
+import { ApiIntegrationData, defaultData } from './definition';
+
+// Re-export the default data for use elsewhere
+export { defaultData };
+
+// Node UI component
+export function component({ id, data, selected, isConnectable }: NodeProps<ApiIntegrationData>) {
+  // Merge incoming data with default data
+  const nodeData = { ...defaultData, ...data };
   
-  // Register with settings drawer if needed
-  useEffect(() => {
-    // Define the settings for the global settings drawer
-    const settings = {
-      title: 'API Integration Settings',
-      fields: [
-        {
-          key: 'apiKey',
-          label: 'API Key',
-          type: 'password',
-          description: 'Your API key (secure)'
-        },
-        {
-          key: 'endpoint',
-          label: 'API Endpoint',
-          type: 'text',
-          description: 'The specific API endpoint to call'
-        },
-        {
-          key: 'method',
-          label: 'HTTP Method',
-          type: 'select',
-          description: 'The HTTP method to use for the request',
-          options: [
-            { value: 'GET', label: 'GET' },
-            { value: 'POST', label: 'POST' },
-            { value: 'PUT', label: 'PUT' },
-            { value: 'DELETE', label: 'DELETE' }
-          ]
-        },
-        {
-          key: 'timeout',
-          label: 'Timeout (ms)',
-          type: 'number',
-          description: 'Request timeout in milliseconds'
-        }
-      ]
-    };
-    
-    // Add the settings to the node data using onChange
-    if (typeof (data as any).onChange === 'function') {
-      (data as any).onChange({
-        ...data,
-        settings,
-        label: "My API Integration", // CHANGE THIS to match your node name
-        description: "Connect with an external API service", // CHANGE THIS to match your node description
-        useGlobalSettingsOnly: true  // Use the global settings drawer only
-      });
+  // Method badge color based on HTTP method
+  const getMethodBadgeColor = (method: string) => {
+    switch (method.toUpperCase()) {
+      case 'GET': return 'bg-green-100 text-green-800 border-green-200';
+      case 'POST': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'PUT': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'DELETE': return 'bg-red-100 text-red-800 border-red-200';
+      case 'PATCH': return 'bg-purple-100 text-purple-800 border-purple-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
-  }, [id, data]);
+  };
   
-  // Node content - displayed in the node UI
-  // CUSTOMIZE THIS: Modify to show relevant information for your API node
-  const nodeContent = (
-    <div className="p-4 flex flex-col gap-3">
-      <div className="text-sm font-medium">API Integration</div>
-      
-      {/* Display API endpoint info */}
-      <div className="bg-muted/80 p-2 rounded-md text-xs">
-        <div className="mb-1 text-muted-foreground">Endpoint:</div>
-        <code className="bg-background p-1 rounded text-xs block truncate">
-          {data?.settings?.endpoint || '/v1/resource'}
-        </code>
-      </div>
-      
-      {/* Method badge */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">Method:</span>
-        <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
-          {data?.settings?.method || 'POST'}
-        </span>
-      </div>
-      
-      {/* API key status */}
-      <div className="text-xs text-muted-foreground mt-1">
-        API Key: {data?.settings?.apiKey ? 'Configured ✓' : 'Not configured ✗'}
+  // Create a custom content element for the node
+  const customContent = (
+    <div className="p-3 flex flex-col gap-2">
+      <div className="text-sm">
+        {/* API endpoint details */}
+        <div className="flex items-center mb-1">
+          <Badge variant="outline" className={`mr-2 text-xs ${getMethodBadgeColor(nodeData.method)}`}>
+            {nodeData.method}
+          </Badge>
+          <code className="text-xs block overflow-hidden text-ellipsis whitespace-nowrap">
+            {nodeData.url}
+          </code>
+        </div>
+        
+        {/* Request configuration */}
+        <div className="grid grid-cols-2 gap-1 mt-2 text-xs">
+          <div className="flex items-center">
+            <span className="text-muted-foreground mr-1">Proxy:</span>
+            {nodeData.useProxy ? 'Yes' : 'No'}
+          </div>
+          <div className="flex items-center">
+            <span className="text-muted-foreground mr-1">Timeout:</span>
+            {nodeData.timeout}ms
+          </div>
+          <div className="flex items-center">
+            <span className="text-muted-foreground mr-1">Retries:</span>
+            {nodeData.retries}
+          </div>
+          <div className="flex items-center">
+            <span className="text-muted-foreground mr-1">Pagination:</span>
+            {nodeData.usePagination ? 'Yes' : 'No'}
+          </div>
+        </div>
+        
+        {/* Authentication status */}
+        {nodeData.authType && (
+          <div className="flex items-center mt-2">
+            <span className="text-xs text-muted-foreground mr-2">Auth:</span>
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+              {nodeData.authType}
+            </Badge>
+          </div>
+        )}
       </div>
     </div>
   );
+
+  // Create icon element for the node header
+  const iconElement = (
+    <div className="bg-primary/10 p-1.5 rounded-md">
+      <ArrowUpDown className="h-4 w-4 text-primary" />
+    </div>
+  );
+
+  // Prepare the node data with the properties expected by BaseNode
+  const baseNodeData = {
+    ...data,
+    icon: iconElement,
+    label: nodeData.label || defaultData.label,
+    description: nodeData.description || defaultData.description,
+    settingsData: nodeData,
+    childrenContent: customContent,
+    // This is not a source node, it has both inputs and outputs
+    isSourceNode: false,
+    // No need to hide default handles
+    hideDefaultHandles: false
+  };
   
-  // Render using the BaseNode wrapper
   return (
-    <BaseNode 
-      id={id} 
-      data={{
-        ...data,
-        type: 'my_api_node', // CHANGE THIS to match your node type in definition.ts
-        icon: 'globe', // You can change to a different icon
-        childrenContent: nodeContent,
-        // Pass through note properties
-        note: data.note,
-        showNote: data.showNote,
-        // Use global settings drawer only
-        useGlobalSettingsOnly: true
-      }}
+    <BaseNode
+      id={id}
+      data={baseNodeData}
+      selected={selected}
+      isConnectable={isConnectable}
+      type="api_integration"
     />
   );
 }

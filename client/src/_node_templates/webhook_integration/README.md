@@ -1,61 +1,58 @@
-# Webhook Integration Node Template
+# Webhook Integration Node
 
-This template provides a foundation for creating webhook integration nodes that can receive data from external systems.
+This node provides a webhook endpoint that can receive external HTTP requests and trigger workflow execution. It's a key component of the Integration Engine system, allowing workflows to be triggered by external events.
 
-## How to Use This Template
+## Features
 
-1. **Copy the Template**: Copy this entire folder to your target location (e.g., `client/src/nodes/Integration/my_webhook`)
-2. **Update Node Information**: 
-   - In `definition.ts`, change the node type, name, and description
-   - Set appropriate defaults and customize settings as needed
-3. **Customize Logic**:
-   - Modify `executor.ts` to implement your webhook's specific logic
-   - Update the interface to match your node's settings
-4. **Update UI**:
-   - In `ui.tsx`, change the component name and customize the UI
-   - Make sure to update the node type references
-5. **Test Your Node**:
-   - Update `tests.ts` with appropriate test cases
-   - Make sure to change the node type references
+- Creates a unique webhook URL for each node instance
+- Supports multiple HTTP methods (GET, POST, PUT, DELETE)
+- Optional authentication for secure webhooks
+- Exposes request payload, headers, and parameters to downstream nodes
 
-## Key Files
+## How It Works
 
-- **definition.ts**: Defines the node's properties, inputs, outputs, and settings
-- **executor.ts**: Contains the execution logic and integration registration
-- **ui.tsx**: Renders the node in the workflow editor
-- **tests.ts**: Contains tests to verify the node's functionality
+1. **Registration**: When a workflow containing this node is deployed, the node registers a webhook endpoint with the Integration Engine.
+2. **External Trigger**: External systems can make HTTP requests to the generated webhook URL.
+3. **Workflow Execution**: When a request is received, the workflow is triggered with the request data.
+4. **Data Processing**: The request payload, headers, and parameters are passed to connected nodes for processing.
 
-## Important Customization Points
+## Node Configuration
 
-Look for the following comments in the code:
+- **Path**: The endpoint path for the webhook (e.g., `/incoming-webhook`)
+- **Method**: The HTTP method to accept (GET, POST, PUT, DELETE)
+- **Authentication**: Optional security for the webhook endpoint
+  - **Require Auth**: Whether authentication is required
+  - **Auth Type**: The type of authentication (token, basic, etc.)
+  - **Webhook Secret**: Secret key for validating webhook requests
 
-- `CHANGE THIS`: Indicates a value that must be changed (like the node type)
-- `CUSTOMIZE THIS`: Indicates a section you might want to customize based on your needs
+## Output Ports
 
-## Webhook URL Structure
+- **payload**: The HTTP request body/payload
+- **headers**: HTTP request headers
+- **params**: URL query parameters and route parameters
 
-By default, this template uses the following URL structure:
-- With custom path: `webhooks/your-custom-path`
-- Without custom path: `webhooks/workflow/{workflowId}/node/{nodeId}`
+## Example Usage
 
-## Testing
+```json
+{
+  "label": "Order Webhook",
+  "description": "Receives new orders from e-commerce platform",
+  "path": "/orders/new",
+  "method": "POST",
+  "requireAuth": true,
+  "authType": "bearer",
+  "webhookSecret": "your-secret-key"
+}
+```
 
-The tests in `tests.ts` verify:
-1. Basic webhook functionality
-2. Handling of input payloads
+## Integration Notes
 
-To run tests, use the node testing framework in the application.
+- This node is designed for the Integration Engine and requires it to be running
+- The webhook URL is only generated when the workflow is deployed
+- For local development, you may need to use a service like ngrok to expose your local server
+- Webhook paths should be unique across the system to avoid conflicts
 
-## Integration Engine
+## Additional Resources
 
-This template is designed to work with the Integration Engine, which:
-- Automatically registers webhook endpoints
-- Makes them immediately available for external systems
-- Handles incoming requests and routes them to the appropriate workflow
-
-## Next Steps
-
-After implementing your webhook node:
-1. Test it thoroughly
-2. Document any special features or requirements
-3. Consider security implications of your webhook design
+- See the Integration Engine documentation for more details on webhook configuration
+- For custom webhook processing logic, consider using a Function node after this node

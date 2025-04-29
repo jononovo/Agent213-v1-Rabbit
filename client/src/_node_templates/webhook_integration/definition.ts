@@ -5,7 +5,27 @@
  * and trigger workflow execution. It's part of the Integration Engine system.
  */
 
-import { NodeDefinition } from '@/types';
+// We're using a simplified interface here for the template
+// In a real implementation, import from the correct path
+interface NodeDefinition {
+  type: string;
+  name: string;
+  description: string;
+  category: string;
+  defaultData: any;
+  integrationConfig?: {
+    provides: string[];
+    requires: string[];
+  };
+  inputs: Record<string, {
+    type: string;
+    description: string;
+  }>;
+  outputs: Record<string, {
+    type: string;
+    description: string;
+  }>;
+}
 
 // Define the structure of node data
 export interface WebhookIntegrationData {

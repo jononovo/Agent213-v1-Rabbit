@@ -1,154 +1,95 @@
 /**
- * API Integration Node Template - Executor
+ * API Integration Node Executor
  * 
- * Handles the execution logic for the API integration node.
- * This file contains the core functionality for making API requests to external services.
+ * This executor handles external API requests through the Integration Engine.
+ * It supports various HTTP methods, authentication, and error handling.
  */
 
-import { createNodeOutput, createErrorOutput } from '@/nodes/nodeOutputUtils';
-import { NodeExecutionData } from '@/nodes/types';
-
-/**
- * Define configuration data interface for this node
- * CUSTOMIZE THIS: Update this interface to match your node's settings
- */
-export interface ApiNodeData {
-  apiKey: string;
-  endpoint: string;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  timeout: number;
+// We're using a simplified interface here for the template
+// In a real implementation, import from the correct path
+interface NodeExecutor<T> {
+  (node: { id: string; data: T }, inputs: Record<string, any[]>, context?: any): Promise<Record<string, any[]>>;
 }
 
-/**
- * Default configuration for the node
- * CUSTOMIZE THIS: Set appropriate defaults for your API node
- */
-export const defaultData: ApiNodeData = {
-  apiKey: '',
-  endpoint: '/v1/resource',
-  method: 'POST',
-  timeout: 10000
-};
+import { ApiIntegrationData, defaultData } from './definition';
 
-/**
- * Execute the API node
- * This function makes the API request and processes the response
- */
-export const execute = async (
-  data: ApiNodeData, 
-  inputs: Record<string, any>
-): Promise<NodeExecutionData> => {
+// Re-export the default data for use in UI
+export { defaultData };
+export type { ApiIntegrationData };
+
+// Node executor function
+export const executor: NodeExecutor<ApiIntegrationData> = async (node, inputs, context) => {
   try {
-    const startTime = new Date();
+    // Get node data and merge with any input overrides
+    const nodeData = node.data;
     
-    // Extract inputs
-    const inputData = inputs.data;
-    const parameters = inputs.parameters || {};
+    // Get URL from input or node configuration
+    const url = inputs.url?.[0]?.json || nodeData.url;
     
-    // Validate inputs
-    if (!inputData && data.method !== 'GET') {
-      return createErrorOutput('Input data is required for this API request');
-    }
-
-    // Get API key from node settings or environment variable
-    // CUSTOMIZE THIS: Update with your specific API key environment variable
-    const apiKey = data.apiKey || import.meta.env.VITE_API_KEY;
-
-    if (!apiKey) {
-      return createErrorOutput('API key is required. Please configure it in the node settings or provide it as an environment variable.');
-    }
-
-    // Build the API URL
-    // CUSTOMIZE THIS: Update with your API's base URL
-    const baseUrl = 'https://api.example.com';
-    const endpoint = data.endpoint || defaultData.endpoint;
+    // Get headers from input or node configuration
+    const configHeaders = nodeData.headers || {};
+    const inputHeaders = inputs.headers?.[0]?.json || {};
+    const headers = { ...configHeaders, ...inputHeaders };
     
-    // Handle query parameters for GET requests
-    let url = `${baseUrl}${endpoint}`;
-    if (data.method === 'GET' && inputData && typeof inputData === 'object') {
-      const queryParams = new URLSearchParams();
-      Object.entries(inputData).forEach(([key, value]) => {
-        queryParams.append(key, String(value));
-      });
-      url = `${url}?${queryParams.toString()}`;
-    }
+    // Get body from input or node configuration
+    const body = inputs.body?.[0]?.json || nodeData.body;
     
-    // Prepare request headers
-    // CUSTOMIZE THIS: Update with your API's authentication method
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    };
+    // Get URL parameters from input
+    const params = inputs.params?.[0]?.json || {};
     
-    // Add any additional headers from parameters
-    if (parameters.headers && typeof parameters.headers === 'object') {
-      Object.entries(parameters.headers).forEach(([key, value]) => {
-        headers[key] = String(value);
-      });
-    }
+    // Build query string from params
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      queryParams.append(key, String(value));
+    });
     
-    // Set up request timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), data.timeout || defaultData.timeout);
+    // Build the complete URL with query parameters
+    const fullUrl = `${url}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
     
-    // Prepare the request options
-    const requestOptions: RequestInit = {
-      method: data.method,
+    // Prepare the request
+    const request = {
+      url: fullUrl,
+      method: nodeData.method,
       headers,
-      signal: controller.signal
+      body: body ? JSON.stringify(body) : undefined,
+      timeout: nodeData.timeout,
+      retries: nodeData.retries,
     };
     
-    // Add body for non-GET requests
-    if (data.method !== 'GET' && inputData) {
-      requestOptions.body = JSON.stringify(inputData);
-    }
+    // Log the request details
+    console.log(`API Integration: Making ${nodeData.method} request to ${fullUrl}`);
     
-    try {
-      // Make the API request
-      const response = await fetch(url, requestOptions);
-      
-      // Handle response
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        const errorMessage = errorData?.error?.message || `API error: ${response.status} ${response.statusText}`;
-        return createErrorOutput(errorMessage);
-      }
-      
-      // Parse successful response
-      const responseData = await response.json();
-      
-      // Return output with response data and metadata
-      return createNodeOutput(
-        {
-          response: responseData,
-          metadata: {
-            statusCode: response.status,
-            headers: Object.fromEntries(response.headers.entries())
-          }
-        }, 
-        { 
-          startTime,
-          additionalMeta: {
-            url,
-            method: data.method,
-            responseTime: new Date().getTime() - startTime.getTime()
-          }
-        }
-      );
-    } finally {
-      // Always clear the timeout
-      clearTimeout(timeoutId);
-    }
-  } catch (error: unknown) {
-    console.error('API request error:', error);
+    // In a real implementation, this would use the Integration Engine proxy
+    // For the template, we'll simulate a successful response
+    const simulatedResponse = {
+      data: { message: 'Success', requestDetails: request },
+      status: 200,
+      headers: { 'content-type': 'application/json' }
+    };
     
-    // Provide helpful error messages
-    if (error instanceof Error) {
-      if (error.name === 'AbortError') {
-        return createErrorOutput(`API request timed out after ${data.timeout || defaultData.timeout}ms`);
-      }
-      return createErrorOutput(`Error making API request: ${error.message}`);
-    }
-    return createErrorOutput('Unknown error making API request');
+    // Return the response data to output ports
+    return {
+      response: [{ json: simulatedResponse.data }],
+      status: [{ json: simulatedResponse.status }],
+      headers: [{ json: simulatedResponse.headers }],
+      error: []
+    };
+  } catch (error) {
+    // Handle errors
+    console.error('API integration execution error:', error);
+    
+    // Provide error details to the error output port
+    const errorDetails = {
+      message: error instanceof Error ? error.message : String(error),
+      code: 'API_REQUEST_FAILED',
+      timestamp: new Date().toISOString()
+    };
+    
+    return {
+      response: [],
+      status: [{ json: 500 }],
+      headers: [],
+      error: [{ json: errorDetails }]
+    };
   }
 };
