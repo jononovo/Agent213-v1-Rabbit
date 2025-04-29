@@ -28,96 +28,20 @@ import { apiRequest } from '@/lib/queryClient';
 import { ArrowLeft, Save, Play, Square, Settings, TestTube, ListFilter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import MonkeyAgentChatOverlay from '@/components/workflows/MonkeyAgentChatOverlay';
+import { 
+  getAllNodes, 
+  hasNode, 
+  getNodeUIPath, 
+  getNode,
+  initializeRegistry,
+  loadNodeComponent as loadComponentFromRegistry 
+} from '@/lib/unifiedNodeRegistry';
 import NodeSettingsDrawer from './NodeSettingsDrawer';
 
 // Import loading placeholder node
 import LoadingNode from '../flow/nodes/LoadingNode';
 // Import base node component as the fallback
 import BaseNode from '../../nodes/Base';
-// Import the unified registry functions for node discovery
-import { 
-  getAllNodes, 
-  getNodeUIPath, 
-  getNode, 
-  hasNode, 
-  initializeRegistry
-} from '@/lib/unifiedNodeRegistry';
-
-// Define a dynamic import function for node components that uses the unified registry
-const loadNodeComponentStatic = (nodeType: string) => {
-  try {
-    // Check if the node type exists in the unified registry
-    if (hasNode(nodeType)) {
-      // Get the path from the unified registry
-      const uiPath = getNodeUIPath(nodeType);
-      
-      // Import the component from the appropriate path
-      return import(/* @vite-ignore */ uiPath)
-        .then(module => module.component || module.default)
-        .catch(error => {
-          console.warn(`Failed to load component for ${nodeType} from unified registry path:`, error);
-          return BaseNode;
-        });
-    }
-    
-    // Fallback to legacy path resolution if not in registry
-    console.log(`Node ${nodeType} not found in registry, using legacy path resolution`);
-    
-    // First try loading from the Custom directory
-    return import(/* @vite-ignore */ `../../nodes/Custom/${nodeType}/ui`)
-      .then(module => module.component || module.default)
-      .catch(customError => {
-        console.log(`Node ${nodeType} not found in Custom directory, trying System directory`);
-        
-        // If not found in Custom directory, try the System directory
-        return import(/* @vite-ignore */ `../../nodes/System/${nodeType}/ui`)
-          .then(module => module.component || module.default)
-          .catch(systemError => {
-            console.log(`Node ${nodeType} not found in System directory, trying Integration directory`);
-            
-            // If not found in System directory, try the Integration directory
-            return import(/* @vite-ignore */ `../../nodes/Integration/${nodeType}/ui`)
-              .then(module => module.component || module.default)
-              .catch(integrationError => {
-                console.log(`Node ${nodeType} not found in Integration directory, trying root path`);
-                
-                // Finally try the root directory as a fallback
-                return import(/* @vite-ignore */ `../../nodes/${nodeType}/ui`)
-                  .then(module => module.component || module.default)
-                  .catch(rootError => {
-                    console.warn(`Failed to load component for node type ${nodeType}:`, rootError);
-                    return BaseNode;
-                  });
-              });
-          });
-      });
-  } catch (error) {
-    console.warn(`Error importing component for node type ${nodeType}:`, error);
-    return Promise.resolve(BaseNode);
-  }
-};
-
-// Map to store loaded components - will be filled lazily
-const loadedComponents: Record<string, any> = {};
-
-// Function to get a node component, loading it if needed
-const getNodeComponent = async (nodeType: string) => {
-  // If already loaded, return from cache
-  if (loadedComponents[nodeType]) {
-    return loadedComponents[nodeType];
-  }
-  
-  try {
-    // Load the component
-    const component = await loadNodeComponentStatic(nodeType);
-    // Cache it for future use
-    loadedComponents[nodeType] = component;
-    return component;
-  } catch (error) {
-    console.warn(`Failed to load component for ${nodeType}:`, error);
-    return BaseNode;
-  }
-};
 
 // Create node types with fallbacks
 const createNodeTypes = () => {
@@ -252,146 +176,26 @@ const FlowEditor = ({
     setLoadedNodeTypes(prev => ({ ...prev, [type]: true }));
     
     try {
-      // Try to load the component using the unified registry first
-      if (hasNode(type)) {
-        const uiPath = getNodeUIPath(type);
-        console.log(`Loading node ${type} from unified registry path: ${uiPath}`);
-        
-        try {
-          // Try to load the component from the registry path
-          const module = await import(/* @vite-ignore */ uiPath);
-          
-          // Check for component or default export
-          if (module && (module.component || module.default)) {
-            const component = module.component || module.default;
-            
-            // Update the loadedComponents with the loaded component
-            setLoadedComponents((prev: Record<string, any>) => ({
-              ...prev,
-              [type]: component
-            }));
-            console.log(`Successfully loaded component for ${type} from unified registry`);
-            return;
-          }
-        } catch (registryError) {
-          console.warn(`Failed to load component for ${type} from unified registry:`, registryError);
-        }
-      }
+      // Use the registry's component loading function (single source of truth)
+      const component = await loadComponentFromRegistry(type);
       
-      // Fallback to legacy loading approach if registry doesn't work
-      console.log(`Falling back to legacy loading for node type: ${type}`);
+      // Update the loadedComponents with the loaded component
+      setLoadedComponents(prev => ({
+        ...prev,
+        [type]: component
+      }));
       
-      // First try loading from the Custom directory using index.ts
-      try {
-        const customIndexModule = await import(/* @vite-ignore */ `../../nodes/Custom/${type}/index`);
-        if (customIndexModule && customIndexModule.component) {
-          // Update the loadedComponents with the loaded component
-          setLoadedComponents((prev: Record<string, any>) => ({
-            ...prev,
-            [type]: customIndexModule.component
-          }));
-          console.log(`Successfully loaded component for ${type} from Custom directory (index.ts)`);
-          return;
-        }
-      } catch (customIndexError) {
-        // If not found in index.ts, try ui.tsx directly
-        try {
-          const customModule = await import(/* @vite-ignore */ `../../nodes/Custom/${type}/ui`);
-          if (customModule && customModule.default) {
-            // Update the loadedComponents with the loaded component
-            setLoadedComponents((prev: Record<string, any>) => ({
-              ...prev,
-              [type]: customModule.default
-            }));
-            console.log(`Successfully loaded component for ${type} from Custom directory (ui.tsx)`);
-            return;
-          }
-        } catch (customUiError) {
-          // If not in Custom directory, try the System directory
-          console.log(`Node ${type} not found in Custom directory, trying System directory`);
-        }
-      }
-      
-      // Try the System directory using index.ts
-      try {
-        const systemIndexModule = await import(/* @vite-ignore */ `../../nodes/System/${type}/index`);
-        if (systemIndexModule && systemIndexModule.component) {
-          // Update the loadedComponents with the loaded component
-          setLoadedComponents((prev: Record<string, any>) => ({
-            ...prev,
-            [type]: systemIndexModule.component
-          }));
-          console.log(`Successfully loaded component for ${type} from System directory (index.ts)`);
-          return;
-        }
-      } catch (systemIndexError) {
-        // If not found in index.ts, try ui.tsx directly
-        try {
-          const systemModule = await import(/* @vite-ignore */ `../../nodes/System/${type}/ui`);
-          if (systemModule && systemModule.default) {
-            // Update the loadedComponents with the loaded component
-            setLoadedComponents((prev: Record<string, any>) => ({
-              ...prev,
-              [type]: systemModule.default
-            }));
-            console.log(`Successfully loaded component for ${type} from System directory (ui.tsx)`);
-            return;
-          }
-        } catch (systemError) {
-          // If not in System directory, try the Integration directory
-          console.log(`Node ${type} not found in System directory, trying Integration directory`);
-        }
-      }
-      
-      // Try the Integration directory using index.ts
-      try {
-        const integrationIndexModule = await import(/* @vite-ignore */ `../../nodes/Integration/${type}/index`);
-        if (integrationIndexModule && integrationIndexModule.component) {
-          // Update the loadedComponents with the loaded component
-          setLoadedComponents((prev: Record<string, any>) => ({
-            ...prev,
-            [type]: integrationIndexModule.component
-          }));
-          console.log(`Successfully loaded component for ${type} from Integration directory (index.ts)`);
-          return;
-        }
-      } catch (integrationIndexError) {
-        // If not found in index.ts, try ui.tsx directly
-        try {
-          const integrationModule = await import(/* @vite-ignore */ `../../nodes/Integration/${type}/ui`);
-          if (integrationModule && integrationModule.default) {
-            // Update the loadedComponents with the loaded component
-            setLoadedComponents((prev: Record<string, any>) => ({
-              ...prev,
-              [type]: integrationModule.default
-            }));
-            console.log(`Successfully loaded component for ${type} from Integration directory (ui.tsx)`);
-            return;
-          }
-        } catch (integrationError) {
-          // If not in Integration directory, try the root directory
-          console.log(`Node ${type} not found in Integration directory, trying root path`);
-        }
-      }
-      
-      // Try the standard directory as fallback
-      try {
-        const module = await import(/* @vite-ignore */ `../../nodes/${type}/ui`);
-        
-        if (module && (module.component || module.default)) {
-          // Update the loadedComponents with the loaded component
-          setLoadedComponents((prev: Record<string, any>) => ({
-            ...prev,
-            [type]: module.component || module.default
-          }));
-          console.log(`Successfully loaded component for ${type} from root directory`);
-        }
-      } catch (rootError) {
-        console.warn(`Failed to load component from root directory for ${type}:`, rootError);
-      }
+      console.log(`Successfully loaded component for ${type}`);
     } catch (error) {
-      console.warn(`Failed to load component for ${type}:`, error);
-      // Even if loading fails, mark as attempted to prevent continuous retries
+      console.error(`Error loading component for ${type} from registry:`, error);
+      
+      // Use BaseNode as fallback
+      setLoadedComponents(prev => ({
+        ...prev,
+        [type]: BaseNode
+      }));
+      
+      console.log(`Using BaseNode as fallback for ${type}`);
     }
   };
   
