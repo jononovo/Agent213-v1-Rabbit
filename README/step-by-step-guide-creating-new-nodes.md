@@ -718,6 +718,282 @@ export default tests;
 
 These tests demonstrate how to validate different aspects of a node's functionality, from input validation to error handling.
 
+## Creating Integration Nodes
+
+Integration nodes are specialized nodes that can autonomously connect with external services through the Integration Engine. These nodes use a folder-based discovery approach with declarative configuration to automatically register with the Integration Engine.
+
+### Integration Node Structure
+
+Integration nodes follow a specific folder structure for automatic discovery:
+
+```
+client/src/nodes/
+└── Integration/                 # Special folder for integration nodes
+    └── CategoryName/            # Integration category (e.g., Webhooks, API)
+        └── node_type_name/      # Node type folder
+            ├── definition.ts    # Node definition with integration config
+            ├── executor.ts      # Execution logic
+            └── ui.tsx           # Configuration UI
+```
+
+Key points:
+- All integration nodes must be placed under the `Integration/` directory
+- Nodes are grouped by category (e.g., Webhooks, API, etc.)
+- Each integration node follows the standard three-file structure
+
+### Integration Definition File
+
+The definition file for integration nodes includes additional `integrationConfig` section:
+
+```typescript
+const definition: NodeDefinition = {
+  type: 'webhook_trigger_integration',
+  name: 'Webhook Trigger (Integration)',
+  description: 'Creates a webhook endpoint for triggering workflows',
+  category: 'triggers',
+  icon: 'webhook',
+  version: '1.0.0',
+  
+  inputs: {
+    // Input definitions
+  },
+  
+  outputs: {
+    // Output definitions  
+  },
+  
+  defaultData: {
+    // Default configuration
+  },
+  
+  // Integration-specific configuration
+  integrationConfig: {
+    // What the node offers to the system
+    provides: {
+      endpoint: true,     // This node provides an HTTP endpoint
+      webhook: true,      // This node acts as a webhook receiver
+      scheduler: false    // This node doesn't schedule anything
+    },
+    
+    // What the node needs from the system
+    requires: {
+      storage: true,       // Needs persistent storage for configuration
+      authentication: false // Doesn't require authentication by default
+    },
+    
+    // Endpoint configuration
+    endpoint: {
+      pathTemplate: 'webhooks/:path',  // URL path template
+      methods: ['POST', 'GET'],        // Supported HTTP methods
+      authTypes: ['none', 'apiKey'],   // Supported auth methods
+    }
+  }
+};
+```
+
+### Integration Executor
+
+The executor for integration nodes needs to register with the Integration Engine:
+
+```typescript
+import { registerIntegration, getIntegrationUrl } from '@utils/integrationClient';
+import { NodeExecutionData } from '@lib/types/workflow';
+
+// Node data structure
+interface WebhookTriggerNodeData {
+  webhookPath: string;
+  description: string;
+  methods: string[];
+  authType: string;
+}
+
+/**
+ * Execute the integration node
+ */
+export const execute = async (
+  nodeData: WebhookTriggerNodeData,
+  inputs?: any,
+  context?: any
+): Promise<NodeExecutionData> => {
+  try {
+    // If we're in a workflow run with inputs, process them
+    if (inputs?.webhook) {
+      // Process webhook data and return results
+      return {
+        items: [{ json: inputs.webhook }],
+        meta: {
+          startTime: new Date(),
+          endTime: new Date()
+        }
+      };
+    }
+    
+    // Extract context
+    const workflowId = context?.workflowId;
+    const nodeId = context?.nodeId;
+    
+    if (!workflowId || !nodeId) {
+      throw new Error('Integration node requires workflow context');
+    }
+    
+    // Register with integration engine
+    const registrationResult = await registerIntegration({
+      nodeType: 'webhook_trigger_integration',
+      capabilities: {
+        provides: {
+          endpoint: true,
+          webhook: true
+        },
+        endpoint: {
+          pathTemplate: 'webhooks/:path',
+          methods: nodeData.methods || ['POST']
+        }
+      },
+      workflowId,
+      nodeId,
+      description: nodeData.description || 'Webhook endpoint'
+    });
+    
+    // Generate the full webhook URL
+    const webhookUrl = getIntegrationUrl(registrationResult.path);
+    
+    // Return information about the registered webhook
+    return {
+      items: [{
+        json: {
+          webhookUrl,
+          path: registrationResult.path,
+          methods: registrationResult.methods,
+          description: registrationResult.description
+        }
+      }],
+      meta: {
+        startTime: new Date(),
+        endTime: new Date()
+      }
+    };
+  } catch (error) {
+    console.error('Error in integration node executor:', error);
+    
+    // Return standardized error output
+    return {
+      items: [{
+        json: {
+          error: error instanceof Error ? error.message : String(error)
+        }
+      }],
+      meta: {
+        startTime: new Date(),
+        endTime: new Date(),
+        error: true,
+        errorMessage: error instanceof Error ? error.message : String(error)
+      }
+    };
+  }
+};
+```
+
+### Integration UI Component
+
+The UI component for integration nodes provides configuration interface and previews:
+
+```tsx
+import React, { useCallback } from 'react';
+import { Input } from '@components/ui/input';
+import { Label } from '@components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
+import { getIntegrationBaseUrl } from '@utils/integrationClient';
+
+export default function WebhookTriggerNodeSettings({ 
+  data, 
+  updateNodeData 
+}: { 
+  data: any; 
+  updateNodeData: (data: any) => void;
+}) {
+  // Get base URL for displaying preview
+  const baseUrl = getIntegrationBaseUrl();
+  
+  // Update node data
+  const handleChange = useCallback((field: string, value: any) => {
+    updateNodeData({
+      ...data,
+      [field]: value
+    });
+  }, [data, updateNodeData]);
+  
+  // Handle webhook path change
+  const handlePathChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    handleChange('webhookPath', e.target.value);
+  }, [handleChange]);
+  
+  // Current values with defaults
+  const webhookPath = data.webhookPath || '';
+  
+  // Calculate the full webhook URL preview
+  const webhookUrlPreview = `${baseUrl}/webhooks/${webhookPath || ':path'}`;
+  
+  return (
+    <div className="space-y-4 p-2">
+      <div className="space-y-2">
+        <Label htmlFor="webhookPath">Webhook Path</Label>
+        <Input
+          id="webhookPath"
+          value={webhookPath}
+          onChange={handlePathChange}
+          placeholder="my-webhook"
+        />
+      </div>
+      
+      {/* Additional settings */}
+      
+      <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
+        <Label>Webhook URL Preview</Label>
+        <p className="text-sm font-mono mt-1 break-all">
+          {webhookUrlPreview}
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          This URL will be generated when the workflow is saved and run
+        </p>
+      </div>
+    </div>
+  );
+}
+```
+
+### Integration Node Types
+
+Common integration node types include:
+
+1. **Webhook Nodes**
+   - Webhook Trigger: Creates an endpoint that starts a workflow when called
+   - Webhook Response: Sends a response back to the caller
+
+2. **API Integration Nodes**
+   - API Request: Makes HTTP requests to external APIs
+   - API Endpoint: Creates an API endpoint for external systems to call
+
+3. **Service-Specific Nodes**
+   - Slack Integration: Sends messages to Slack
+   - Email Integration: Sends emails
+   - Database Integration: Connects to external databases
+
+### Testing Integration Nodes
+
+To test integration nodes:
+
+1. Use the built-in Integration Engine test endpoint:
+   ```bash
+   curl -X POST http://localhost:5000/api/test-integration-engine
+   ```
+
+2. Test specific endpoints directly:
+   ```bash
+   curl -X GET http://localhost:5000/api/integration/your-endpoint-path
+   ```
+
+See the [Integration Engine Documentation](INTEGRATION_ENGINE.md) and [Integration Nodes Guide](INTEGRATION_NODES.md) for more details.
+
 ## Advanced Node Features
 
 ### Conditional Settings
@@ -761,6 +1037,162 @@ For nodes with dynamic input/output ports:
 1. Implement a port configuration mechanism in settings
 2. Update the UI component to render the dynamic ports
 3. In the executor, process each input dynamically
+
+## Integration Nodes
+
+Integration nodes are a special type of node that connect with external systems through webhooks, APIs, and other integration points. These nodes leverage the Integration Engine to register endpoints and handle external requests.
+
+### Integration Node Structure
+
+Integration nodes follow a special folder structure:
+
+```
+client/src/nodes/
+└── Integration/               ← All integration nodes must be in this folder
+    └── CategoryName/          ← Integration category (e.g., Webhooks, APIs)
+        └── node_type_name/    ← Specific node type
+            ├── definition.ts  ← Node definition with integration config
+            ├── executor.ts    ← Execution logic
+            └── ui.tsx         ← Configuration UI
+```
+
+### Integration Node Definition
+
+Integration nodes require additional configuration in their definition file:
+
+```typescript
+const definition: NodeDefinition = {
+  type: 'webhook_trigger_integration',
+  name: 'Webhook Trigger',
+  description: 'Creates an endpoint that triggers a workflow when called',
+  category: 'triggers',
+  // Standard node properties (inputs, outputs, etc.)
+  
+  // Integration-specific configuration
+  integrationConfig: {
+    // What the node offers to the system
+    provides: {
+      endpoint: true,     // This node provides an HTTP endpoint
+      webhook: true,      // This node acts as a webhook receiver
+      scheduler: false    // This node doesn't schedule anything
+    },
+    
+    // What the node needs from the system
+    requires: {
+      storage: true,       // Needs persistent storage
+      authentication: true // Requires authentication
+    },
+    
+    // Endpoint configuration (when provides.endpoint = true)
+    endpoint: {
+      pathTemplate: 'webhooks/:path',  // URL path template with parameters
+      methods: ['POST', 'GET'],        // Supported HTTP methods
+      authTypes: ['apiKey', 'bearer'], // Supported auth methods
+    }
+  }
+};
+```
+
+### Integration Node Executor
+
+Integration node executors must register with the Integration Engine:
+
+```typescript
+import { registerIntegration, getIntegrationUrl } from '@utils/integrationClient';
+
+export const execute = async (
+  nodeData: WebhookTriggerNodeData,
+  inputs?: any,
+  context?: any
+): Promise<NodeExecutionData> => {
+  try {
+    // If being triggered by a webhook during workflow execution
+    if (inputs?.webhook) {
+      return {
+        items: [{ json: inputs.webhook }],
+        meta: {
+          startTime: new Date(),
+          endTime: new Date()
+        }
+      };
+    }
+    
+    // When first run in the workflow editor, register with Integration Engine
+    const workflowId = context?.workflowId;
+    const nodeId = context?.nodeId;
+    
+    if (!workflowId || !nodeId) {
+      throw new Error('Webhook trigger node requires workflow context');
+    }
+    
+    // Register with integration engine
+    const registrationResult = await registerIntegration({
+      nodeType: 'webhook_trigger_integration',
+      capabilities: {
+        provides: {
+          endpoint: true,
+          webhook: true
+        },
+        endpoint: {
+          pathTemplate: 'webhooks/:path',
+          methods: ['POST', 'GET']
+        }
+      },
+      workflowId,
+      nodeId,
+      description: 'Webhook endpoint'
+    });
+    
+    // Return information about the registered webhook
+    return {
+      items: [{
+        json: {
+          webhookUrl: getIntegrationUrl(registrationResult.path),
+          path: registrationResult.path,
+          methods: registrationResult.methods,
+          description: registrationResult.description
+        }
+      }],
+      meta: {
+        startTime: new Date(),
+        endTime: new Date()
+      }
+    };
+  } catch (error) {
+    // Handle errors...
+  }
+};
+```
+
+### Integration Node UI
+
+The UI component for integration nodes often includes special displays:
+
+```tsx
+export default function WebhookTriggerNodeSettings({ data, updateNodeData }) {
+  // Get base URL for displaying preview
+  const baseUrl = getIntegrationBaseUrl();
+  
+  // Calculate the full webhook URL preview
+  const webhookUrlPreview = `${baseUrl}/webhooks/${data.webhookPath || ':path'}`;
+  
+  return (
+    <div className="space-y-4 p-2">
+      {/* Configuration UI */}
+      
+      {/* URL Preview */}
+      <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
+        <Label>Webhook URL Preview</Label>
+        <p className="text-sm font-mono mt-1 break-all">
+          {webhookUrlPreview}
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          This URL will be generated when the workflow is saved and run
+        </p>
+      </div>
+    </div>
+  );
+}
 
 ---
 
