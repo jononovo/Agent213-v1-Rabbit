@@ -6,16 +6,12 @@
  */
 
 import { definition } from './definition';
-import { execute, registerWithIntegrationEngine } from './executor';
+import { execute } from './executor';
 import { component } from './ui';
 import tests from './tests';
 
-// Initialize integration if applicable
-try {
-  registerWithIntegrationEngine();
-} catch (error) {
-  console.error('Failed to register with Integration Engine:', error);
-}
+// Note: The Integration Engine automatically registers nodes with integrationConfig
+// No explicit registration is needed as the engine scans for nodes with this configuration
 
 // Export individual components
 export { 

@@ -5,8 +5,8 @@
  * It handles API calls to external services.
  */
 
-// Import integration client utilities if needed
-import { IntegrationClient } from '@/utils/integrationClient';
+// Integration utilities will be available within the system
+// import { someUtility } from '@/utils/integrationUtils';
 
 // Define the node data interface
 export interface BaseIntegrationNodeData {
@@ -123,21 +123,5 @@ export const execute = async (
   }
 };
 
-// Register the node with the Integration Engine
-// This is only required for nodes that implement integration interfaces
-export const registerWithIntegrationEngine = () => {
-  // This registration will be called when the node is loaded
-  // and will register any endpoints or webhooks with the integration engine
-  console.log('Registering base integration node with Integration Engine');
-  
-  // Example: Register an API endpoint if this node provides one
-  // IntegrationClient.registerEndpoint({
-  //   nodeType: 'base_node_integration',
-  //   path: '/api/integration/base',
-  //   methods: ['GET', 'POST'],
-  //   handler: async (req, res) => {
-  //     // Handle incoming requests
-  //     res.json({ status: 'success' });
-  //   }
-  // });
-};
+// Note: The Integration Engine automatically registers nodes with integrationConfig
+// No explicit registration is needed as the engine scans for nodes with this configuration
