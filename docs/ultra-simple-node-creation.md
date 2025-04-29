@@ -279,7 +279,9 @@ import { defaultData, MyNodeData } from './definition';
 /**
  * UI Component for the custom node
  */
-export function component({ id, data, selected, isConnectable }: NodeProps<MyNodeData>) {
+import React, { memo } from 'react';
+
+function MyNodeComponent({ id, data, selected, isConnectable }: NodeProps<MyNodeData>) {
   // Merge incoming data with default data to ensure all properties exist
   const nodeData = { ...defaultData, ...data };
   
@@ -389,7 +391,7 @@ export function component({ id, data, selected, isConnectable }: NodeProps<MyNod
   );
 }
 
-export default component;
+export default memo(MyNodeComponent);
 ```
 
 ### 5. Setting Up Node Exports
@@ -400,10 +402,11 @@ Create the `index.ts` file to export your node components:
 // Import all components
 import { definition } from './definition';
 import { execute } from './executor';
-import { component } from './ui';
+import YourNodeComponent from './ui';
 
 // Named exports
-export { definition, execute, component };
+export { definition, execute };
+export const component = YourNodeComponent;
 
 // Default export for dynamic imports
 export default { definition, execute, component };
