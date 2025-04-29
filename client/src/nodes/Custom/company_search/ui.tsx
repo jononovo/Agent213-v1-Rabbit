@@ -11,7 +11,7 @@ import { FormItem, FormLabel } from '@/components/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Slider } from '@/components/ui/slider';
-import { BaseNode } from '@/nodes/Base_nodes/BaseNode';
+import { BaseNode } from '@/nodes/Base';
 import { defaultData } from './definition';
 
 // Define the node data structure
