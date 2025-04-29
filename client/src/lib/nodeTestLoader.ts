@@ -39,7 +39,25 @@ const initTestRegistry = async (): Promise<Record<string, NodeTest[]>> => {
       console.warn('Could not load text_formatter tests:', e);
     }
     
-    // Add more node test imports here
+    // Attempt to load http_request tests
+    try {
+      const httpRequestModule = await import('../nodes/Integration/http_request/tests');
+      if (httpRequestModule.default) {
+        nodeTestRegistry['http_request'] = httpRequestModule.default;
+      }
+    } catch (e) {
+      console.warn('Could not load http_request tests:', e);
+    }
+    
+    // Attempt to load perplexity_api tests
+    try {
+      const perplexityApiModule = await import('../nodes/Integration/perplexity_api/tests');
+      if (perplexityApiModule.default) {
+        nodeTestRegistry['perplexity_api'] = perplexityApiModule.default;
+      }
+    } catch (e) {
+      console.warn('Could not load perplexity_api tests:', e);
+    }
     
     return nodeTestRegistry;
   } catch (e) {
