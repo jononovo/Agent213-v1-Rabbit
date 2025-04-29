@@ -48,7 +48,7 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
       <div className="p-4 flex flex-col h-full">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-3">
-            <div className={`${collapsed ? "w-12 h-12" : "w-8 h-8"} rounded-md bg-primary flex items-center justify-center`}>
+            <div className={`${collapsed ? "w-10 h-10" : "w-8 h-8"} rounded-md bg-primary flex items-center justify-center`}>
               <Bot className={`${collapsed ? "h-9 w-9" : "h-5 w-5"}`} />
             </div>
             {!collapsed && <h1 className="font-bold text-xl">Agent Builder</h1>}
@@ -94,7 +94,7 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
             </div>
           </Link>
           <div className="flex items-center space-x-3 px-3 py-2 mt-2">
-            <div className={`${collapsed ? "w-12 h-12" : "w-8 h-8"} rounded-full bg-slate-700 flex items-center justify-center text-white`}>
+            <div className={`${collapsed ? "w-10 h-10" : "w-8 h-8"} rounded-full bg-slate-700 flex items-center justify-center text-white`}>
               <User className={`${collapsed ? "h-9 w-9" : "h-5 w-5"}`} />
             </div>
             {!collapsed && (
