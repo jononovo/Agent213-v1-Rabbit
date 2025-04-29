@@ -33,7 +33,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -312,31 +311,6 @@ export default function Library() {
     return data.slice(startIndex, startIndex + itemsPerPage);
   };
   
-  // Update totalPages whenever filtered data changes
-  useEffect(() => {
-    let filteredData: any[] = [];
-    
-    switch(activeTab) {
-      case 'workflows':
-        filteredData = filterWorkflows(workflows);
-        break;
-      case 'agents':
-        filteredData = filterAgents(agents);
-        break;
-      case 'nodes':
-        filteredData = filterNodes(nodes);
-        break;
-    }
-    
-    const calculatedTotalPages = Math.ceil(filteredData.length / itemsPerPage);
-    setTotalPages(calculatedTotalPages > 0 ? calculatedTotalPages : 1);
-    
-    // If current page is now greater than total pages, reset to page 1
-    if (page > calculatedTotalPages && calculatedTotalPages > 0) {
-      setPage(1);
-    }
-  }, [activeTab, searchQuery, typeFilter, statusFilter, workflows, agents, nodes, itemsPerPage, page]);
-  
   // Delete item function
   const deleteItem = async () => {
     if (!itemToDelete) return;
@@ -382,6 +356,31 @@ export default function Library() {
       setItemToDelete(null);
     }
   };
+  
+  // Update totalPages whenever filtered data changes
+  useEffect(() => {
+    let filteredData: any[] = [];
+    
+    switch(activeTab) {
+      case 'workflows':
+        filteredData = filterWorkflows(workflows);
+        break;
+      case 'agents':
+        filteredData = filterAgents(agents);
+        break;
+      case 'nodes':
+        filteredData = filterNodes(nodes);
+        break;
+    }
+    
+    const calculatedTotalPages = Math.ceil(filteredData.length / itemsPerPage);
+    setTotalPages(calculatedTotalPages > 0 ? calculatedTotalPages : 1);
+    
+    // If current page is now greater than total pages, reset to page 1
+    if (page > calculatedTotalPages && calculatedTotalPages > 0) {
+      setPage(1);
+    }
+  }, [activeTab, searchQuery, typeFilter, statusFilter, workflows, agents, nodes, itemsPerPage, page]);
   
   // Pagination controls
   const PaginationControls = ({ itemsCount }: { itemsCount: number }) => {
@@ -607,7 +606,14 @@ export default function Library() {
                                           <Copy className="h-4 w-4 mr-2" />
                                           Duplicate
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem className="flex items-center text-red-600">
+                                        <DropdownMenuItem 
+                                          className="flex items-center text-red-600"
+                                          onClick={() => setItemToDelete({
+                                            id: workflow.id,
+                                            name: workflow.name,
+                                            type: 'workflow'
+                                          })}
+                                        >
                                           <Trash2 className="h-4 w-4 mr-2" />
                                           Delete
                                         </DropdownMenuItem>
@@ -639,7 +645,6 @@ export default function Library() {
                             <TableHead>Name</TableHead>
                             <TableHead>Type</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead>Workflows</TableHead>
                             <TableHead>Created</TableHead>
                             <TableHead>Actions</TableHead>
                           </TableRow>
@@ -647,7 +652,7 @@ export default function Library() {
                         <TableBody>
                           {filterAgents(agents).length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={6} className="text-center py-4">
+                              <TableCell colSpan={5} className="text-center py-4">
                                 No agents found
                               </TableCell>
                             </TableRow>
@@ -672,18 +677,6 @@ export default function Library() {
                                 <TableCell>
                                   <StatusBadge status={agent.status} />
                                 </TableCell>
-                                <TableCell>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-blue-600 hover:underline"
-                                    asChild
-                                  >
-                                    <Link href={`/agent/${agent.id}`}>
-                                      View Workflows
-                                    </Link>
-                                  </Button>
-                                </TableCell>
                                 <TableCell>{formatDate(agent.createdAt)}</TableCell>
                                 <TableCell>
                                   <div className="flex items-center space-x-1">
@@ -692,7 +685,7 @@ export default function Library() {
                                         <Pencil className="h-4 w-4" />
                                       </Button>
                                     </Link>
-                                    <Button size="icon" variant="ghost" title="Run">
+                                    <Button size="icon" variant="ghost" title="Test">
                                       <Play className="h-4 w-4" />
                                     </Button>
                                     <DropdownMenu>
@@ -708,7 +701,14 @@ export default function Library() {
                                           <Copy className="h-4 w-4 mr-2" />
                                           Duplicate
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem className="flex items-center text-red-600">
+                                        <DropdownMenuItem 
+                                          className="flex items-center text-red-600"
+                                          onClick={() => setItemToDelete({
+                                            id: agent.id,
+                                            name: agent.name,
+                                            type: 'agent'
+                                          })}
+                                        >
                                           <Trash2 className="h-4 w-4 mr-2" />
                                           Delete
                                         </DropdownMenuItem>
@@ -756,7 +756,9 @@ export default function Library() {
                               <TableRow key={node.id}>
                                 <TableCell className="font-medium">
                                   <div className="flex flex-col">
-                                    <span>{node.name}</span>
+                                    <Link href={`/node/${node.id}`}>
+                                      <span className="hover:underline cursor-pointer">{node.name}</span>
+                                    </Link>
                                     {node.description && (
                                       <span className="text-xs text-gray-500 truncate max-w-[300px]">
                                         {node.description}
@@ -768,15 +770,20 @@ export default function Library() {
                                   <TypeBadge type={node.type} />
                                 </TableCell>
                                 <TableCell>
-                                  <Badge variant="outline" className="bg-slate-100">
-                                    {node.category || 'Uncategorized'}
+                                  <Badge variant="outline" className="bg-slate-100 text-slate-800 border-slate-200">
+                                    {node.category}
                                   </Badge>
                                 </TableCell>
                                 <TableCell>{formatDate(node.createdAt)}</TableCell>
                                 <TableCell>
                                   <div className="flex items-center space-x-1">
-                                    <Button size="icon" variant="ghost" title="Edit">
-                                      <Pencil className="h-4 w-4" />
+                                    <Link href={`/node/${node.id}`}>
+                                      <Button size="icon" variant="ghost" title="Edit">
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                    </Link>
+                                    <Button size="icon" variant="ghost" title="Test">
+                                      <Play className="h-4 w-4" />
                                     </Button>
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
@@ -791,7 +798,14 @@ export default function Library() {
                                           <Copy className="h-4 w-4 mr-2" />
                                           Duplicate
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem className="flex items-center text-red-600">
+                                        <DropdownMenuItem 
+                                          className="flex items-center text-red-600"
+                                          onClick={() => setItemToDelete({
+                                            id: node.id,
+                                            name: node.name,
+                                            type: 'node'
+                                          })}
+                                        >
                                           <Trash2 className="h-4 w-4 mr-2" />
                                           Delete
                                         </DropdownMenuItem>
@@ -813,6 +827,36 @@ export default function Library() {
           </Tabs>
         </div>
       </MainContent>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={itemToDelete !== null} onOpenChange={(open) => !open && setItemToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {itemToDelete && (
+                <>
+                  This will permanently delete the {itemToDelete.type} <strong>"{itemToDelete.name}"</strong>.
+                  This action cannot be undone.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={(e) => {
+                e.preventDefault();
+                deleteItem();
+              }}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

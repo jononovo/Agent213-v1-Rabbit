@@ -70,39 +70,19 @@ const MainContent = ({ children }: MainContentProps) => {
 
   return (
     <div className="flex-grow overflow-y-auto">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-slate-900">{getPageTitle()}</h1>
-          <div className="flex items-center space-x-3">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex items-center gap-1"
-              onClick={() => setIsNewAgentModalOpen(true)}
-            >
-              <UserPlus size={16} />
-              <span>New Agent</span>
-            </Button>
-            
-            {/* New Agent Modal */}
-            <NewAgentModal 
-              isOpen={isNewAgentModalOpen}
-              onClose={() => setIsNewAgentModalOpen(false)}
-              onAgentCreated={(agent) => {
-                console.log('New agent created:', agent);
-                // We could add a refresh of the agents list here if needed
-              }}
-            />
-
-            
-            {/* Settings and Deploy buttons removed */}
-          </div>
-        </div>
-      </header>
-
       <main className="container mx-auto px-4 py-6">
         {children}
       </main>
+      
+      {/* New Agent Modal - kept outside but still available */}
+      <NewAgentModal 
+        isOpen={isNewAgentModalOpen}
+        onClose={() => setIsNewAgentModalOpen(false)}
+        onAgentCreated={(agent) => {
+          console.log('New agent created:', agent);
+          // We could add a refresh of the agents list here if needed
+        }}
+      />
     </div>
   );
 };
