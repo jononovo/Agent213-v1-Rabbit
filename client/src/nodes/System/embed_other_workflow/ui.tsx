@@ -5,7 +5,7 @@
  * This node allows embedding and running another workflow within the current workflow.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { GitBranch, Settings, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -42,7 +42,7 @@ export const validator = (data: EmbedOtherWorkflowNodeData) => {
 };
 
 // UI component for the Embed Other Workflow node
-export const component = React.memo(function EmbedOtherWorkflowNode({ 
+function EmbedOtherWorkflowNode({ 
   id, 
   data,
   selected,
@@ -259,4 +259,7 @@ export const component = React.memo(function EmbedOtherWorkflowNode({
       />
     </>
   );
-});
+}
+
+// Export the component with memo for optimization
+export default memo(EmbedOtherWorkflowNode);
