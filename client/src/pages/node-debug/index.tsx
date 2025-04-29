@@ -179,6 +179,9 @@ const NodeDebugPanel: React.FC = () => {
       
       console.log(`Testing node ${node.type} with real node-debug API endpoint`);
       
+      // Update progress to show activity
+      setTestProgress(10);
+      
       // Call the node-debug API endpoint to test the node type with real execution
       const response = await fetch('/api/node-debug', {
         method: 'POST',
@@ -205,8 +208,14 @@ const NodeDebugPanel: React.FC = () => {
       const nodeTestResult = await response.json();
       console.log("Node debug API response:", nodeTestResult);
       
+      // Update progress to indicate response received
+      setTestProgress(50);
+      
+      // Update progress to indicate processing results
+      setTestProgress(75);
+      
       // Generate test results based on the actual API response
-      const results: TestResult[] = STANDARD_TESTS.map((test, index) => {
+      const results: TestResult[] = STANDARD_TESTS.map((test) => {
         let status: 'passed' | 'failed' = 'failed';
         let message = '';
         
