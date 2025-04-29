@@ -99,7 +99,7 @@ export async function handleNodeDebugRequest(req: Request, res: Response): Promi
       console.error(`[Node Debug] Error executing node ${nodeType}:`, error);
       
       // Create a detailed error log to help with debugging
-      if (typeof debugAttemptLog !== 'undefined') {
+      if (debugAttemptLog) {
         await storage.updateLog(debugAttemptLog.id, {
           status: 'node_debug_failed',
           error: error instanceof Error ? error.message : String(error),
