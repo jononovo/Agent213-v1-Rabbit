@@ -202,7 +202,9 @@ Follow this decision tree:
 
 2. [ ] Create the component function:
    ```typescript
-   export function component({ id, data, selected, isConnectable }: NodeProps<YourNodeData>) {
+   import React, { memo } from 'react';
+   
+   function YourNodeComponent({ id, data, selected, isConnectable }: NodeProps<YourNodeData>) {
      // Merge with defaults for type safety
      const nodeData = { ...defaultData, ...data };
      
@@ -291,9 +293,9 @@ Follow this decision tree:
    );
    ```
 
-7. [ ] Export the component:
+7. [ ] Export the component with memo for optimization:
    ```typescript
-   export default component;
+   export default memo(YourNodeComponent);
    ```
 
 ## Step 6: Node Registration
@@ -302,10 +304,14 @@ Follow this decision tree:
   ```typescript
   import { definition } from './definition';
   import { execute } from './executor';
-  import { component } from './ui';
+  import YourNodeComponent from './ui';
   
-  export { definition, execute, component };
-  export default { definition, execute, component };
+  // Export for module usage
+  export { definition, execute };
+  export const component = YourNodeComponent;
+  
+  // Default export for dynamic loading
+  export default { definition, execute, component: YourNodeComponent };
   ```
 
 ## Step 7: Additional Steps for Integration Nodes
