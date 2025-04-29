@@ -1,72 +1,75 @@
 /**
  * Integration Client
  * 
- * A client-side utility to communicate with the integration engine service.
- * This provides a clean interface for registering and managing integrations.
+ * This utility provides functions for nodes to interact with the Integration Engine.
+ * It handles registration, API requests, and endpoint management.
  */
 
-import { apiRequest } from '../lib/queryClient';
-
-// Integration capability type definitions
+// Types for integration registration
 export interface IntegrationCapabilities {
-  // What the node offers to the system
-  provides?: {
-    endpoint?: boolean;    // This node provides an HTTP endpoint
-    webhook?: boolean;     // This node acts as a webhook receiver
-    scheduler?: boolean;   // This node provides scheduling capabilities
-  };
-  
-  // What the node needs from the system
-  requires?: {
-    storage?: boolean;       // Needs persistent storage for configuration
-    authentication?: boolean; // Requires authentication
-  };
-  
-  // Endpoint configuration (applicable when provides.endpoint=true)
-  endpoint?: {
-    pathTemplate?: string;   // URL path template
-    methods?: string[];      // Supported HTTP methods
-    authTypes?: string[];    // Supported auth methods
+  provides: {
+    endpoint?: boolean;
+    webhook?: boolean;
+    scheduler?: boolean;
+    api?: boolean;
   };
 }
 
-// Integration node registration request
-export interface IntegrationRegistrationRequest {
+export interface RegisterIntegrationParams {
   nodeType: string;
   capabilities: IntegrationCapabilities;
-  workflowId?: number;
-  nodeId?: string;
+  workflowId: number;
+  nodeId: string | number;
   description?: string;
+  config?: Record<string, any>;
 }
 
-// Integration endpoint information
-export interface EndpointInfo {
-  path: string;
-  methods: string[];
-  workflowId?: number;
-  nodeId?: string;
-  description?: string;
+export interface RegisterIntegrationResponse {
+  id: string;
+  endpoint?: string;
+  capabilities: IntegrationCapabilities;
+  registered: boolean;
+  timestamp: string;
+}
+
+// Types for integration requests
+export interface IntegrationRequestOptions {
+  url: string;
+  method?: string;
+  headers?: Record<string, string>;
+  params?: Record<string, any>;
+  data?: any;
+  timeout?: number;
+  useAuth?: boolean;
 }
 
 /**
- * Register a node as an integration with the Integration Engine
+ * Register an integration with the Integration Engine
  * 
- * @param registrationData The registration data for the integration
- * @returns The registered endpoint information
+ * This registers a node as an integration provider or consumer,
+ * which allows it to receive webhooks, provide endpoints, or access external APIs.
+ * 
+ * @param params Registration parameters
+ * @returns Registration result with endpoint information if applicable
  */
 export async function registerIntegration(
-  registrationData: IntegrationRegistrationRequest
-): Promise<EndpointInfo> {
+  params: RegisterIntegrationParams
+): Promise<RegisterIntegrationResponse> {
   try {
-    const response = await apiRequest('/api/integration/register', {
+    const response = await fetch('/api/integration/register', {
       method: 'POST',
-      body: JSON.stringify(registrationData),
       headers: {
         'Content-Type': 'application/json'
-      }
+      },
+      body: JSON.stringify(params)
     });
-    
-    return response;
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to register integration: ${response.status} - ${errorText}`);
+    }
+
+    return await response.json();
   } catch (error) {
     console.error('Error registering integration:', error);
     throw error;
@@ -74,146 +77,137 @@ export async function registerIntegration(
 }
 
 /**
- * Unregister an integration endpoint
+ * Make an authenticated request through the Integration Engine
  * 
- * @param path The path of the endpoint to unregister
- * @returns Success status
+ * This sends an API request through the Integration Engine, which handles:
+ * - Adding authentication headers (API keys)
+ * - Error handling
+ * - Rate limiting
+ * - Logging
+ * 
+ * @param options Request options
+ * @returns API response
  */
-export async function unregisterIntegration(path: string): Promise<{ success: boolean }> {
+export async function makeIntegrationRequest(
+  options: IntegrationRequestOptions
+): Promise<any> {
   try {
-    const response = await apiRequest('/api/integration/unregister', {
+    const response = await fetch('/api/integration/request', {
       method: 'POST',
-      body: JSON.stringify({ path }),
       headers: {
         'Content-Type': 'application/json'
-      }
+      },
+      body: JSON.stringify(options)
     });
-    
-    return response;
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Integration request failed: ${response.status} - ${errorText}`);
+    }
+
+    return await response.json();
   } catch (error) {
-    console.error('Error unregistering integration:', error);
+    console.error('Error making integration request:', error);
     throw error;
   }
 }
 
 /**
- * Get all registered integration endpoints
+ * Get information about registered integrations
  * 
- * @returns Array of endpoint information
+ * @param workflowId Optional workflow ID to filter by
+ * @param nodeId Optional node ID to filter by
+ * @returns List of registered integrations
  */
-export async function getIntegrationEndpoints(): Promise<EndpointInfo[]> {
+export async function getIntegrations(
+  workflowId?: number,
+  nodeId?: string | number
+): Promise<RegisterIntegrationResponse[]> {
   try {
-    const response = await apiRequest('/api/integration/endpoints', {
-      method: 'GET'
-    });
+    let url = '/api/integration/endpoints';
+    const params = new URLSearchParams();
     
-    return response;
-  } catch (error) {
-    console.error('Error fetching integration endpoints:', error);
-    throw error;
-  }
-}
-
-/**
- * Get the base URL for webhooks or API endpoints
- * 
- * @returns The base URL for constructing webhook or API endpoints
- */
-export function getIntegrationBaseUrl(): string {
-  // Default to current host if in browser
-  if (typeof window !== 'undefined') {
-    const protocol = window.location.protocol;
-    const host = window.location.host;
-    return `${protocol}//${host}/api/integration`;
-  }
-  
-  // Fallback for non-browser environments (unlikely to be needed)
-  return '/api/integration';
-}
-
-/**
- * Get the full URL for a specific integration endpoint
- * 
- * @param path The endpoint path
- * @returns The full URL for the endpoint
- */
-export function getIntegrationUrl(path: string): string {
-  const baseUrl = getIntegrationBaseUrl();
-  const normalizedPath = path.startsWith('/') ? path.substring(1) : path;
-  return `${baseUrl}/${normalizedPath}`;
-}
-
-/**
- * Parse a dynamic path template with variables
- * 
- * @param pathTemplate The path template with placeholders (e.g., 'webhooks/:path')
- * @param params The parameters to substitute in the template
- * @returns The parsed path
- */
-export function parsePathTemplate(pathTemplate: string, params: Record<string, string>): string {
-  let path = pathTemplate;
-  
-  // Replace each variable with its value
-  Object.entries(params).forEach(([key, value]) => {
-    path = path.replace(`:${key}`, encodeURIComponent(value));
-  });
-  
-  return path;
-}
-
-/**
- * Interface for API request options
- */
-export interface ApiRequestOptions {
-  method: string;
-  url: string;
-  headers?: Record<string, string>;
-  body?: any;
-  timeout?: number;
-  params?: Record<string, string>;
-}
-
-/**
- * Make an outgoing API request through the Integration Engine
- * 
- * This function handles external API requests, leveraging the Integration Engine's
- * proxy capabilities, error handling, and logging.
- * 
- * @param options The API request options
- * @returns The API response
- */
-export async function makeApiRequest(options: ApiRequestOptions): Promise<any> {
-  try {
-    // Format request body based on content type
-    let formattedBody = options.body;
-    const contentType = options.headers?.['Content-Type'] || 'application/json';
-    
-    if (typeof options.body === 'object' && contentType.includes('application/json')) {
-      formattedBody = JSON.stringify(options.body);
+    if (workflowId !== undefined) {
+      params.append('workflowId', workflowId.toString());
     }
     
-    // Create the request payload
-    const requestPayload = {
-      method: options.method,
-      url: options.url,
-      headers: options.headers || {},
-      body: formattedBody,
-      timeout: options.timeout || 30000,
-      params: options.params || {}
-    };
+    if (nodeId !== undefined) {
+      params.append('nodeId', nodeId.toString());
+    }
     
-    // Make the request through our proxy endpoint
-    const response = await apiRequest('/api/integration/request', {
-      method: 'POST',
-      body: JSON.stringify(requestPayload),
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
     
-    return response;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to get integrations: ${response.status} - ${errorText}`);
+    }
+
+    return await response.json();
   } catch (error) {
-    console.error('API request error:', error);
+    console.error('Error getting integrations:', error);
     throw error;
   }
+}
+
+/**
+ * Get integration node types
+ * 
+ * @returns List of available integration node types
+ */
+export async function getIntegrationNodeTypes(): Promise<string[]> {
+  try {
+    const response = await fetch('/api/integration/node-types');
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to get integration node types: ${response.status} - ${errorText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error getting integration node types:', error);
+    throw error;
+  }
+}
+
+/**
+ * Build a webhook URL for an integration node
+ * 
+ * @param workflowId Workflow ID
+ * @param nodeId Node ID
+ * @returns Full webhook URL
+ */
+export function buildWebhookUrl(workflowId: number, nodeId: string | number): string {
+  // Get the base URL from the current window location
+  const protocol = window.location.protocol;
+  const host = window.location.host;
+  
+  // Construct the webhook URL
+  return `${protocol}//${host}/api/webhooks/workflow/${workflowId}/node/${nodeId}`;
+}
+
+/**
+ * Build a dynamic endpoint URL for an integration node
+ * 
+ * @param pathTemplate Path template string (e.g., 'webhooks/:path')
+ * @param params Parameters to replace in the template
+ * @returns Full endpoint URL
+ */
+export function buildEndpointUrl(pathTemplate: string, params: Record<string, string>): string {
+  // Get the base URL from the current window location
+  const protocol = window.location.protocol;
+  const host = window.location.host;
+  
+  // Replace parameters in the path template
+  let path = pathTemplate;
+  Object.entries(params).forEach(([key, value]) => {
+    path = path.replace(`:${key}`, value);
+  });
+  
+  // Construct the full URL
+  return `${protocol}//${host}/api/${path}`;
 }
