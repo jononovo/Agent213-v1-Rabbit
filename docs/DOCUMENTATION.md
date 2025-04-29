@@ -35,13 +35,14 @@ This project implements a flexible, extensible node-based workflow system for cr
 client/src/nodes/          # Node implementation folders
   ├── System/              # System nodes (core functionality)
   ├── Custom/              # Domain-specific custom nodes
-  └── Default/             # Default node implementation pattern
+  ├── Integration/         # External API integration nodes
+  ├── Agents/              # Agent-specific nodes
+  ├── components/          # Shared node components
+  │   ├── base/            # Base node components (Container, Header, Content)
+  │   └── custom_node_ui/  # Custom node UI components
+  └── _node_templates/     # Templates for creating new nodes
 
-client/src/components/     # Shared UI components
-  └── nodes/common/        # Common node UI components
-    ├── NodeContainer.tsx  # Base container for all nodes
-    ├── NodeHoverMenu.tsx  # Hover menu with node actions
-    └── NodeSettingsForm.tsx # Dynamic settings form
+client/src/components/     # Shared UI components (non-node specific)
 
 client/src/lib/            # Core system libraries
   ├── nodeSystem.ts        # Node registration and discovery
@@ -512,7 +513,7 @@ All nodes follow UI design inspired by simple-ai.dev to maintain consistency acr
    - Handles workflow state management and serialization
    - Creates stable references to prevent unnecessary re-renders
 
-4. **client/src/components/nodes/common/NodeHoverMenu.tsx**
+4. **client/src/nodes/components/base/NodeHoverMenu.tsx**
    - Provides a hover menu for node actions with null-safe event handling
    - Uses optional event parameters to prevent runtime errors
    - Creates type-safe action creators with consistent interfaces
@@ -915,7 +916,7 @@ The node system automatically:
 
 #### 2. Updating the Node UI
 
-1. Modify components in `client/src/components/nodes/common/`
+1. Modify components in `client/src/nodes/components/base/`
 2. For system-wide changes, modify `client/src/nodes/Default/ui.tsx`
 3. For node-specific changes, modify that node's ui.tsx file
 
@@ -930,7 +931,7 @@ The node system automatically:
 
 When adding a feature that should work across all nodes:
 
-1. Implement the feature in a reusable component (e.g., in `components/nodes/common/`)
+1. Implement the feature in a reusable component (e.g., in `client/src/nodes/components/base/`)
 2. Use standardized window events for communication:
    ```typescript
    // Add this to your new component
