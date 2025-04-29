@@ -1138,11 +1138,15 @@ Add tests to your `index.ts` exports:
 ```typescript
 import { definition } from './definition';
 import { execute } from './executor';
-import { component } from './ui';
+import YourNodeComponent from './ui';
 import tests from './tests';
 
-export { definition, execute, component, tests };
-export default { definition, execute, component, tests };
+// Export for module usage
+export { definition, execute, tests };
+export const component = YourNodeComponent;
+
+// Default export for dynamic loading
+export default { definition, execute, component: YourNodeComponent, tests };
 ```
 
 ## Node Migration and Adaptation

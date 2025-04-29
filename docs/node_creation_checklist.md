@@ -8,17 +8,24 @@ This document provides a crystal clear, detailed checklist for creating new node
   - `System/`: Core system functionality nodes
   - `Custom/`: Application-specific nodes
   - `Integration/`: External API integration nodes
+  - `Agents/`: Agent-specific nodes
 
 - [ ] Copy the appropriate template:
   ```bash
-  # For standard processing nodes:
+  # For minimal base node template (simplest starting point):
   cp -r client/src/nodes/_node_templates/base_node_template client/src/nodes/[Category]/[your_node_name]
   
-  # For data input/output nodes:
-  cp -r client/src/nodes/_node_templates/data_node_template client/src/nodes/[Category]/[your_node_name]
+  # For processing-focused nodes:
+  cp -r client/src/nodes/_node_templates/processing_node client/src/nodes/[Category]/[your_node_name]
   
-  # For integration nodes:
-  cp -r client/src/nodes/_node_templates/integration_node_template client/src/nodes/[Category]/[your_node_name]
+  # For output-focused nodes:
+  cp -r client/src/nodes/_node_templates/output_node client/src/nodes/[Category]/[your_node_name]
+  
+  # For API integration nodes:
+  cp -r client/src/nodes/_node_templates/api_integration client/src/nodes/[Category]/[your_node_name]
+  
+  # For webhook integration nodes:
+  cp -r client/src/nodes/_node_templates/webhook_integration client/src/nodes/[Category]/[your_node_name]
   ```
 
 - [ ] Verify you have these files in your node folder:
@@ -164,6 +171,8 @@ Follow this decision tree:
   # Update index.ts to export it
   echo "export * from './your_shared_component';" >> client/src/components/nodes/custom_node_ui/index.ts
   ```
+
+  Note: Create reusable components in a consistent manner that follows our standardized patterns.
 
 - [ ] Use proper component structure:
   ```typescript
