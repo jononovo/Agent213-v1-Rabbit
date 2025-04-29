@@ -15,7 +15,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { executeWorkflow, loadWorkflow } from '@/lib/workflowClient';
+import { executeWorkflow, executeWorkflowIsolated, loadWorkflow } from '@/lib/workflowClient';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
@@ -216,6 +216,81 @@ export default function WorkflowTestBench() {
       setExecutionResult(result);
     } catch (err: any) {
       console.error('Error executing workflow:', err);
+      setError(`Failed to execute workflow: ${err.message || 'Unknown error'}`);
+      addExecutionLog(`Execution error: ${err.message || 'Unknown error'}`);
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+  
+  // Handle isolated workflow execution using the dedicated server
+  const handleExecuteIsolatedWorkflow = async () => {
+    try {
+      setIsExecuting(true);
+      setError(null);
+      setExecutionResult(null);
+      setNodeStates({});
+      setExecutionLogs([]);
+
+      // Parse input data based on the selected input tab
+      let parsedInput: any;
+      
+      if (inputTab === 'json') {
+        try {
+          parsedInput = jsonInput ? JSON.parse(jsonInput) : {};
+        } catch (err) {
+          setError('Invalid JSON input. Please check your syntax.');
+          setIsExecuting(false);
+          return;
+        }
+      } else {
+        // Simple text input
+        parsedInput = inputData || '';
+      }
+
+      // Add log entry
+      addExecutionLog(`Executing workflow ${workflowId} in isolated mode with input: ${typeof parsedInput === 'string' ? parsedInput : JSON.stringify(parsedInput, null, 2)}`);
+
+      // Use the isolated execution service
+      addExecutionLog('Using isolated workflow execution server for enhanced stability');
+      
+      // Start a polling status indicator
+      const statusInterval = setInterval(() => {
+        addExecutionLog('Waiting for isolated execution server response...');
+      }, 3000);
+      
+      try {
+        const result = await executeWorkflowIsolated(
+          parseInt(workflowId), 
+          parsedInput,
+          {
+            timeout: 60000 // 1 minute timeout
+          }
+        );
+        
+        clearInterval(statusInterval);
+        
+        // Process the result
+        addExecutionLog(`Isolated workflow execution completed successfully`);
+        
+        // Create a compatible result format for the UI
+        const formattedResult: WorkflowExecutionState = {
+          status: 'completed',
+          output: result,
+          nodeResults: {},
+          executionOrder: [],
+          startTime: new Date(),
+          endTime: new Date()
+        };
+        
+        setExecutionResult(formattedResult);
+        addExecutionLog(`Result: ${JSON.stringify(result, null, 2)}`);
+      } catch (error: any) {
+        clearInterval(statusInterval);
+        throw error;
+      }
+    } catch (err: any) {
+      console.error('Error executing isolated workflow:', err);
       setError(`Failed to execute workflow: ${err.message || 'Unknown error'}`);
       addExecutionLog(`Execution error: ${err.message || 'Unknown error'}`);
     } finally {
@@ -505,23 +580,48 @@ export default function WorkflowTestBench() {
                 <CardDescription>Run the workflow and view results</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button 
-                  onClick={handleExecuteWorkflow}
-                  disabled={isExecuting || !workflowData}
-                  className="w-full"
-                >
-                  {isExecuting ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Executing...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="h-4 w-4 mr-2" />
-                      Execute Workflow
-                    </>
-                  )}
-                </Button>
+                <div className="space-y-2">
+                  <Button 
+                    onClick={handleExecuteWorkflow}
+                    disabled={isExecuting || !workflowData}
+                    className="w-full"
+                  >
+                    {isExecuting ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Executing...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="h-4 w-4 mr-2" />
+                        Execute In-Process
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button 
+                    onClick={handleExecuteIsolatedWorkflow}
+                    disabled={isExecuting || !workflowData}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    {isExecuting ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Executing...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="h-4 w-4 mr-2" />
+                        Execute Isolated
+                      </>
+                    )}
+                  </Button>
+                  
+                  <p className="text-xs text-gray-500 mt-1">
+                    Use isolated execution for enhanced stability and crash resistance
+                  </p>
+                </div>
                 
                 {executionResult && (
                   <div className="mt-4">
