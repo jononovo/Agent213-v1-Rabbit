@@ -31,9 +31,9 @@ import {
   PopoverTrigger 
 } from '@/components/ui/popover';
 
-import { NodeContainer } from '@/components/nodes/common/NodeContainer';
-import { NodeHeader } from '@/components/nodes/common/NodeHeader';
-import { NodeContent } from '@/components/nodes/common/NodeContent';
+import { NodeContainer } from '@/components/nodes/base/NodeContainer';
+import { NodeHeader } from '@/components/nodes/base/NodeHeader';
+import { NodeContent } from '@/components/nodes/base/NodeContent';
 import { NodeSettingsForm } from '@/components/nodes/base/NodeSettingsForm';
 import NodeHoverMenu, { 
   createDuplicateAction, 
@@ -42,7 +42,7 @@ import NodeHoverMenu, {
   createRunAction,
   createAddNoteAction,
   NodeHoverMenuAction
-} from '@/components/nodes/common/NodeHoverMenu';
+} from '@/components/nodes/base/NodeHoverMenu';
 
 import { BaseNode } from '@/nodes/Base';
 

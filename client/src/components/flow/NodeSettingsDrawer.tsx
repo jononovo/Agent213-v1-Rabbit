@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { Save, X, BookOpen, HelpCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Agent } from '@shared/schema';
-import NodeReadmeModal from '@/components/nodes/common/NodeReadmeModal';
+import NodeReadmeModal from '@/components/nodes/base/NodeReadmeModal';
 // Import from the unified registry
 import { getNodeSettings, hasNode, getNodeDefinitionPath } from '@/lib/unifiedNodeRegistry';
 
