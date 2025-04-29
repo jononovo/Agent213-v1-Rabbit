@@ -12,7 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { BaseIntegrationNodeData } from './executor';
-import { checkSecrets } from '@/utils/secretsHelper';
+// Import your existing API check function
+// Update this import to your actual secrets checking function
+import { checkApiKey } from '@/utils/apiKeyUtils';
 
 // Interface for validation result
 interface ValidationResult {

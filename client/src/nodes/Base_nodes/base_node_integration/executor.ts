@@ -5,16 +5,12 @@
  * It demonstrates how to register with the Integration Engine and make API requests.
  */
 
-// Using a more generic type definition for NodeExecutionData since we can't directly
-// import from shared/nodeTypes
-export interface NodeExecutionData {
-  [key: string]: {
-    items: Array<{ json: any }>;
-    meta: Record<string, any>;
-  };
-}
+// Import the NodeExecutionData interface from shared nodeTypes
+import { NodeExecutionData } from '@/shared/nodeTypes';
 
-import { registerIntegration, makeIntegrationRequest } from '@/utils/integrationClient';
+// Import integration functions from your existing integration engine 
+// Update this import to your actual integration client path
+import { integrationRequest, registerIntegration } from '@/services/integrationEngine';
 
 // Define the node data interface
 export interface BaseIntegrationNodeData {
@@ -58,7 +54,7 @@ export const execute = async (
       
       // Make API request through the Integration Engine
       // This automatically handles API keys and authentication
-      const result = await makeIntegrationRequest({
+      const result = await integrationRequest({
         url: nodeData.apiEndpoint,
         method: nodeData.method,
         headers: {
