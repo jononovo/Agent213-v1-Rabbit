@@ -272,7 +272,7 @@ import React from 'react';
 import { NodeProps } from 'reactflow';
 import { Calculator, ArrowRight } from 'lucide-react';
 import { BaseNode } from '@/nodes/Base';
-import { HandleWithLabel } from '@/components/nodes/custom_node_ui/handle_with_label';
+import { HandleWithLabel } from '@/nodes/components/custom_node_ui/handle_with_label';
 import { Position } from 'reactflow';
 import { defaultData, MyNodeData } from './definition';
 
@@ -859,7 +859,7 @@ import React, { memo } from 'react';
 import { NodeProps } from 'reactflow';
 import { Globe, ArrowRight, Database, Shield } from 'lucide-react';
 import { BaseNode } from '@/nodes/Base';
-import { HandleWithLabel } from '@/components/nodes/custom_node_ui/handle_with_label';
+import { HandleWithLabel } from '@/nodes/components/custom_node_ui/handle_with_label';
 import { Position } from 'reactflow';
 import { defaultData, MyApiIntegrationData } from './definition';
 
@@ -1342,11 +1342,11 @@ import React, { memo } from 'react';
 import { NodeProps } from 'reactflow';
 import { BaseNode } from '@/nodes/Base';
 import { Position } from 'reactflow';
-import { HandleWithLabel } from '@/components/nodes/custom_node_ui/handle_with_label';
+import { HandleWithLabel } from '@/nodes/components/custom_node_ui/handle_with_label';
 import { defaultData, YourNodeData } from './definition';
 
 // You may want to import components similar to what the legacy node used
-import { SomeCustomControl } from '@/components/nodes/custom_node_ui/some_custom_control';
+import { SomeCustomControl } from '@/nodes/components/custom_node_ui/some_custom_control';
 
 function YourNodeComponent({ id, data, selected, isConnectable }: NodeProps<YourNodeData>) {
   // Combine with defaults for safety
