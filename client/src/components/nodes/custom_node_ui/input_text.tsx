@@ -1,5 +1,5 @@
 /**
- * NodeTextInput
+ * Node Text Input
  * 
  * A standardized text input control for node configuration with label.
  */
