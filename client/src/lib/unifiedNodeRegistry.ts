@@ -112,6 +112,49 @@ export async function initializeRegistry(): Promise<void> {
 export const NODE_FOLDERS = ['System', 'Custom', 'Integration', 'Agents'];
 
 /**
+ * Load a node component by type - one simple approach
+ * The registry is the single source of truth
+ */
+export async function loadNodeComponent(nodeType: string): Promise<any> {
+  // Get the folder from the registry
+  const node = nodeRegistry.get(nodeType);
+  
+  if (!node) {
+    console.warn(`Node ${nodeType} not found in registry, using BaseNode`);
+    const { default: BaseNode } = await import('../nodes/Base/ui');
+    return BaseNode;
+  }
+  
+  try {
+    // Load UI component directly from ui.tsx using the folder from registry
+    const uiModule = await import(/* @vite-ignore */ `../nodes/${node.folderPath}/${nodeType}/ui`);
+    return uiModule.default;
+  } catch (error) {
+    console.warn(`Failed to load UI for ${nodeType}, using BaseNode`);
+    const { default: BaseNode } = await import('../nodes/Base/ui');
+    return BaseNode;
+  }
+}
+
+/**
+ * Process node definitions for a specific folder
+ */
+function processDefinitions(folder: string, definitionModules: Record<string, any>): number {
+  let count = 0;
+  
+  for (const path in definitionModules) {
+    const module = definitionModules[path] as any;
+    const nodeDef = module.default as NodeDefinition;
+    
+    if (registerNodeDefinition(nodeDef, folder)) {
+      count++;
+    }
+  }
+  
+  return count;
+}
+
+/**
  * Discover all node definitions from defined folders
  */
 async function discoverNodeDefinitions(): Promise<void> {
@@ -119,35 +162,17 @@ async function discoverNodeDefinitions(): Promise<void> {
     console.log('Discovering node definitions...');
     let count = 0;
     
-    // Process each folder - one approach for all
     // Use static patterns for import.meta.glob (it doesn't support dynamic templates)
     const systemDefinitions = import.meta.glob('../nodes/System/*/definition.ts', { eager: true });
     const customDefinitions = import.meta.glob('../nodes/Custom/*/definition.ts', { eager: true });
     const integrationDefinitions = import.meta.glob('../nodes/Integration/*/definition.ts', { eager: true });
     const agentsDefinitions = import.meta.glob('../nodes/Agents/*/definition.ts', { eager: true });
     
-    // Map folder names to their definition modules
-    const folderDefinitions = {
-      'System': systemDefinitions,
-      'Custom': customDefinitions,
-      'Integration': integrationDefinitions,
-      'Agents': agentsDefinitions
-    };
-    
-    // Process each folder
-    for (const folder of NODE_FOLDERS) {
-      const definitionModules = folderDefinitions[folder];
-      
-      // Register each definition with its folder
-      for (const path in definitionModules) {
-        const module = definitionModules[path] as any;
-        const nodeDef = module.default as NodeDefinition;
-        
-        if (registerNodeDefinition(nodeDef, folder)) {
-          count++;
-        }
-      }
-    }
+    // Process each folder with its corresponding definitions
+    count += processDefinitions('System', systemDefinitions);
+    count += processDefinitions('Custom', customDefinitions);
+    count += processDefinitions('Integration', integrationDefinitions);
+    count += processDefinitions('Agents', agentsDefinitions);
     
     console.log(`Discovered ${count} node definitions`);
   } catch (error) {
