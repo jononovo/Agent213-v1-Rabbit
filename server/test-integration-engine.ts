@@ -74,9 +74,11 @@ async function testIntegrationEngine() {
     const postResponseData = await postResponse.json();
     log(`POST response: ${JSON.stringify(postResponseData)}`, 'test');
     
-    // 5. Unregister the test node type
-    const unregistered = await integrationEngine.unregisterNodeType('test_integration_node');
-    log(`Unregistered test node type: ${unregistered}`, 'test');
+    // 5. Keep the test node type registered for manual testing
+    // Comment out unregistration for demo purposes
+    // const unregistered = await integrationEngine.unregisterNodeType('test_integration_node');
+    // log(`Unregistered test node type: ${unregistered}`, 'test');
+    log(`Test node type 'test_integration_node' is now available for manual testing at /api/integration/test/:param`, 'test');
     
     log('Integration Engine test completed successfully', 'test');
   } catch (error) {
@@ -84,9 +86,5 @@ async function testIntegrationEngine() {
   }
 }
 
-// Run the test if executed directly
-if (require.main === module) {
-  testIntegrationEngine();
-}
-
+// Just export the test function
 export { testIntegrationEngine };
