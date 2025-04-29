@@ -8,7 +8,7 @@
 import fetch from 'node-fetch';
 import { storage } from './storage';
 
-async function testWorkflowExecution() {
+export async function testWorkflowExecution() {
   try {
     console.log('Testing Workflow Execution Server...');
 
@@ -42,10 +42,18 @@ async function testWorkflowExecution() {
       })
     });
 
-    const executeResult = await executeResponse.json();
+    const executeResult = await executeResponse.json() as {
+      success: boolean;
+      jobId?: string;
+      error?: string;
+    };
     
     if (!executeResult.success) {
-      throw new Error(`Failed to queue workflow: ${executeResult.error}`);
+      throw new Error(`Failed to queue workflow: ${executeResult.error || 'Unknown error'}`);
+    }
+
+    if (!executeResult.jobId) {
+      throw new Error('No job ID returned from workflow execution server');
     }
 
     const jobId = executeResult.jobId;
@@ -71,10 +79,24 @@ async function testWorkflowExecution() {
         }
       });
 
-      const statusResult = await statusResponse.json();
+      const statusResult = await statusResponse.json() as {
+        success: boolean;
+        job?: {
+          id: string;
+          status: 'pending' | 'processing' | 'completed' | 'failed';
+          result?: any;
+          error?: string;
+        };
+        error?: string;
+      };
       
       if (!statusResult.success) {
-        console.error(`Error checking status: ${statusResult.error}`);
+        console.error(`Error checking status: ${statusResult.error || 'Unknown error'}`);
+        continue;
+      }
+      
+      if (!statusResult.job) {
+        console.error('No job information returned from server');
         continue;
       }
       

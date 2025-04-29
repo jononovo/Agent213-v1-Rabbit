@@ -656,6 +656,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Test Workflow Execution Server
+  app.post('/api/test-workflow-execution', async (req: Request, res: Response) => {
+    try {
+      log('Starting Workflow Execution test', 'test');
+      
+      // Run the workflow execution test
+      const { testWorkflowExecution } = await import('./test-workflow-execution');
+      
+      // Execute test (returns a promise)
+      testWorkflowExecution()
+        .then(() => {
+          log('Workflow Execution test completed successfully', 'test');
+        })
+        .catch(error => {
+          console.error('Error in Workflow Execution test:', error);
+        });
+      
+      // Return immediate response (test runs in background)
+      res.json({
+        success: true,
+        message: "Workflow Execution test started",
+        note: "Check server logs for test results"
+      });
+    } catch (error) {
+      console.error("Workflow Execution test error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error starting Workflow Execution test",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   // Endpoint to manually trigger saving of all data
   app.post('/api/admin/save-all-data', async (req: Request, res: Response) => {
     try {
