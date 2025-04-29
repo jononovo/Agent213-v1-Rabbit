@@ -10,7 +10,6 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { createServer } from 'http';
-import { WebSocketServer, WebSocket } from 'ws';
 import { db } from '../db';
 // Import routes once it's created
 // Temporarily commented out to avoid import errors
@@ -212,37 +211,6 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 // Create HTTP server
 const server = createServer(app);
 
-// Create WebSocket server for real-time workflow execution updates
-const wss = new WebSocketServer({ server, path: '/ws' });
-
-// Handle WebSocket connections
-wss.on('connection', (ws) => {
-  console.log('[Integration Engine] WebSocket client connected');
-  
-  ws.on('message', (message) => {
-    // Parse and handle WebSocket messages
-    try {
-      const data = JSON.parse(message.toString());
-      console.log('[Integration Engine] Received message:', data);
-      
-      // Echo back for now - will implement proper handling later
-      ws.send(JSON.stringify({ type: 'ack', received: data }));
-    } catch (error) {
-      console.error('[Integration Engine] WebSocket message error:', error);
-    }
-  });
-  
-  ws.on('close', () => {
-    console.log('[Integration Engine] WebSocket client disconnected');
-  });
-  
-  // Send welcome message
-  ws.send(JSON.stringify({ 
-    type: 'system', 
-    message: 'Connected to Integration Engine WebSocket'
-  }));
-});
-
 // Start the server
 export function startIntegrationServer() {
   server.listen(PORT, () => {
@@ -252,14 +220,5 @@ export function startIntegrationServer() {
   return server;
 }
 
-// Initialize and export WebSocket broadcast helper
-export function broadcastToClients(data: any) {
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(data));
-    }
-  });
-}
-
 // Export server for testing and integration
-export { app, server, wss };
+export { app, server };

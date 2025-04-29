@@ -47,7 +47,8 @@ router.post('/integration/perplexity', async (req, res) => {...});
 router.post('/integration/request', async (req, res) => {...});
 router.all('/integration/webhook/:id', async (req, res) => {...});
 
-// Start the server
+// Create HTTP server and start it
+const server = createServer(app);
 export function startIntegrationServer() {
   server.listen(PORT, () => {
     console.log(`[Integration Engine] Server running on port ${PORT}`);
