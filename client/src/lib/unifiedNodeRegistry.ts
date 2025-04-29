@@ -108,46 +108,44 @@ export async function initializeRegistry(): Promise<void> {
   }
 }
 
+// Define all supported node folder locations - single source of truth
+export const NODE_FOLDERS = ['System', 'Custom', 'Integration', 'Agents'];
+
 /**
- * Discover all node definitions from System, Custom, and Integration folders
+ * Discover all node definitions from defined folders
  */
 async function discoverNodeDefinitions(): Promise<void> {
   try {
     console.log('Discovering node definitions...');
-    
-    // Import all definition files using Vite's import.meta.glob
-    const systemDefinitionModules = import.meta.glob('../nodes/System/*/definition.ts', { eager: true });
-    const customDefinitionModules = import.meta.glob('../nodes/Custom/*/definition.ts', { eager: true });
-    const integrationDefinitionModules = import.meta.glob('../nodes/Integration/**/*/definition.ts', { eager: true });
-    
-    // Process system nodes
     let count = 0;
-    for (const path in systemDefinitionModules) {
-      const module = systemDefinitionModules[path] as any;
-      const nodeDef = module.default as NodeDefinition;
-      
-      if (registerNodeDefinition(nodeDef, 'System')) {
-        count++;
-      }
-    }
     
-    // Process custom nodes
-    for (const path in customDefinitionModules) {
-      const module = customDefinitionModules[path] as any;
-      const nodeDef = module.default as NodeDefinition;
-      
-      if (registerNodeDefinition(nodeDef, 'Custom')) {
-        count++;
-      }
-    }
+    // Process each folder - one approach for all
+    // Use static patterns for import.meta.glob (it doesn't support dynamic templates)
+    const systemDefinitions = import.meta.glob('../nodes/System/*/definition.ts', { eager: true });
+    const customDefinitions = import.meta.glob('../nodes/Custom/*/definition.ts', { eager: true });
+    const integrationDefinitions = import.meta.glob('../nodes/Integration/*/definition.ts', { eager: true });
+    const agentsDefinitions = import.meta.glob('../nodes/Agents/*/definition.ts', { eager: true });
     
-    // Process integration nodes
-    for (const path in integrationDefinitionModules) {
-      const module = integrationDefinitionModules[path] as any;
-      const nodeDef = module.default as NodeDefinition;
+    // Map folder names to their definition modules
+    const folderDefinitions = {
+      'System': systemDefinitions,
+      'Custom': customDefinitions,
+      'Integration': integrationDefinitions,
+      'Agents': agentsDefinitions
+    };
+    
+    // Process each folder
+    for (const folder of NODE_FOLDERS) {
+      const definitionModules = folderDefinitions[folder];
       
-      if (registerNodeDefinition(nodeDef, 'Integration')) {
-        count++;
+      // Register each definition with its folder
+      for (const path in definitionModules) {
+        const module = definitionModules[path] as any;
+        const nodeDef = module.default as NodeDefinition;
+        
+        if (registerNodeDefinition(nodeDef, folder)) {
+          count++;
+        }
       }
     }
     
