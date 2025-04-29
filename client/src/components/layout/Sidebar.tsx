@@ -34,7 +34,7 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
         <Link key={index} href={item.path}>
           <div className={`flex items-center space-x-3 px-3 py-2 rounded-md cursor-pointer ${location === item.path ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
             <div className={`flex items-center ${collapsed ? "w-full justify-center" : ""}`}>
-              <IconComponent className="h-5 w-5" />
+              <IconComponent className={`${collapsed ? "h-6 w-6" : "h-5 w-5"}`} />
             </div>
             {!collapsed && <span>{item.label}</span>}
           </div>
@@ -49,7 +49,7 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-              <Bot className="h-5 w-5" />
+              <Bot className={`${collapsed ? "h-6 w-6" : "h-5 w-5"}`} />
             </div>
             {!collapsed && <h1 className="font-bold text-xl">Agent Builder</h1>}
           </div>
@@ -88,14 +88,14 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
           <Link href="/help">
             <div className={`flex items-center space-x-3 px-3 py-2 rounded-md cursor-pointer ${location === '/help' ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
               <div className={`flex items-center ${collapsed ? "w-full justify-center" : ""}`}>
-                <HelpCircle className="h-5 w-5" />
+                <HelpCircle className={`${collapsed ? "h-6 w-6" : "h-5 w-5"}`} />
               </div>
               {!collapsed && <span>Help & Resources</span>}
             </div>
           </Link>
           <div className="flex items-center space-x-3 px-3 py-2 mt-2">
             <div className={`w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white`}>
-              <User className="h-5 w-5" />
+              <User className={`${collapsed ? "h-6 w-6" : "h-5 w-5"}`} />
             </div>
             {!collapsed && (
               <div className="text-sm">
