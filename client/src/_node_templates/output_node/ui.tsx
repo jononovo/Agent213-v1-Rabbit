@@ -8,7 +8,7 @@
 import React from 'react';
 import { ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import BaseNode from '@/nodes/Base/ui';
+import BaseNode from '@/nodes/Base';
 import { NodeProps } from 'reactflow';
 import { BaseNodeData } from '@/nodes/Base/ui';
 
