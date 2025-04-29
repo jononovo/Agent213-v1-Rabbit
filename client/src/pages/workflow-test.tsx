@@ -277,8 +277,8 @@ export default function WorkflowTestBench() {
         const formattedResult: WorkflowExecutionState = {
           status: 'completed',
           output: result,
-          nodeResults: {},
-          executionOrder: [],
+          nodeStates: {},
+          nodeOutputs: {},
           startTime: new Date(),
           endTime: new Date()
         };

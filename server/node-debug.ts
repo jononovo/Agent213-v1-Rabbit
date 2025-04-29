@@ -36,7 +36,7 @@ export async function handleNodeDebugRequest(req: Request, res: Response): Promi
     const { nodeType, data, inputs } = validation.data;
     
     // Define the log variable in the outer scope
-    let debugAttemptLog: { id: number; executionPath: Record<string, any> };
+    let debugAttemptLog: { id: number; executionPath: Record<string, any> } | null = null;
     
     try {
       // Determine node category
