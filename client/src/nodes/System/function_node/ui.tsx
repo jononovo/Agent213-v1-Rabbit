@@ -44,7 +44,7 @@ import NodeHoverMenu, {
   NodeHoverMenuAction
 } from '@/components/nodes/common/NodeHoverMenu';
 
-import { BaseNode } from '@/nodes/Base_nodes/BaseNode';
+import { BaseNode } from '@/nodes/Base';
 
 // Node interface
 interface FunctionNodeData {

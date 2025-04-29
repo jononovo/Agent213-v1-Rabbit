@@ -34,10 +34,8 @@ export const executor: NodeExecutor<WebhookIntegrationData> = async (node, input
     // Return the webhook details
     // This doesn't actually trigger the flow, it just registers the webhook
     return {
-      // These outputs won't be used until the webhook is triggered
-      payload: [],
-      headers: [],
-      params: [],
+      // These outputs will be used when the webhook is triggered
+      output: [],
       
       // Special metadata for the Integration Engine
       meta: {

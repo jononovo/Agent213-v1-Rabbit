@@ -10,10 +10,8 @@ import { NodeProps } from 'reactflow';
 import { Globe } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
-// This would be a real import in production
-// import { BaseNode } from '@/nodes/Base';
-// For the template we'll simulate it
-const BaseNode = (props: any) => <div>{JSON.stringify(props)}</div>;
+// Import the BaseNode component
+import { BaseNode } from '@/nodes/Base';
 
 import { WebhookIntegrationData, defaultData } from './definition';
 
