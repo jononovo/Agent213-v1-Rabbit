@@ -5,6 +5,8 @@ import session from 'express-session';
 import { sessionOptions } from './session';
 import { storage } from "./storage";
 import { importWebhookTestWorkflow } from "./importTestWorkflow";
+// Import the Integration Engine server
+import { startIntegrationServer } from './integration';
 
 const app = express();
 app.use(express.json());
@@ -52,6 +54,10 @@ app.use((req, res, next) => {
     
     // Import test workflow for webhook callback testing
     await importWebhookTestWorkflow();
+    
+    // Start the Integration Engine server
+    startIntegrationServer();
+    log('Integration Engine server started');
     
     // Setup error handler
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
