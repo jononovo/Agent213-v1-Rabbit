@@ -219,7 +219,7 @@ const PromptInput = () => {
           <div className="ml-4 flex-grow">
             <div className="text-sm text-slate-500 mb-2">Coordinator Agent</div>
             <div className="text-slate-700 mb-4">
-              Hi there! I'm ready to help you build a new agent. What would you like to create today?
+              Hi there! I'm ready to help you build a new agent.
             </div>
             <div className="relative">
               <textarea 
