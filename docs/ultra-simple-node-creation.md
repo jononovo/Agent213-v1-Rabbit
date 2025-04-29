@@ -1145,3 +1145,236 @@ export default { definition, execute, component, tests };
 9. **Performance**: Be mindful of performance, especially for nodes that might process large amounts of data.
 
 10. **Security**: For integration nodes, follow security best practices for handling credentials and external API calls.
+
+## BaseNode Comprehensive Customization Options
+
+The `BaseNode` component has been enhanced with comprehensive customization capabilities that allow for rich, unique node UIs while maintaining standardized behavior. Here are the detailed customization options:
+
+### Content Customization
+
+BaseNode provides several ways to customize the content that appears within the node:
+
+```typescript
+// Example of providing custom content to BaseNode
+const baseNodeData = {
+  ...data,
+  
+  // Basic custom content - replaces the default content area
+  childrenContent: <YourCustomComponent />,
+  
+  // Additional header content shown above the main content
+  customHeaderContent: <YourHeaderComponent />,
+  
+  // Additional footer content shown below the main content
+  customFooterContent: <YourFooterComponent />,
+  
+  // When true, custom content takes full control of the content area
+  fullCustomContent: true
+};
+```
+
+### Handle Customization
+
+You can fully customize the connection handles that appear on your node:
+
+```typescript
+// Example of custom handles configuration
+const baseNodeData = {
+  ...data,
+  
+  // Custom handles to replace the default input/output handles
+  customHandles: (
+    <>
+      <HandleWithLabel
+        type="target"
+        position={Position.Left}
+        id="input_1"
+        label="Data Input"
+        isConnectable={isConnectable}
+      />
+      <HandleWithLabel
+        type="source"
+        position={Position.Right}
+        id="output_1"
+        label="Result"
+        isConnectable={isConnectable}
+      />
+      {/* Add as many handles as needed */}
+    </>
+  ),
+  
+  // Hide the default handles when using custom ones
+  hideDefaultHandles: true
+};
+```
+
+### Visual and Status Customization
+
+```typescript
+// Example of visual customization options
+const baseNodeData = {
+  ...data,
+  
+  // Custom icon (can be a string or React element)
+  icon: <YourIconComponent className="h-4 w-4" />,
+  
+  // Status indicators
+  isProcessing: isNodeRunning,
+  isComplete: hasCompletedSuccessfully,
+  hasError: didEncounterError,
+  errorMessage: 'Detailed error message appears here',
+  
+  // Node information
+  label: 'Custom Node Title',
+  description: 'Detailed node description',
+  category: 'processing'
+};
+```
+
+### Note Functionality
+
+BaseNode has built-in support for attaching notes to nodes:
+
+```typescript
+const baseNodeData = {
+  ...data,
+  
+  // Note text content
+  note: 'This node performs an important calculation',
+  
+  // Whether to display the note
+  showNote: true
+};
+```
+
+### Bringing It All Together
+
+Here's a comprehensive example showing how to use all these customization options:
+
+```typescript
+export function component({ id, data, selected, isConnectable }: NodeProps) {
+  // Create custom UI elements
+  const customContent = (
+    <div className="p-3 flex flex-col gap-2">
+      {/* Your custom content goes here */}
+      <div className="text-sm font-medium">Custom node content</div>
+      <div className="grid grid-cols-2 gap-2">
+        <InputText 
+          label="API Key"
+          value={data.settingsData?.apiKey || ''}
+          onChange={(value) => {
+            if (data.onChange) {
+              data.onChange({
+                ...data,
+                settingsData: { ...data.settingsData, apiKey: value }
+              });
+            }
+          }}
+        />
+        <InputToggle
+          label="Streaming"
+          checked={data.settingsData?.streaming || false}
+          onChange={(checked) => {
+            if (data.onChange) {
+              data.onChange({
+                ...data,
+                settingsData: { ...data.settingsData, streaming: checked }
+              });
+            }
+          }}
+        />
+      </div>
+    </div>
+  );
+  
+  // Create custom header content
+  const customHeaderContent = (
+    <div className="flex justify-between items-center px-3 pt-1 pb-2 border-b border-border/40">
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs font-medium">API Status:</span>
+        <span className="h-2 w-2 rounded-full bg-green-500"></span>
+      </div>
+    </div>
+  );
+  
+  // Create custom footer content
+  const customFooterContent = (
+    <div className="px-3 pt-2 text-xs text-muted-foreground">
+      Last run: {data.lastRunTime || 'Never'}
+    </div>
+  );
+  
+  // Create custom handles
+  const customHandles = (
+    <>
+      <HandleWithLabel
+        type="target"
+        position={Position.Left}
+        id="prompt"
+        label="Prompt"
+        isConnectable={isConnectable}
+      />
+      <HandleWithLabel
+        type="target"
+        position={Position.Left}
+        id="context"
+        label="Context"
+        isConnectable={isConnectable}
+        className="top-[60%]"
+      />
+      <HandleWithLabel
+        type="source"
+        position={Position.Right}
+        id="response"
+        label="Response"
+        isConnectable={isConnectable}
+      />
+    </>
+  );
+  
+  // Prepare comprehensive data for BaseNode
+  const baseNodeData = {
+    ...data,
+    
+    // Node identification
+    label: data.label || 'Enhanced Node',
+    description: data.description || 'A node with advanced customization',
+    category: data.category || 'custom',
+    
+    // Visual customization
+    icon: <YourCustomIcon className="h-4 w-4" />,
+    
+    // Content customization
+    childrenContent: customContent,
+    customHeaderContent: customHeaderContent,
+    customFooterContent: customFooterContent,
+    
+    // Handles customization
+    customHandles: customHandles,
+    hideDefaultHandles: true,
+    
+    // Status indicators
+    isProcessing: data.status === 'running',
+    isComplete: data.status === 'complete',
+    hasError: data.status === 'error',
+    errorMessage: data.errorMessage,
+    
+    // Notes
+    note: data.note,
+    showNote: data.showNote
+  };
+  
+  // Render with BaseNode
+  return (
+    <BaseNode
+      id={id}
+      data={baseNodeData}
+      selected={selected}
+      isConnectable={isConnectable}
+      type="enhanced_node"
+    />
+  );
+}
+```
+
+By leveraging these comprehensive customization options, you can create nodes with rich, unique UIs while still maintaining the standardized behavior and consistent user experience provided by the BaseNode component.
