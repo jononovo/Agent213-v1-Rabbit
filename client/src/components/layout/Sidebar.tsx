@@ -44,7 +44,7 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
   };
 
   return (
-    <div className={`${collapsed ? 'w-[4.5rem]' : 'w-64'} flex-shrink-0 bg-slate-900 text-white transition-all duration-300`}>
+    <div className={`${collapsed ? 'w-20' : 'w-64'} flex-shrink-0 bg-slate-900 text-white transition-all duration-300`}>
       <div className="p-4 flex flex-col h-full">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-3">
