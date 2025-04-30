@@ -12,6 +12,7 @@ declare global {
     __currentTestingNode?: {
       type: string;
       category: string;
+      folderPath?: string; // Add folderPath for accurate file location
     };
   }
 }
@@ -32,34 +33,45 @@ export const fileStructureTest: NodeTest = {
   category: 'structure',
   run: async (): Promise<NodeTestResult> => {
     try {
-      // Get node type and category from context
+      // Get node type and folder path from context
       const nodeType = window.__currentTestingNode?.type;
+      const folderPath = window.__currentTestingNode?.folderPath;
       const category = window.__currentTestingNode?.category;
       
-      if (!nodeType || !category) {
+      if (!nodeType) {
         return {
           passed: false,
-          message: 'Cannot determine node type or category for testing'
+          message: 'Cannot determine node type for testing'
+        };
+      }
+      
+      // Use folderPath if available, fallback to category (which is likely wrong)
+      const nodePath = folderPath || category;
+      
+      if (!nodePath) {
+        return {
+          passed: false,
+          message: 'Cannot determine node path for testing'
         };
       }
       
       // Check for definition.ts
       try {
-        await import(/* @vite-ignore */ `../../../nodes/${category}/${nodeType}/definition.ts`);
+        await import(/* @vite-ignore */ `../../../nodes/${nodePath}/${nodeType}/definition.ts`);
       } catch (e) {
         return {
           passed: false,
-          message: 'Missing required file: definition.ts'
+          message: `Missing required file: definition.ts (Looked in: nodes/${nodePath}/${nodeType}/)`
         };
       }
       
       // Check for executor.ts
       try {
-        await import(/* @vite-ignore */ `../../../nodes/${category}/${nodeType}/executor.ts`);
+        await import(/* @vite-ignore */ `../../../nodes/${nodePath}/${nodeType}/executor.ts`);
       } catch (e) {
         return {
           passed: false,
-          message: 'Missing required file: executor.ts'
+          message: `Missing required file: executor.ts (Looked in: nodes/${nodePath}/${nodeType}/)`
         };
       }
       
