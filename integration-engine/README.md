@@ -1,64 +1,66 @@
-# Integration Engine
+# Integration Engine Server
 
-The Integration Engine is a standalone server that manages external API integrations, webhooks, and API proxying. It runs on port 3001 and provides a clean separation of concerns for all external service communication.
+The Integration Engine Server is a dedicated component responsible for managing all external API integrations, webhooks, and third-party service communications. It runs on port 3001 and isolates external connection handling from the main application logic.
 
-## Migration Plan
+## Core Responsibilities
 
-The Integration Engine components should be migrated from `server/integration` and related files to this directory structure.
+1. **External API Management**:
+   - Handle outgoing API requests to third-party services
+   - Authentication to external systems
+   - Rate limiting and request caching
 
-### Future Structure
+2. **Webhook Processing**:
+   - Registration and management of webhook endpoints
+   - Receiving webhook callbacks
+   - Validating webhook payloads
+   - Forwarding webhook data to workflows
+
+3. **Integration Registry**:
+   - Maintaining a registry of all available integrations
+   - Dynamic loading of integration handlers
+   - Configuration storage for integration settings
+
+## Directory Structure
 
 ```
 integration-engine/
-├── api/               # API proxying endpoints
-├── connectors/        # External API connectors
-├── webhooks/          # Webhook registration and routing
-├── auth/              # API authentication handling
-├── index.ts           # Integration Engine entry point
-└── README.md          # This documentation file
+├── src/
+│   ├── integrationEngine.ts     # Core engine implementation
+│   └── types.ts                 # Type definitions
+├── handlers/                    # Integration-specific request handlers
+│   ├── webhook/                 # Webhook integration handlers
+│   └── api/                     # API integration handlers
+├── providers/                   # Third-party integration providers
+│   ├── github/                  # GitHub integration provider
+│   └── slack/                   # Slack integration provider
+├── index.ts                     # Main server entry point
+└── README.md                    # This file
 ```
 
-### Migration Steps
+## Communication Flow
 
-1. **Move Core Files**:
-   - Move `server/integration/index.ts` to `integration-engine/index.ts`
-   - Move integration engine services to appropriate subdirectories
+1. **Incoming Requests**:
+   - Requests come from Main Application Server (port 5000)
+   - Direct webhook callbacks come to Integration Engine
+   - Requests are processed by the appropriate handler
 
-2. **Update Import Paths**:
-   - Update all import paths to reference the new file locations
-   - Create shared types in `shared/types` directory
+2. **Outgoing Requests**:
+   - Integration Engine makes requests to external APIs
+   - Authentication and authorization are handled here
+   - Responses are formatted and returned to workflow nodes
 
-3. **Setup Coordination**:
-   - Update startup code in main server to start the Integration Engine
+## Integration Types
 
-## Integration Engine Capabilities
+The Integration Engine supports multiple integration types:
 
-The Integration Engine provides:
+- **Webhooks**: For event-based integrations that receive callbacks
+- **APIs**: For request-response based integrations
+- **OAuth**: For integrations requiring user authentication
+- **Custom**: For specialized integration types
 
-1. **API Proxying**: Routes API requests through a single endpoint for security and monitoring
-2. **Authentication Management**: Handles authentication to external services
-3. **Endpoint Registration**: Manages webhook endpoints and callbacks
-4. **Service Connectors**: Provides standardized interfaces to external APIs
+## Future Enhancements
 
-## Integration Architecture
-
-The Integration Engine exposes a standardized interface for all integration nodes:
-
-```typescript
-interface IntegrationCapabilities {
-  provides: {
-    endpoint?: boolean;
-    webhook?: boolean;
-    connector?: boolean;
-    scheduler?: boolean;
-    ai?: boolean;
-  };
-  requires: {
-    storage?: boolean;
-    authentication?: boolean;
-    proxy?: boolean;
-  };
-}
-```
-
-Integration nodes communicate with the Integration Engine via a well-defined API to register capabilities, endpoints, and webhooks.
+- OAuth token management and refresh
+- Advanced rate limiting and circuit breaking
+- Integration monitoring and analytics
+- Automatic retries and error recovery
