@@ -74,6 +74,7 @@ export interface NodeDefinition {
   category: string;                    // Grouping category
   version: string;                     // Semantic version
   icon?: string;                       // Icon identifier
+  NodeFormat?: string;                 // Folder location (System, Custom, Integration, etc.)
   inputs: Record<string, PortDefinition>;    // Input ports
   outputs: Record<string, PortDefinition>;   // Output ports
   configOptions?: NodeConfigOption[];  // Configuration options (Legacy - being migrated to settings)

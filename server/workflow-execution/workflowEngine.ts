@@ -336,16 +336,24 @@ async function executeNode(
 /**
  * Determine the category folder for a node type
  */
-function getNodeCategory(nodeType: string): string {
-  // Common mappings between node types and their categories
-  const categoryMap: Record<string, string> = {
-    'claude': 'System',
-    'function_node': 'System',
-    'webhook_trigger': 'Integration',
-    'perplexity_api': 'Integration',
-    'embed_other_workflow': 'System',
-    'send_to_webhook': 'System'
-  };
+/**
+ * Get the node's folder category from the node data
+ * Looks for 'NodeFormat' property in the node's data
+ * If not found, falls back to assuming 'System' for common nodes or 'Custom' as default
+ */
+function getNodeCategory(node: any): string {
+  // Check if node has NodeFormat property
+  if (node.data && node.data.NodeFormat) {
+    return node.data.NodeFormat;
+  }
   
-  return categoryMap[nodeType] || 'Custom';
+  // Fallback to some reasonable assumptions for common nodes
+  // This allows backward compatibility
+  const nodeType = node.type;
+  
+  if (nodeType.includes('webhook') || nodeType.includes('api')) {
+    return 'Integration';
+  }
+  
+  return 'System';
 }
