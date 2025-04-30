@@ -1,39 +1,25 @@
-Analysis of Current Architecture
-The current architecture is now better aligned with the logical separation of concerns, but there are still areas for improvement:
+# Analysis of Current Architecture
 
-Strengths
-Clear Separation of Concerns: Each server has a dedicated directory with its own responsibility
-Better Discoverability: New developers can quickly understand the system by examining the top-level directories
-Improved Maintainability: Changes to one component are less likely to affect others
-Documentation: Each component now has clear documentation explaining its purpose
-Areas for Improvement
-Incomplete Migration: Some components still reference the old structure
-Frontend Organization: The client-side code could be better organized
-Configuration Management: Configuration is spread across multiple files
-Startup Coordination: The coordination between servers could be more explicit
-Recommendations for Further Improvement
-Here are my recommendations for further enhancing the architecture:
+The current architecture is now better aligned with the logical separation into three servers, but there are still some implementation issues to fix:
 
-1. Complete Migration of Remaining Components
-Webhook Handling: Fully migrate webhook handling to the workflow-execution server
+## Main Problems
 
-Move webhook-specific routes from server/routes.ts to workflow-execution/webhooks
-Create clean interfaces for webhook registration and handling
-API Client Abstractions: Create a dedicated directory in integration-engine for API clients
+1. **Routing Configuration**: Express routes in the integration engine aren't properly registered or ordered, leading to 404 errors.
 
-Move any API client code currently in the server directory
-Implement standardized interfaces for different types of API connections
-2. Enhance Server Startup and Coordination
-Server Configuration: Create a unified configuration system
+2. **Server Setup**: The integration engine still has vestiges of complex routing rather than being dedicated to its role.
 
-Create /config directory with server-specific configs
-Implement environment-based configuration loading
-Server Startup Sequence: Implement explicit startup coordination
+3. **Import/Export Clarity**: Unclear exports and imports between server modules is causing confusion.
 
-Create a main.ts file that starts all three servers in the correct order
-Add health checks to ensure dependencies are available before continuing
-3. Improve Client-Side Organization
-Client Architecture: Reorganize client code to match server architecture
+# Recommended Approach
 
-Create directories for workflow-ui, integration-ui, and admin-ui
-Implement cleaner separation between API clients and UI components
+Rather than continuing with more complex refactoring, let's simplify our approach:
+
+1. **Start Fresh**: Create a clean, simple implementation for webhook handling without complex middleware or nested routers.
+
+2. **Focus on Critical Routes**: Implement only the essential webhook endpoints needed for the system to work.
+
+3. **Explicit Route Registration**: Use explicit route declarations with proper ordering.
+
+4. **Separate Webhook Logic**: Keep webhook-specific code isolated from other integration engine functions.
+
+This will allow us to have a working webhook implementation faster, which can then be built upon with confidence.

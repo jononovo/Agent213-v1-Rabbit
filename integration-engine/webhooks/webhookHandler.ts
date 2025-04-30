@@ -1,140 +1,162 @@
 /**
- * Webhook Handler for Integration Engine
+ * Webhook Handler
  * 
- * This module manages pending webhook responses and provides functionality
- * to register and send responses to webhook requests.
+ * This module manages webhook requests and forwards them to the workflow execution server.
+ * It also maintains state for pending webhook responses.
  */
 
-import { Response } from 'express';
-import { PendingWebhookResponse, WebhookStats } from '../../shared/types/webhook';
-import { persistentStore } from './persistentStore';
+import { v4 as uuidv4 } from 'uuid';
+import { WebhookRequest, WebhookResponse, WebhookStats } from '../../shared/types/webhook';
+import * as persistentStore from './persistentStore';
+import fetch from 'node-fetch';
 
-// Store pending HTTP responses for webhook processing
-const pendingResponses = new Map<string, PendingWebhookResponse>();
+// Configuration
+const WORKFLOW_EXECUTION_URL = process.env.WORKFLOW_EXECUTION_URL || 'http://localhost:3002';
+const DEFAULT_WEBHOOK_TIMEOUT_MS = 60000; // 1 minute default timeout
 
-// Default timeout for webhook responses (in milliseconds)
-const DEFAULT_TIMEOUT = 30000; // 30 seconds
-
-// Initialize by loading any persisted webhooks
-async function initializePersistence(): Promise<void> {
+/**
+ * Forward a webhook to the workflow execution server
+ */
+export async function forwardWebhookToWorkflowExecution(
+  webhook: WebhookRequest
+): Promise<void> {
   try {
-    // Clean up any stale webhooks first
-    const cleanupCount = await persistentStore.cleanupStaleWebhooks();
-    if (cleanupCount > 0) {
-      console.log(`[Integration Engine] Cleaned up ${cleanupCount} stale webhook entries`);
+    // Store the webhook request for potential async response
+    await persistentStore.storeWebhookRequest(webhook);
+    
+    // Forward to workflow execution server
+    const url = `${WORKFLOW_EXECUTION_URL}/api/webhook`;
+    
+    console.log(`Forwarding webhook ${webhook.id} to workflow execution: ${url}`);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(webhook)
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error forwarding webhook to workflow execution: ${response.status} ${errorText}`);
+      throw new Error(`Workflow execution server error: ${response.status} ${errorText}`);
     }
     
-    // Note: We can't restore actual response objects, so this is mainly for cleanup
+    const result = await response.json();
+    
+    // If the workflow engine responded immediately (sync execution)
+    if (result.immediate) {
+      // Store the response
+      const webhookResponse: WebhookResponse = {
+        webhookId: webhook.id,
+        success: result.success,
+        statusCode: result.statusCode || 200,
+        headers: result.headers || { 'Content-Type': 'application/json' },
+        body: result.body,
+        error: result.error,
+        timestamp: Date.now()
+      };
+      
+      await persistentStore.storeWebhookResponse(webhookResponse);
+    }
+    // Otherwise the workflow will send a response later via the webhook-response API
+    
   } catch (error) {
-    console.error('[Integration Engine] Error initializing webhook persistence:', error);
-  }
-}
-
-// Initialize persistence system
-initializePersistence().catch(console.error);
-
-/**
- * Register a pending webhook response
- * 
- * @param requestId Unique identifier for the webhook request
- * @param res Express Response object to respond to later
- * @param workflowId ID of the workflow being executed
- * @param timeoutMs Optional custom timeout in milliseconds
- */
-export function registerPendingResponse(
-  requestId: string, 
-  res: Response, 
-  workflowId: number,
-  timeoutMs: number = DEFAULT_TIMEOUT
-): void {
-  // Create timeout that will automatically respond if no explicit response is sent
-  const timeout = setTimeout(() => {
-    if (pendingResponses.has(requestId)) {
-      const { res } = pendingResponses.get(requestId)!;
-      
-      if (!res.headersSent) {
-        res.status(202).json({
-          success: true,
-          message: "Webhook received and processing started, but no explicit response was sent within the timeout period",
-          requestId
-        });
-      }
-      
-      pendingResponses.delete(requestId);
-      persistentStore.removeResponse(requestId).catch(console.error);
-      console.log(`[Integration Engine] Auto-response sent for webhook ${requestId} (timeout reached)`);
-    }
-  }, timeoutMs);
-  
-  const now = Date.now();
-  
-  // Store the response object
-  pendingResponses.set(requestId, { 
-    res, 
-    timeout,
-    workflowId,
-    timestamp: now
-  });
-  
-  // Persist basic metadata for recovery
-  persistentStore.saveResponse(requestId, { workflowId }).catch(console.error);
-  
-  console.log(`[Integration Engine] Registered pending response for requestId ${requestId} (workflow ${workflowId})`);
-}
-
-/**
- * Send a response to a pending webhook request
- * 
- * @param requestId ID of the pending request
- * @param data Response data to send
- * @param statusCode HTTP status code
- * @returns True if response was sent successfully, false otherwise
- */
-export function sendWebhookResponse(
-  requestId: string, 
-  data: any, 
-  statusCode: number = 200
-): boolean {
-  // Look up the pending response
-  const pendingResponse = pendingResponses.get(requestId);
-  
-  if (!pendingResponse) {
-    console.log(`[Integration Engine] No pending response found for request ${requestId}`);
-    return false;
-  }
-  
-  // Clear the timeout
-  clearTimeout(pendingResponse.timeout);
-  
-  // Send the response to the original webhook caller
-  if (!pendingResponse.res.headersSent) {
-    pendingResponse.res.status(statusCode).json(data);
-    console.log(`[Integration Engine] Webhook response sent for request ${requestId}`);
+    console.error('Error forwarding webhook to workflow execution:', error);
     
-    // Clean up
-    pendingResponses.delete(requestId);
-    persistentStore.removeResponse(requestId).catch(console.error);
-    return true;
-  } else {
-    console.log(`[Integration Engine] Response already sent for request ${requestId}`);
+    // Create an error response
+    const errorResponse: WebhookResponse = {
+      webhookId: webhook.id,
+      success: false,
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        message: 'Error forwarding webhook to workflow execution'
+      },
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: Date.now()
+    };
     
-    // Clean up anyway
-    pendingResponses.delete(requestId);
-    persistentStore.removeResponse(requestId).catch(console.error);
-    return false;
+    await persistentStore.storeWebhookResponse(errorResponse);
   }
 }
 
 /**
- * Get statistics about pending webhook responses
+ * Create a new webhook request from an HTTP request
  */
-export function getWebhookStats(): WebhookStats {
+export function createWebhookRequest(
+  workflowId: string | number,
+  nodeId: string,
+  method: string,
+  headers: Record<string, string>,
+  query: Record<string, string>,
+  body: any,
+  path: string,
+  options: {
+    respondDirectly?: boolean;
+    timeoutMs?: number;
+  } = {}
+): WebhookRequest {
   return {
-    pendingCount: pendingResponses.size,
-    pendingIds: Array.from(pendingResponses.keys()),
-    workflowIds: Array.from(pendingResponses.values()).map(pr => pr.workflowId)
+    id: uuidv4(),
+    workflowId,
+    nodeId,
+    timestamp: Date.now(),
+    method,
+    headers,
+    query,
+    body,
+    path,
+    respondDirectly: options.respondDirectly || false,
+    timeoutMs: options.timeoutMs || DEFAULT_WEBHOOK_TIMEOUT_MS
   };
 }
 
-// Export the pendingResponses map for testing
-export { pendingResponses };
+/**
+ * Check if a webhook response is ready
+ */
+export function hasWebhookResponse(webhookId: string): boolean {
+  return persistentStore.getWebhookResponse(webhookId) !== undefined;
+}
+
+/**
+ * Get a webhook response by ID
+ */
+export function getWebhookResponse(webhookId: string): WebhookResponse | undefined {
+  return persistentStore.getWebhookResponse(webhookId);
+}
+
+/**
+ * Create and store a webhook response
+ */
+export async function createWebhookResponse(
+  webhookId: string,
+  status: number,
+  headers: Record<string, string>,
+  body: any,
+  success: boolean = true,
+  error?: string
+): Promise<WebhookResponse> {
+  const response: WebhookResponse = {
+    webhookId,
+    success,
+    statusCode: status,
+    headers,
+    body,
+    error,
+    timestamp: Date.now()
+  };
+  
+  await persistentStore.storeWebhookResponse(response);
+  return response;
+}
+
+/**
+ * Get statistics about pending webhooks
+ */
+export function getWebhookStats(): WebhookStats {
+  return persistentStore.getWebhookStats();
+}

@@ -1,33 +1,38 @@
 /**
  * Integration Engine Server
  * 
- * This server handles external API integrations, webhooks, and third-party service
- * communication, creating a clean separation of concerns from the main application.
+ * This module serves as the entry point for the Integration Engine server
+ * which handles webhooks and third-party API integrations.
  * 
  * Port: 3001
  */
 
-import { log } from '../server/vite';
 import { startWebhookServer } from './webhook-server';
+import { log } from '../server/vite';
 
 // Set port
 const port = process.env.INTEGRATION_ENGINE_PORT || 3001;
 
-// Start the webhook server when this is the main module
+// Start the webhook server when this module is directly executed
 if (import.meta.url.endsWith(process.argv[1])) {
-  const server = startWebhookServer();
-  console.log(`Webhook Server started on port ${port}`);
-  
-  // Handle graceful shutdown
-  process.on('SIGTERM', () => {
-    console.log('SIGTERM signal received: closing webhook server');
-    server.close(() => {
-      console.log('Webhook server closed');
+  try {
+    const server = startWebhookServer();
+    console.log(`[Integration Engine] Started webhook server on port ${port}`);
+    log(`[Integration Engine] Started webhook server on port ${port}`, 'integration-engine');
+    
+    // Handle graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM signal received: closing webhook server');
+      server.close(() => {
+        console.log('Webhook server closed');
+      });
     });
-  });
-} else {
-  console.log('Integration Engine loaded as module');
+  } catch (error) {
+    console.error('[Integration Engine] Failed to start webhook server:', error);
+    log(`[Integration Engine] Failed to start webhook server: ${error}`, 'integration-engine');
+    process.exit(1);
+  }
 }
 
-// Export the startWebhookServer function for use in the main server
+// Export the webhook server starter function
 export { startWebhookServer };

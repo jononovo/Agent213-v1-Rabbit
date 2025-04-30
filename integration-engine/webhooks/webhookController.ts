@@ -7,9 +7,8 @@
 
 import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import fetch from 'node-fetch';
-import { WebhookRequest, WebhookExecutionResult } from '../../shared/types/webhook';
-import { registerPendingResponse, sendWebhookResponse } from './webhookHandler';
+import { WebhookRequest, WebhookResponse } from '../../shared/types/webhook';
+import * as webhookHandler from './webhookHandler';
 
 /**
  * Process a webhook request
@@ -20,97 +19,106 @@ import { registerPendingResponse, sendWebhookResponse } from './webhookHandler';
  */
 export async function handleWebhookRequest(req: Request, res: Response): Promise<void> {
   try {
-    console.log(`[Integration Engine] Received webhook request at path: ${req.path}`);
-    console.log(`[Integration Engine] Method: ${req.method}, Content-Type: ${req.headers['content-type']}`);
+    console.log(`Processing webhook request for path: ${req.path}`);
     
-    // Extract required parameters
-    const workflowId = parseInt(req.params.workflowId, 10);
+    // Extract workflow and node IDs from request parameters
+    const workflowId = req.params.workflowId;
     const nodeId = req.params.nodeId;
     
-    // Validate parameters
-    if (isNaN(workflowId) || !nodeId) {
-      console.error(`[Integration Engine] Invalid webhook parameters: workflowId=${req.params.workflowId}, nodeId=${nodeId}`);
+    if (!workflowId || !nodeId) {
+      console.error('Missing required parameters workflowId or nodeId');
       res.status(400).json({
         success: false,
-        message: 'Missing required fields: workflowId and nodeId are required'
+        message: 'Missing required parameters workflowId or nodeId'
       });
       return;
     }
     
-    // Generate a unique request ID
-    const requestId = `webhook-${uuidv4()}`;
+    console.log(`Webhook request for workflow ${workflowId}, node ${nodeId}`);
     
-    console.log(`[Integration Engine] Processing webhook request ${requestId} for workflow ${workflowId}, node ${nodeId}`);
-    
-    // Register the response for later use
-    registerPendingResponse(requestId, res, workflowId);
-    
-    // Extract payload from the request body
-    let payload;
-    if (req.headers['content-type']?.includes('application/json')) {
-      // For JSON content, use the parsed body
-      payload = req.body;
-    } else {
-      // For other content types, preserve the raw body
-      payload = {
-        _raw: true,
-        body: req.body,
-        contentType: req.headers['content-type']
-      };
+    // Create a sanitized copy of headers (remove content-length, etc. if present)
+    const sanitizedHeaders: Record<string, string> = {};
+    for (const [key, value] of Object.entries(req.headers)) {
+      // Skip content-length as it will be recalculated
+      if (key.toLowerCase() === 'content-length') continue;
+      
+      // Skip connection, host, etc.
+      if (['connection', 'host', 'accept-encoding', 'user-agent'].includes(key.toLowerCase())) continue;
+      
+      // Convert header value to string
+      if (value !== undefined) {
+        sanitizedHeaders[key] = Array.isArray(value) ? value.join(', ') : String(value);
+      }
     }
     
-    // Prepare the webhook request
-    const webhookData: WebhookRequest = {
-      workflowId,
-      startNodeId: nodeId,
-      payload,
-      headers: req.headers as Record<string, string | string[] | undefined>,
-      method: req.method,
-      query: req.query,
-      params: req.params,
-      path: req.path,
-      requestId
-    };
-    
-    // Forward to Workflow Execution Server
-    try {
-      const executionResponse = await fetch('http://localhost:3002/api/execute', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          workflowId,
-          input: webhookData,
-          nodeId,
-          webhookRequestId: requestId
-        })
-      });
-      
-      const result = await executionResponse.json();
-      console.log(`[Integration Engine] Workflow execution initiated for webhook ${requestId}`);
-      
-      // If execution failed immediately, send error response
-      if (result && typeof result === 'object' && 'success' in result && !result.success) {
-        sendWebhookResponse(requestId, {
-          success: false,
-          message: 'Error executing workflow',
-          error: (result as any).error || 'Unknown error'
-        }, 500);
+    // Create normalized query parameters
+    const sanitizedQuery: Record<string, string> = {};
+    for (const [key, value] of Object.entries(req.query)) {
+      if (value !== undefined) {
+        sanitizedQuery[key] = Array.isArray(value) ? value.join(',') : String(value);
       }
+    }
+    
+    // Create webhook request data
+    const webhookData: WebhookRequest = webhookHandler.createWebhookRequest(
+      workflowId,
+      nodeId,
+      req.method,
+      sanitizedHeaders,
+      sanitizedQuery,
+      req.body,
+      req.path,
+      { respondDirectly: true }
+    );
+    
+    // Log basic info about the webhook request
+    console.log(`Created webhook request ${webhookData.id} for workflow ${workflowId}, node ${nodeId}`);
+    
+    // Forward to workflow execution service
+    await webhookHandler.forwardWebhookToWorkflowExecution(webhookData);
+    
+    // Check if a response is immediately available
+    if (webhookHandler.hasWebhookResponse(webhookData.id)) {
+      const response = webhookHandler.getWebhookResponse(webhookData.id);
       
-      // Otherwise, response will be sent by webhook node in the workflow
-      // or by the timeout handler
-    } catch (error) {
-      console.error(`[Integration Engine] Error forwarding webhook to execution server:`, error);
-      sendWebhookResponse(requestId, {
-        success: false,
-        message: 'Error processing webhook',
-        error: error instanceof Error ? error.message : String(error)
-      }, 500);
+      if (response) {
+        // Send response to client
+        console.log(`Sending immediate webhook response for ${webhookData.id}, status: ${response.statusCode}`);
+        
+        // Set status code and headers
+        res.status(response.statusCode);
+        Object.entries(response.headers).forEach(([key, value]) => {
+          res.set(key, value);
+        });
+        
+        // Send body
+        res.send(response.body);
+        
+        // Clean up the response from memory
+        webhookHandler.cleanupWebhookResponse(webhookData.id);
+      } else {
+        // This should not happen but handle it anyway
+        console.error(`Response marked as ready but not found for webhook ${webhookData.id}`);
+        res.status(500).json({
+          success: false,
+          message: 'Webhook response not found',
+          webhookId: webhookData.id
+        });
+      }
+    } else {
+      // No immediate response, send pending status
+      console.log(`No immediate response available for webhook ${webhookData.id}`);
+      
+      // Webhook is pending response from the workflow
+      res.status(202).json({
+        success: true,
+        message: 'Webhook request accepted for processing',
+        webhookId: webhookData.id,
+        status: 'pending'
+      });
     }
   } catch (error) {
-    console.error('[Integration Engine] Error processing webhook request:', error);
+    console.error('Error processing webhook request:', error);
     
     if (!res.headersSent) {
       res.status(500).json({
@@ -128,30 +136,47 @@ export async function handleWebhookRequest(req: Request, res: Response): Promise
  */
 export async function handleWebhookResponse(req: Request, res: Response): Promise<void> {
   try {
-    const { requestId, data, statusCode = 200 } = req.body;
+    const { webhookId, statusCode, headers, body, success, error } = req.body;
     
-    if (!requestId) {
+    if (!webhookId) {
       res.status(400).json({
         success: false,
-        message: 'Request ID is required'
+        message: 'Missing required parameter webhookId'
       });
       return;
     }
     
-    // Send the response to the original webhook caller
-    const sent = sendWebhookResponse(requestId, data, statusCode);
+    console.log(`Received webhook response for ${webhookId}, status: ${statusCode || 200}`);
     
-    // Respond to the workflow node
+    // Create and store response
+    await webhookHandler.createWebhookResponse(
+      webhookId,
+      statusCode || 200,
+      headers || { 'Content-Type': 'application/json' },
+      body || { success: true },
+      success !== undefined ? success : true,
+      error
+    );
+    
     res.json({
-      success: sent,
-      message: sent ? 'Webhook response sent successfully' : 'No pending response found or response already sent'
+      success: true,
+      message: 'Webhook response stored successfully',
+      webhookId
     });
   } catch (error) {
-    console.error('[Integration Engine] Error sending webhook response:', error);
+    console.error('Error processing webhook response:', error);
+    
     res.status(500).json({
       success: false,
-      message: 'Error sending webhook response',
+      message: 'Error processing webhook response',
       error: error instanceof Error ? error.message : String(error)
     });
   }
+}
+
+/**
+ * Function to clean up webhook response resources
+ */
+export function cleanupWebhookResponse(webhookId: string): void {
+  webhookHandler.cleanupWebhookResponse(webhookId);
 }
