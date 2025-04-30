@@ -48,6 +48,51 @@ app.get('/api/webhooks', (req, res) => {
   });
 });
 
+// Webhook registration endpoint
+app.post('/api/register-webhook', async (req, res) => {
+  try {
+    const { workflowId, nodeId, path, methods, authType } = req.body;
+    
+    if (!workflowId || !nodeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required parameters: workflowId and nodeId are required'
+      });
+    }
+    
+    console.log(`Registering webhook for workflow ${workflowId}, node ${nodeId}`);
+    
+    // Generate webhook path
+    const webhookPath = path 
+      ? `webhooks/${path}` 
+      : `webhooks/workflow/${workflowId}/node/${nodeId}`;
+    
+    // Register in persistent storage if needed
+    // This could be extended to store in a database for persistence across restarts
+    
+    // Return success with webhook information
+    res.status(201).json({
+      success: true,
+      message: 'Webhook registered successfully',
+      webhook: {
+        path: webhookPath,
+        fullUrl: `${req.protocol}://${req.headers.host}/${webhookPath}`,
+        workflowId,
+        nodeId,
+        methods: methods || ['POST'],
+        authType: authType || 'none'
+      }
+    });
+  } catch (error) {
+    console.error('Error registering webhook:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error registering webhook',
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
 // Direct webhook endpoint
 app.all('/webhooks/workflow/:workflowId/node/:nodeId', async (req, res) => {
   try {
