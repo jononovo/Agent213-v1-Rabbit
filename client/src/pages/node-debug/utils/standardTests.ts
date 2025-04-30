@@ -12,7 +12,6 @@ declare global {
     __currentTestingNode?: {
       type: string;
       category: string;
-      folderPath?: string; // Add folderPath for accurate file location
     };
   }
 }
@@ -33,9 +32,8 @@ export const fileStructureTest: NodeTest = {
   category: 'structure',
   run: async (): Promise<NodeTestResult> => {
     try {
-      // Get node type and folder path from context
+      // Get node type and category from context
       const nodeType = window.__currentTestingNode?.type;
-      const folderPath = window.__currentTestingNode?.folderPath;
       const category = window.__currentTestingNode?.category;
       
       if (!nodeType) {
@@ -45,33 +43,55 @@ export const fileStructureTest: NodeTest = {
         };
       }
       
-      // Use folderPath if available, fallback to category (which is likely wrong)
-      const nodePath = folderPath || category;
+      // We'll check both System and Integration folders directly, so we don't need nodePath
       
-      if (!nodePath) {
+      // Check for definition.ts by trying both System and Integration folders
+      let definitionFound = false;
+      
+      // Try System folder first
+      try {
+        await import(/* @vite-ignore */ `../../../nodes/System/${nodeType}/definition.ts`);
+        definitionFound = true;
+      } catch (e) {
+        // Try Integration folder next
+        try {
+          await import(/* @vite-ignore */ `../../../nodes/Integration/${nodeType}/definition.ts`);
+          definitionFound = true;
+        } catch (err) {
+          // Neither location worked
+          definitionFound = false;
+        }
+      }
+      
+      if (!definitionFound) {
         return {
           passed: false,
-          message: 'Cannot determine node path for testing'
+          message: `Missing required file: definition.ts (Looked in System and Integration folders)`
         };
       }
       
-      // Check for definition.ts
+      // Check for executor.ts by trying both System and Integration folders
+      let executorFound = false;
+      
+      // Try System folder first
       try {
-        await import(/* @vite-ignore */ `../../../nodes/${nodePath}/${nodeType}/definition.ts`);
+        await import(/* @vite-ignore */ `../../../nodes/System/${nodeType}/executor.ts`);
+        executorFound = true;
       } catch (e) {
-        return {
-          passed: false,
-          message: `Missing required file: definition.ts (Looked in: nodes/${nodePath}/${nodeType}/)`
-        };
+        // Try Integration folder next
+        try {
+          await import(/* @vite-ignore */ `../../../nodes/Integration/${nodeType}/executor.ts`);
+          executorFound = true;
+        } catch (err) {
+          // Neither location worked
+          executorFound = false;
+        }
       }
       
-      // Check for executor.ts
-      try {
-        await import(/* @vite-ignore */ `../../../nodes/${nodePath}/${nodeType}/executor.ts`);
-      } catch (e) {
+      if (!executorFound) {
         return {
           passed: false,
-          message: `Missing required file: executor.ts (Looked in: nodes/${nodePath}/${nodeType}/)`
+          message: `Missing required file: executor.ts (Looked in System and Integration folders)`
         };
       }
       
@@ -107,15 +127,22 @@ export const exportValidationTest: NodeTest = {
         };
       }
       
-      // Check definition exports
+      // Check definition exports by trying both System and Integration folders
       let definitionModule;
+      
+      // Try System folder first
       try {
-        definitionModule = await import(/* @vite-ignore */ `../../../nodes/${category}/${nodeType}/definition.ts`);
+        definitionModule = await import(/* @vite-ignore */ `../../../nodes/System/${nodeType}/definition.ts`);
       } catch (e) {
-        return {
-          passed: false,
-          message: 'Failed to import definition module'
-        };
+        // Try Integration folder next
+        try {
+          definitionModule = await import(/* @vite-ignore */ `../../../nodes/Integration/${nodeType}/definition.ts`);
+        } catch (err) {
+          return {
+            passed: false,
+            message: 'Failed to import definition module (checked both System and Integration folders)'
+          };
+        }
       }
       
       if (!definitionModule.definition) {
