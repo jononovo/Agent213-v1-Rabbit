@@ -10,14 +10,16 @@ This project implements a flexible, extensible node-based workflow system for cr
 2. [Core Architecture](#core-architecture)
 3. [Node System](#node-system)
 4. [Node Testing Framework](#node-testing-framework)
-5. [Storage System](#storage-system)
-6. [UI Guidelines](#ui-guidelines)
-7. [Technical Reference](#technical-reference)
+5. [Workflow Execution Engine](#workflow-execution-engine)
+6. [Integration Engine](#integration-engine)
+7. [Storage System](#storage-system)
+8. [UI Guidelines](#ui-guidelines)
+9. [Technical Reference](#technical-reference)
    - [Key Files and Functions](#key-files-and-functions)
    - [Data Structures](#data-structures)
    - [Code Patterns](#code-patterns)
-8. [Development Guide](#development-guide)
-9. [Troubleshooting](#troubleshooting)
+10. [Development Guide](#development-guide)
+11. [Troubleshooting](#troubleshooting)
 
 ## Quick Start Guide
 
@@ -298,6 +300,35 @@ Use the `createNodeOutput` and `createErrorOutput` utility functions from `clien
 ## Node Testing Framework
 
 The platform includes a comprehensive testing framework for nodes, featuring both standard and custom test capabilities through a modular, maintainable architecture.
+
+The Node Debug System provides a comprehensive test and debug environment for workflow nodes in the platform. The testing framework is divided into three categories:
+
+### Standard Tests
+
+Standard tests are run on all nodes to ensure they adhere to basic requirements:
+
+1. **File Structure Test**: Verifies that the node has the required `definition.ts` and `executor.ts` files.
+2. **Export Validation Test**: Confirms the node properly exports required components.
+3. **Metadata Completeness Test**: Validates that the node definition includes all required metadata fields.
+4. **Port Definition Test**: Ensures both inputs and outputs are properly defined.
+5. **Executor Signature Test**: Verifies the executor function has the correct parameter signature.
+6. **Output Format Test**: Confirms the executor returns data in the expected format.
+7. **Error Handling Test**: Tests that the node properly formats error responses.
+
+### Integration Tests
+
+Integration tests verify that nodes implementing external service integrations provide the necessary capabilities:
+
+1. **Integration Capabilities Test**: Verifies that integration nodes declare their capabilities (provides/requires).
+2. **Integration Requirements Test**: Confirms that integration nodes specify any external requirements.
+
+Integration tests are shown for all nodes regardless of their category to ensure consistent testing across the platform.
+
+### Custom Tests
+
+Nodes can implement custom tests specific to their functionality. These tests are loaded from a `tests.ts` file in the node's folder and allow for testing unique behaviors or requirements.
+
+Custom tests can access the node's definition and executor, and run specific scenarios to validate node behavior.
 
 ### Node Debug Panel
 

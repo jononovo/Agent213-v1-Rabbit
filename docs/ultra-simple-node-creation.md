@@ -2,6 +2,19 @@
 
 This comprehensive guide explains how to create custom nodes for the workflow system. It covers the entire process from initial setup to advanced customization and integration with external APIs.
 
+## Architecture Overview
+
+The workflow platform is built around three main components:
+
+1. **Main Application Server** (port 5000): Handles the web UI, data storage, and API endpoints
+2. **Integration Engine Server** (port 3001): Manages integrations with external services
+3. **Workflow Execution Server** (port 3002): Executes workflows in isolation to prevent crashes from affecting the main application
+
+The separation of workflow execution into its own service provides several benefits:
+- Crash isolation: Issues in a workflow won't crash the main application
+- Resource management: Long-running workflows don't impact application performance
+- Independent scaling: Each component can be scaled separately as needed
+
 ## Understanding the Node System Architecture
 
 Before creating nodes, it's important to understand the core architecture:
@@ -1028,7 +1041,25 @@ export default handleWebhook;
 
 ## Adding Automated Tests
 
-Create a `tests.ts` file to add automated tests for your node:
+The platform provides a comprehensive testing framework for nodes with standardized tests, integration tests, and custom tests. All tests are run through the Node Debug UI which provides a visual interface for debugging.
+
+### Standard Tests
+
+All nodes automatically undergo these standard tests:
+
+1. **File Structure Test**: Verifies all required files exist
+2. **Export Validation Test**: Checks all required exports are defined
+3. **Metadata Completeness Test**: Validates node metadata and definitions
+4. **Port Definition Test**: Validates input and output port definitions
+5. **Executor Signature Test**: Verifies executor function has the correct signature
+6. **Output Format Test**: Validates executor returns properly formatted outputs
+7. **Error Handling Test**: Checks that nodes properly handle and format error responses
+
+Integration nodes receive additional tests for their specific capabilities.
+
+### Custom Tests
+
+Create a `tests.ts` file to add custom automated tests for your node:
 
 ```typescript
 import { NodeTest } from '@/nodes/types/nodeTestsStandard';
