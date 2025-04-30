@@ -400,8 +400,8 @@ export async function runWorkflow(
  * Helper function to handle incoming webhook requests
  * This is used by both custom path webhooks and dynamic path webhooks
  * 
- * It forwards the request to the Workflow Execution Server and
- * allows send_to_webhook nodes to respond to the original request.
+ * It forwards the request directly to the Workflow Execution Server
+ * which handles both execution and response.
  */
 async function handleWebhookRequest(
   req: Request,
@@ -409,9 +409,6 @@ async function handleWebhookRequest(
   workflowId: number,
   nodeId: string
 ): Promise<void> {
-  // Import the webhook proxy service
-  const { forwardWebhookToExecutionServer } = require('./services/webhookProxy');
-  
   try {
     // Get the workflow to verify it exists
     const workflow = await storage.getWorkflow(workflowId);
@@ -422,9 +419,53 @@ async function handleWebhookRequest(
         message: "Webhook target workflow not found" 
       });
     }
-
-    // Forward to the Workflow Execution Server using our proxy service
-    await forwardWebhookToExecutionServer(req, res, workflowId, nodeId);
+    
+    console.log(`Forwarding webhook request to Workflow Execution Server for workflow ${workflowId}, node ${nodeId}`);
+    
+    // Forward the request directly to the Workflow Execution Server
+    // The execution server will hold the response and handle it
+    try {
+      // Prepare the request body to forward
+      const forwardBody = {
+        workflowId,
+        startNodeId: nodeId,
+        payload: req.body,
+        headers: req.headers,
+        method: req.method,
+        query: req.query,
+        params: req.params,
+        path: req.path
+      };
+      
+      // Pipe the request through to the execution server
+      // The execution server will respond directly back through this response object
+      await fetch('http://localhost:3002/api/webhook', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(forwardBody)
+      }).then(executionResponse => {
+        // Copy status code
+        res.status(executionResponse.status);
+        
+        // Copy headers
+        executionResponse.headers.forEach((value, key) => {
+          // Skip certain headers to avoid conflicts
+          if (!['content-length', 'connection'].includes(key.toLowerCase())) {
+            res.setHeader(key, value);
+          }
+        });
+        
+        // Pipe the response body
+        return executionResponse.json();
+      }).then(body => {
+        res.json(body);
+      });
+    } catch (error) {
+      console.error('Error forwarding webhook to execution server:', error);
+      throw error;
+    }
   } catch (error) {
     console.error(`Webhook execution error:`, error);
     res.status(500).json({ 
@@ -624,6 +665,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         message: "Error starting Workflow Execution test",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Test Workflow Webhook Execution
+  app.post('/api/test-workflow-webhook', async (req: Request, res: Response) => {
+    try {
+      log('Starting Workflow Webhook test', 'test');
+      
+      // Run the workflow webhook test using dynamic import
+      const testModule = await import('./test-workflow-webhook');
+      const testWorkflowWebhook = testModule.default;
+      
+      // Execute test (returns a promise)
+      testWorkflowWebhook()
+        .then(() => {
+          log('Workflow Webhook test completed successfully', 'test');
+        })
+        .catch((error: any) => {
+          console.error('Error in Workflow Webhook test:', error);
+        });
+      
+      // Return immediate response (test runs in background)
+      res.json({
+        success: true,
+        message: "Workflow Webhook test started",
+        note: "Check server logs for test results"
+      });
+    } catch (error) {
+      console.error("Workflow Webhook test error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error starting Workflow Webhook test",
         error: error instanceof Error ? error.message : String(error)
       });
     }
