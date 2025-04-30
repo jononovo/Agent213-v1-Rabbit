@@ -4,7 +4,7 @@
  * Enhanced definition file with advanced configuration options and template support.
  */
 
-import { NodeDefinition } from '../../types';
+import { NodeDefinition } from '../../../core/types/nodeDefinitions';
 import { z } from 'zod';
 
 const definition: NodeDefinition = {

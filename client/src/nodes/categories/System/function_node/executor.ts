@@ -12,29 +12,11 @@
  * - Timeout protection
  */
 
-// Define interfaces needed to avoid import issues
-interface WorkflowItem {
-  json: any;              // The actual data
-  text?: string;          // Text representation
-  binary?: {              // For binary data (images, files, etc.)
-    mimeType: string;
-    data: string;
-    filename?: string;
-  };
-}
-
-interface NodeExecutionData {
-  items: WorkflowItem[];  // Output data items
-  meta: {
-    startTime: Date;           // When execution started
-    endTime: Date;             // When execution completed
-    source?: string;           // Source node identifier
-    error?: boolean;           // Whether execution resulted in an error
-    errorMessage?: string;     // Error message if error is true
-    warning?: string;          // Non-critical warning message
-    [key: string]: any;        // Additional metadata properties
-  };
-}
+// Import types from core
+import { 
+  NodeExecutionData,
+  WorkflowItem 
+} from '../../../core/types/nodeExecutionTypes';
 
 interface FunctionNodeData {
   code?: string;
