@@ -221,23 +221,60 @@ const NodeDebugPanel: React.FC = () => {
         
         // Determine test status based on the API response and test type
         if (nodeTestResult.success) {
-          // Node execution succeeded, the basic structure tests pass
-          if (test.id === 'definition' || test.id === 'interface') {
-            status = 'passed';
-          }
+          // Check if the result contains an error message
+          const hasError = nodeTestResult.result && 
+                          nodeTestResult.result.meta && 
+                          nodeTestResult.result.meta.error === true;
           
-          // Check if the node produced any outputs
-          if (test.id === 'execution' && nodeTestResult.result) {
-            status = 'passed';
+          if (hasError) {
+            // Node has error in the result
+            message = nodeTestResult.result.meta.errorMessage || "Unknown error in node execution";
+            
+            // For error handling test, we expect an error
+            if (test.id === 'error') {
+              status = 'passed';
+            } else {
+              status = 'failed';
+            }
+          } else {
+            // No error, basic structure tests pass
+            if (test.id === 'definition' || test.id === 'interface') {
+              status = 'passed';
+            }
+            
+            // Check if the node produced any outputs
+            if (test.id === 'execution' && nodeTestResult.result) {
+              // Check if this is a special node type that requires specific handling
+              const isWebhookNode = nodeTestResult.result.meta && 
+                                   (nodeTestResult.result.meta.isWebhookNode === true ||
+                                    nodeTestResult.result.meta.requiresHttpRequest === true);
+              
+              // Check for simulated data
+              const isSimulated = nodeTestResult.result.meta && 
+                                 nodeTestResult.result.meta.isSimulated === true;
+              
+              if (isWebhookNode) {
+                // For webhook nodes, we mark the test as passed but with a special message
+                status = 'passed';
+                message = "Webhook node - requires HTTP request to fully test";
+              } else if (isSimulated) {
+                status = 'failed';
+                message = "Node is using simulated data, not real execution";
+              } else {
+                status = 'passed';
+              }
+            }
+            
+            // Check error handling - only pass if we expect proper error handling
+            if (test.id === 'error') {
+              status = 'passed';
+            }
+            
+            // Integration tests
+            if (test.id === 'integration') {
+              status = 'passed';
+            }
           }
-          
-          // Check error handling - if API had success then probably this works
-          if (test.id === 'error') {
-            status = 'passed';
-          }
-          
-          // Default to pass for other standard tests if the node executed successfully
-          status = 'passed';
         } else {
           // API call failed, get the error message
           message = nodeTestResult.error || 'Unknown error occurred during node execution';

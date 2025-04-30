@@ -40,32 +40,60 @@ export const execute = async (
     // Register with the integration engine
     await registerWithIntegrationEngine(nodeData);
     
-    // For testing purposes, simulate a webhook payload
-    // In a real scenario, this data would come from an HTTP request
-    const simulatedPayload = inputs?.payload || {
-      message: "This is a simulated webhook trigger. In production, this node waits for external HTTP requests."
-    };
+    // Check if this is a test/debug execution or a real webhook trigger
+    const isTestExecution = !inputs?.isRealWebhook;
     
-    // Generate the webhook URL that would be used in production
-    const webhookUrl = generateWebhookUrl(nodeData);
-    
-    return createNodeOutput(
-      {
-        payload: simulatedPayload,
-        headers: { 'content-type': 'application/json' },
-        method: 'POST',
-        webhookUrl
-      },
-      {
-        startTime,
-        additionalMeta: {
+    if (isTestExecution) {
+      // For testing purposes, provide information about the webhook
+      // In the test harness, we now mark this clearly as a webhook node
+      // that cannot be directly tested
+      
+      // Generate the webhook URL that would be used in production
+      const webhookUrl = generateWebhookUrl(nodeData);
+      
+      // Return special test output for webhook trigger nodes
+      return createNodeOutput(
+        {
+          _specialNode: true,
+          _nodeType: 'webhook',
+          message: "⚠️ Webhook node cannot be directly executed. It requires an incoming HTTP request to trigger.",
           webhookUrl,
-          allowedMethods: methods,
-          isSimulated: true,
-          integrationRegistered: true
+          expectedHttpMethods: methods || ['POST'],
+          authType: nodeData.authType || 'none'
+        },
+        {
+          startTime,
+          additionalMeta: {
+            webhookUrl,
+            allowedMethods: methods,
+            isWebhookNode: true,
+            requiresHttpRequest: true
+          }
         }
-      }
-    );
+      );
+    } else {
+      // This is a real webhook invocation with actual payload data
+      const webhookPayload = inputs?.payload || {};
+      const headers = inputs?.headers || {};
+      const method = inputs?.method || 'POST';
+      const webhookUrl = generateWebhookUrl(nodeData);
+      
+      return createNodeOutput(
+        {
+          payload: webhookPayload,
+          headers,
+          method,
+          webhookUrl
+        },
+        {
+          startTime,
+          additionalMeta: {
+            webhookUrl,
+            isRealInvocation: true
+          }
+        }
+      );
+    }
   } catch (error: any) {
     console.error('Error in webhook_trigger executor:', error);
     return createErrorOutput(

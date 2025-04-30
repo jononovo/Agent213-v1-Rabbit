@@ -45,42 +45,42 @@ export interface TestDefinition {
   icon: React.ElementType;
 }
 
-// Standard test definitions
+// Standard test definitions - updated for BaseNode compatibility
 export const STANDARD_TESTS: Omit<TestDefinition, 'icon'>[] = [
   {
     id: 'definition',
-    name: 'Definition Validation',
-    description: 'Verifies all required fields are present and correctly formatted'
+    name: 'BaseNode Definition',
+    description: 'Verifies the node follows BaseNode structure and has all required base properties'
   },
   {
     id: 'interface',
-    name: 'Input/Output Interface',
-    description: 'Tests that declared I/O ports work as expected'
+    name: 'Type-Safe Interface',
+    description: 'Tests the input/output ports match the TypeScript definitions'
   },
   {
     id: 'execution',
-    name: 'Execution Testing',
-    description: 'Verifies the node executor works with sample inputs'
+    name: 'Executor Validation',
+    description: 'Verifies the node executor properly processes inputs and generates outputs'
   },
   {
     id: 'error',
     name: 'Error Handling',
-    description: 'Tests how the node behaves with invalid inputs or failure conditions'
+    description: 'Tests how the node handles invalid inputs and creates proper error outputs'
   },
   {
     id: 'ui',
-    name: 'UI Rendering',
-    description: 'Validates the node\'s visual representation renders properly'
+    name: 'UI Component',
+    description: 'Validates the node has required UI components for the builder interface'
   },
   {
     id: 'performance',
-    name: 'Performance Testing',
-    description: 'Measures execution time and resource usage'
+    name: 'Resource Efficiency',
+    description: 'Measures execution time and checks resource usage meets standards'
   },
   {
     id: 'integration',
-    name: 'Integration Testing',
-    description: 'Tests the node working with other connected nodes'
+    name: 'Integration Flow',
+    description: 'Tests the node properly integrates with other nodes in the workflow'
   }
 ];
 
