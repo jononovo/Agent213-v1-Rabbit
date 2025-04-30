@@ -10,7 +10,6 @@ import { Globe, Link, CheckCircle } from 'lucide-react';
 import { BaseNode } from '@/nodes/Base';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import * as integrationClient from '@/utils/integrationClient';
 
 export default function WebhookTriggerNode({ id, data }: { id: string, data: any }) {
   const [webhookUrl, setWebhookUrl] = useState<string>('');
@@ -55,34 +54,68 @@ export default function WebhookTriggerNode({ id, data }: { id: string, data: any
       ? `webhooks/${path}` 
       : `webhooks/workflow/${workflowId}/node/${id}`;
     
-    // Update the webhook URL
-    const generatedUrl = integrationClient.getIntegrationUrl(webhookPath);
+    // Generate the webhook URL directly in the node (no dependency on integrationClient)
+    // Get the current hostname - only replace the port
+    const getWebhookUrl = (path: string): string => {
+      if (typeof window !== 'undefined') {
+        const protocol = window.location.protocol;
+        const hostname = window.location.hostname;
+        // Use port 3001 for the integration engine
+        const integrationEngineBaseUrl = `${protocol}//${hostname}:3001`;
+        const normalizedPath = path.startsWith('/') ? path.substring(1) : path;
+        return `${integrationEngineBaseUrl}/${normalizedPath}`;
+      }
+      return `http://localhost:3001/${path}`;
+    };
+    
+    const generatedUrl = getWebhookUrl(webhookPath);
     setWebhookUrl(generatedUrl);
     
     // Register the webhook with the integration engine if it's a real workflow
     if (workflowId && workflowId !== 'unknown') {
-      // Register with integration engine
-      integrationClient.registerIntegration({
-        nodeType: 'webhook_trigger',
-        capabilities: {
-          provides: {
-            endpoint: true,
-            webhook: true
-          },
-          endpoint: {
-            pathTemplate: webhookPath,
-            methods: methods || ['POST']
+      // Direct registration with the Integration Engine (no dependency on integrationClient)
+      const registerWithIntegrationEngine = async () => {
+        try {
+          const registrationData = {
+            nodeType: 'webhook_trigger',
+            capabilities: {
+              provides: {
+                endpoint: true,
+                webhook: true
+              },
+              endpoint: {
+                pathTemplate: webhookPath,
+                methods: methods || ['POST']
+              }
+            },
+            workflowId: typeof workflowId === 'string' ? parseInt(workflowId, 10) : workflowId,
+            nodeId: id,
+            description: `Webhook trigger for workflow ${workflowId}, node ${id}`
+          };
+          
+          // Direct API call to register the webhook
+          const response = await fetch('/api/integration/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(registrationData)
+          });
+          
+          if (response.ok) {
+            setRegistered(true);
+          } else {
+            console.error('Error registering webhook:', await response.text());
+            setRegistered(false);
           }
-        },
-        workflowId: typeof workflowId === 'string' ? parseInt(workflowId, 10) : workflowId,
-        nodeId: id,
-        description: `Webhook trigger for workflow ${workflowId}, node ${id}`
-      }).then(() => {
-        setRegistered(true);
-      }).catch(error => {
-        console.error('Error registering webhook during UI mount:', error);
-        setRegistered(false);
-      });
+        } catch (error) {
+          console.error('Error registering webhook during UI mount:', error);
+          setRegistered(false);
+        }
+      };
+      
+      // Call the registration function
+      registerWithIntegrationEngine();
     }
   }, [id, data?.settings?.path, data?.workflowId, data?.settings?.methods, getWorkflowIdFromUrl]);
   
