@@ -46,44 +46,8 @@ export interface TestDefinition {
   icon: React.ElementType;
 }
 
-// Standard test definitions - updated for BaseNode compatibility
-export const STANDARD_TESTS: Omit<TestDefinition, 'icon'>[] = [
-  {
-    id: 'definition',
-    name: 'BaseNode Definition',
-    description: 'Verifies the node follows BaseNode structure and has all required base properties'
-  },
-  {
-    id: 'interface',
-    name: 'Type-Safe Interface',
-    description: 'Tests the input/output ports match the TypeScript definitions'
-  },
-  {
-    id: 'execution',
-    name: 'Executor Validation',
-    description: 'Verifies the node executor properly processes inputs and generates outputs'
-  },
-  {
-    id: 'error',
-    name: 'Error Handling',
-    description: 'Tests how the node handles invalid inputs and creates proper error outputs'
-  },
-  {
-    id: 'ui',
-    name: 'UI Component',
-    description: 'Validates the node has required UI components for the builder interface'
-  },
-  {
-    id: 'performance',
-    name: 'Resource Efficiency',
-    description: 'Measures execution time and checks resource usage meets standards'
-  },
-  {
-    id: 'integration',
-    name: 'Integration Flow',
-    description: 'Tests the node properly integrates with other nodes in the workflow'
-  }
-];
+// Import legacy test definitions for backward compatibility
+import { LEGACY_STANDARD_TESTS } from './legacy-test-definitions';
 
 /**
  * Load custom tests for a given node type

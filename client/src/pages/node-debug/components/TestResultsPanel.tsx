@@ -7,7 +7,8 @@
 import React from 'react';
 import { 
   CheckCircle2, XCircle, AlertTriangle, RefreshCcw, 
-  FileSymlink, Link, Play, Zap, LayoutGrid, Clock, AlertTriangle as AlertIcon
+  FileSymlink, Link, Play, Zap, LayoutGrid, Clock, 
+  FileCode, Database, Server, Workflow, AlertTriangle as AlertIcon
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +18,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 import { NodeType, TestResult, CustomTestResult, TestType } from '../utils/testRunner';
 
-// Icons for test types
+// Icons for test types (original test types)
 const TEST_ICONS: Record<TestType, React.ElementType> = {
   'definition': FileSymlink,
   'interface': Link,
@@ -26,6 +27,25 @@ const TEST_ICONS: Record<TestType, React.ElementType> = {
   'ui': LayoutGrid,
   'performance': Clock,
   'error': AlertIcon
+};
+
+// Icons for our new test categories
+const TEST_CATEGORY_ICONS: Record<string, React.ElementType> = {
+  'definition': FileSymlink,
+  'interface': Link,
+  'execution': Play,
+  'integration': Server,
+  'ui': LayoutGrid,
+  'performance': Clock,
+  'error-handling': AlertIcon,
+  
+  // New specific test categories
+  'file-structure': FileCode,
+  'metadata': Database,
+  'validation': FileSymlink,
+  'port-definition': Link,
+  'executor-signature': Play,
+  'output-format': Workflow,
 };
 
 interface TestResultsPanelProps {
@@ -114,7 +134,10 @@ const TestResultsPanel: React.FC<TestResultsPanelProps> = ({
               <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-4">
                   {selectedNode.testResults.map((testResult: TestResult, index: number) => {
-                    const TestIcon = TEST_ICONS[testResult.test] || AlertIcon;
+                    // Try using category-specific icon first, fallback to general test type icon
+                    const TestIcon = TEST_CATEGORY_ICONS[testResult.test] || 
+                                    TEST_ICONS[testResult.test as TestType] || 
+                                    AlertIcon;
                     
                     return (
                       <div key={`std-test-${index}`} className="flex items-start space-x-3 pb-3 border-b border-gray-100">
