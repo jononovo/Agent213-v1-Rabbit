@@ -15,9 +15,17 @@ Before creating nodes, it's important to understand the core architecture:
 
 2. **Node Registry**: All nodes are automatically discovered and registered by the `unifiedNodeRegistry`. This handles validation, executor loading, and UI component discovery.
 
-3. **BaseNode Component**: All node UIs are built on the `BaseNode` component, which provides consistent behavior, styling, and interaction patterns. The BaseNode component offers extensive customization options including custom content, custom header/footer elements, and custom handles.
+3. **Workflow Execution Engine**: Workflows are executed in an isolated process to prevent crashes from affecting the main application. The workflow execution engine runs as a separate service that communicates with the main application via HTTP requests.
 
-4. **Component Hierarchy**:
+4. **Node Testing System**: The platform includes a comprehensive testing framework for nodes with:
+   - Standard tests: Verify node structure, interfaces, and execution
+   - Integration tests: Check integration capabilities and requirements
+   - Custom tests: Test specific node functionality
+   - Node Debug UI: A visual interface for testing node execution with sample data
+
+5. **BaseNode Component**: All node UIs are built on the `BaseNode` component, which provides consistent behavior, styling, and interaction patterns. The BaseNode component offers extensive customization options including custom content, custom header/footer elements, and custom handles.
+
+6. **Component Hierarchy**:
    - `NodeContainer`: Wrapper providing consistent styling
    - `NodeHeader`: Displays the node title, icon, and action buttons
    - `NodeContent`: Contains node-specific controls and information
