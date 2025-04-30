@@ -7,7 +7,7 @@
 
 import { Job, WorkflowExecutionContext, WorkflowValidationResult, WorkflowExecutionOutput } from '../../shared/types/workflow';
 import { NodeExecutionData } from '../../shared/nodeTypes';
-import { storage } from '../../server/storage'; // TODO: Update import path after server migration
+import { storage } from '../../server/storage';
 
 /**
  * Validate a workflow before execution
