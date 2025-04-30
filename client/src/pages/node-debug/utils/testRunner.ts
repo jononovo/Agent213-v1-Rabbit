@@ -272,6 +272,8 @@ export const initNodeForTesting = (
   
   // Add integration tests only for Integration category nodes
   if (node.category === 'Integration') {
+    console.log(`Adding integration tests for Integration node: ${node.type}`);
+    
     integrationNodeTests.forEach(test => {
       updatedNode.integrationTestResults?.push({
         name: test.name,
@@ -282,6 +284,8 @@ export const initNodeForTesting = (
       // Log integration test being added
       console.log(`Adding integration test: ${test.name} with category: ${test.category}`);
     });
+    
+    console.log(`Added ${integrationNodeTests.length} integration tests`);
   }
   
   // Set up custom tests if available

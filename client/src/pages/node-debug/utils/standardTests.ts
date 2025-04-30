@@ -633,19 +633,20 @@ export const integrationRequirementsTest: NodeTest = {
         };
       }
       
-      // Check for integrationCapabilities
-      if (!definition.integrationCapabilities) {
+      // Check for integration property
+      if (!definition.integration) {
         return {
           passed: false,
-          message: 'Integration node does not define integrationCapabilities'
+          message: 'Node does not define integration capabilities'
         };
       }
       
-      // Check for requires section
-      if (!definition.integrationCapabilities.requires) {
+      // Check that provides and requires are defined
+      const integration = definition.integration;
+      if (!integration.provides || !integration.requires) {
         return {
           passed: false,
-          message: 'Integration capabilities missing "requires" section'
+          message: 'Integration definition is missing provides or requires'
         };
       }
       
@@ -673,6 +674,7 @@ export const standardNodeTests = [
   errorHandlingTest
 ];
 
+// Define the set of integration-specific tests
 export const integrationNodeTests = [
   integrationCapabilitiesTest,
   integrationRequirementsTest
