@@ -3,7 +3,7 @@
  * Defines the node's properties, appearance, and behavior
  */
 
-import { NodeDefinition, NodeSetting } from '../../types';
+import { NodeDefinition } from '../../../core/types/nodeDefinitions';
 import { z } from 'zod';
 
 // Updated model identifier for claude-3.7

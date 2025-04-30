@@ -6,7 +6,7 @@
  */
 
 // Import node types
-import { NodeExecutionData, WorkflowItem } from '../../types';
+import { NodeExecutionData, WorkflowItem } from '../../../core/types/nodeExecutionTypes';
 
 /**
  * Calls the Claude API with configured parameters
@@ -209,7 +209,9 @@ export const execute = async (
             text: generatedText,
             model: model
           },
-          text: generatedText
+          meta: {
+            source: 'claude'
+          }
         }],
         meta: {
           startTime,

@@ -6,5 +6,9 @@
 
 // Export the node types from this category
 export const SYSTEM_NODE_TYPES = [
-  // This will be populated as nodes are migrated
+  'claude',
+  // Additional nodes will be added as they are migrated
 ];
+
+// Export claude node for direct import
+export { default as claude } from './claude/definition';
