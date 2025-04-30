@@ -21,12 +21,14 @@ The node system is built on these foundational principles:
 
 When working with nodes, these are the key file locations to be aware of:
 
-- **Base Node**: `client/src/nodes/Base/ui.tsx`
+- **Base Node**: `client/src/nodes/core/base/ui.tsx`
 - **Node Templates**: `client/src/nodes/_node_templates/`
 - **Core UI Components**: `client/src/nodes/components/base/`
 - **Custom UI Components**: `client/src/nodes/components/custom_node_ui/`
 - **Node Registry**: `client/src/lib/unifiedNodeRegistry.ts`
 - **Node Documentation**: `docs/ultra-simple-node-creation.md`
+- **Node Categories**: `client/src/nodes/categories/`
+- **Core Node Types**: `client/src/nodes/core/types/`
 
 ## BaseNode Customization System
 
@@ -81,7 +83,7 @@ When editing or creating nodes, follow these principles:
 
 1. **Start with a template**:
    ```bash
-   cp -r client/src/nodes/_node_templates/base_node_template client/src/nodes/Category/new_node_name
+   cp -r client/src/nodes/_node_templates/base_node_template client/src/nodes/categories/Category/new_node_name
    ```
 
 2. **Define node interface** in `definition.ts`:
@@ -258,7 +260,7 @@ export default execute;
 import React from 'react';
 import { NodeProps } from 'reactflow';
 import { Type, ArrowRight } from 'lucide-react';
-import { BaseNode } from '@/nodes/Base';
+import { BaseNode } from '@/nodes/core/base';
 import { HandleWithLabel } from '@/nodes/components/custom_node_ui/handle_with_label';
 import { Position } from 'reactflow';
 import { defaultData, TextProcessorData } from './definition';

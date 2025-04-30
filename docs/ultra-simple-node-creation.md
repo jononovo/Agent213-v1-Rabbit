@@ -292,7 +292,7 @@ Implement the visual interface in `ui.tsx`:
 import React from 'react';
 import { NodeProps } from 'reactflow';
 import { Calculator, ArrowRight } from 'lucide-react';
-import { BaseNode } from '@/nodes/Base';
+import { BaseNode } from '@/nodes/core/base';
 import { HandleWithLabel } from '@/nodes/components/custom_node_ui/handle_with_label';
 import { Position } from 'reactflow';
 import { defaultData, MyNodeData } from './definition';
@@ -518,6 +518,7 @@ For nodes that need to dynamically add or remove handles:
 ```typescript
 // In ui.tsx
 import React, { useState, useEffect, memo } from 'react';
+import { BaseNode } from '@/nodes/core/base';
 import { HandleEditable } from '@/nodes/components/custom_node_ui/handle_editable';
 
 function DynamicHandlesComponent({ id, data, selected, isConnectable }: NodeProps) {
@@ -879,7 +880,7 @@ Create the `ui.tsx` file with integration-specific UI elements:
 import React, { memo } from 'react';
 import { NodeProps } from 'reactflow';
 import { Globe, ArrowRight, Database, Shield } from 'lucide-react';
-import { BaseNode } from '@/nodes/Base';
+import { BaseNode } from '@/nodes/core/base';
 import { HandleWithLabel } from '@/nodes/components/custom_node_ui/handle_with_label';
 import { Position } from 'reactflow';
 import { defaultData, MyApiIntegrationData } from './definition';
@@ -1379,7 +1380,7 @@ In the `ui.tsx` file, convert the legacy UI to our BaseNode pattern:
 ```typescript
 import React, { memo } from 'react';
 import { NodeProps } from 'reactflow';
-import { BaseNode } from '@/nodes/Base';
+import { BaseNode } from '@/nodes/core/base';
 import { Position } from 'reactflow';
 import { HandleWithLabel } from '@/nodes/components/custom_node_ui/handle_with_label';
 import { defaultData, YourNodeData } from './definition';
