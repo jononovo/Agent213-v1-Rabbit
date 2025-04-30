@@ -3163,26 +3163,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // These routes redirect to the Integration Engine for direct webhook access
   
-  // 1. Redirect for custom path webhooks
-  app.all('/api/webhooks/:path', (req: Request, res: Response) => {
-    const customPath = req.params.path;
-    console.log(`Redirecting webhook request at path: ${customPath} to Integration Engine`);
+  /**
+   * Helper to redirect webhook requests to the Integration Engine
+   * This simplifies and centralizes the redirection logic
+   */
+  function redirectWebhookToIntegrationEngine(req: Request, res: Response, targetPath: string) {
+    console.log(`Redirecting webhook to Integration Engine: ${targetPath}`);
     
-    // Redirect to the integration engine
-    res.redirect(307, `http://localhost:3001/webhooks/${customPath}`);
-  });
+    // We include the original method and headers
+    const targetUrl = `http://localhost:3001${targetPath}`;
+    
+    // Perform the redirect with status 307 (Temporary Redirect) to preserve the HTTP method
+    res.redirect(307, targetUrl);
+  }
   
-  // 2. Redirect for workflow/node specific webhooks
+  // IMPORTANT: Order of routes matters - most specific routes must come first
+  
+  // 1. Redirect for workflow/node specific webhooks - MOST SPECIFIC FIRST
   app.all('/api/webhooks/workflow/:workflowId/node/:nodeId', (req: Request, res: Response) => {
     const workflowId = req.params.workflowId;
     const nodeId = req.params.nodeId;
-    console.log(`Redirecting webhook request for workflow ${workflowId}, node ${nodeId} to Integration Engine`);
     
-    // Redirect to the integration engine
-    res.redirect(307, `http://localhost:3001/webhooks/workflow/${workflowId}/node/${nodeId}`);
+    console.log(`Redirecting webhook request for workflow ${workflowId}, node ${nodeId} to Integration Engine`);
+    redirectWebhookToIntegrationEngine(req, res, `/webhooks/workflow/${workflowId}/node/${nodeId}`);
   });
   
-  // 3. Webhook documentation route
+  // 2. Redirect for custom path webhooks - GENERAL PATH ROUTE COMES SECOND
+  app.all('/api/webhooks/:path', (req: Request, res: Response) => {
+    const customPath = req.params.path;
+    
+    // Guard against conflicts with the specific workflow/node route
+    if (customPath === 'workflow') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid webhook path. Use /api/webhooks/workflow/:workflowId/node/:nodeId for workflow targeting'
+      });
+    }
+    
+    console.log(`Redirecting webhook request at path: ${customPath} to Integration Engine`);
+    redirectWebhookToIntegrationEngine(req, res, `/webhooks/${customPath}`);
+  });
+  
+  // 3. Also handle requests at root level (without /api prefix) - for backward compatibility
+  // Again, most specific route first
+  app.all('/webhooks/workflow/:workflowId/node/:nodeId', (req: Request, res: Response) => {
+    const workflowId = req.params.workflowId;
+    const nodeId = req.params.nodeId;
+    
+    console.log(`Redirecting direct webhook request for workflow ${workflowId}, node ${nodeId} to Integration Engine`);
+    redirectWebhookToIntegrationEngine(req, res, `/webhooks/workflow/${workflowId}/node/${nodeId}`);
+  });
+  
+  // 4. Handle custom path requests at root level (without /api prefix)
+  app.all('/webhooks/:path', (req: Request, res: Response) => {
+    const customPath = req.params.path;
+    
+    // Guard against conflicts
+    if (customPath === 'workflow') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid webhook path. Use /webhooks/workflow/:workflowId/node/:nodeId for workflow targeting'
+      });
+    }
+    
+    console.log(`Redirecting direct webhook request at path: ${customPath} to Integration Engine`);
+    redirectWebhookToIntegrationEngine(req, res, `/webhooks/${customPath}`);
+  });
+  
+  // 5. Webhook documentation route
   app.get('/api/webhooks', (req: Request, res: Response) => {
     res.json({
       success: true,

@@ -31,7 +31,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // === Direct Webhook Routes ===
 
 // 1. Direct webhook routes with specific workflow/node targeting
-app.all('/webhooks/workflow/:workflowId/node/:nodeId', handleWebhookRequest);
+app.all('/webhooks/workflow/:workflowId/node/:nodeId', (req: Request, res: Response) => {
+  console.log(`[Integration Engine] Direct webhook request for workflow ${req.params.workflowId}, node ${req.params.nodeId}`);
+  return handleWebhookRequest(req, res);
+});
 
 // 2. Direct webhook routes with custom path
 app.all('/webhooks/:path', async (req: Request, res: Response) => {
