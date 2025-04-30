@@ -244,20 +244,11 @@ const NodeDebugPanel: React.FC = () => {
             
             // Check if the node produced any outputs
             if (test.id === 'execution' && nodeTestResult.result) {
-              // Check if this is a special node type that requires specific handling
-              const isWebhookNode = nodeTestResult.result.meta && 
-                                   (nodeTestResult.result.meta.isWebhookNode === true ||
-                                    nodeTestResult.result.meta.requiresHttpRequest === true);
-              
-              // Check for simulated data
+              // Check for simulated data - mark as failed if using simulated data
               const isSimulated = nodeTestResult.result.meta && 
                                  nodeTestResult.result.meta.isSimulated === true;
               
-              if (isWebhookNode) {
-                // For webhook nodes, we mark the test as passed but with a special message
-                status = 'passed';
-                message = "Webhook node - requires HTTP request to fully test";
-              } else if (isSimulated) {
+              if (isSimulated) {
                 status = 'failed';
                 message = "Node is using simulated data, not real execution";
               } else {
