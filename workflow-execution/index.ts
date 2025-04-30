@@ -45,8 +45,41 @@ router.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', service: 'workflow-execution' });
 });
 
-// Webhook routes have been moved to the Integration Engine Server
-// This ensures proper separation of concerns in the three-server architecture
+// Webhook handling endpoint for processing webhook requests from the Integration Engine
+router.post('/webhook', async (req: Request, res: Response) => {
+  try {
+    const webhookData = req.body;
+    
+    if (!webhookData || !webhookData.workflowId || !webhookData.nodeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid webhook data'
+      });
+    }
+    
+    console.log(`Processing webhook for workflow ${webhookData.workflowId}, node ${webhookData.nodeId}`);
+    
+    // Add job to the queue - this starts the workflow from the webhook node
+    const jobId = await workflowQueue.addJob('execute-workflow', {
+      workflowId: webhookData.workflowId,
+      input: webhookData,
+      startNodeId: webhookData.nodeId,
+      isWebhook: true
+    });
+    
+    res.json({
+      success: true,
+      jobId,
+      message: 'Webhook received and workflow execution queued'
+    });
+  } catch (error) {
+    console.error('[Workflow Execution] Error processing webhook:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
 
 // Standard execute workflow endpoint (for non-webhook workflows)
 router.post('/execute', async (req: Request, res: Response) => {
