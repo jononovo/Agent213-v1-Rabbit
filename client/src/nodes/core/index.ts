@@ -1,59 +1,21 @@
 /**
- * Core Node System
+ * Core Node System Exports
  * 
- * This is the main entry point for the core node system.
- * It exports all the important interfaces, types, and functions
- * that are needed by the rest of the application.
+ * This file serves as the central export point for all core node system
+ * functionality including registry, type definitions, utilities, and base components.
  */
 
-// Export registry functions and utilities
-export { 
-  initializeRegistry,
-  loadNodeComponent,
-  registerNodeDefinition,
-  loadNodeExecutors,
-  getNode,
-  getAllNodes,
-  getNodesByCategory,
-  getNodeCapabilities,
-  isIntegrationNode,
-  IntegrationCapabilities,
-  RegisteredNode
-} from './registry/nodeRegistry';
+// Export registry functionality
+export * from './registry/nodeRegistry';
+export * from './registry/nodeDiscovery';
+export * from './registry/nodeValidation';
 
-export {
-  NODE_FOLDERS,
-  discoverNodeDefinitions,
-  processDefinitions,
-  getNodeExecutorPath,
-  getNodeDefinitionPath,
-  getNodeUIPath,
-  setRegisterNodeDefinitionFn
-} from './registry/nodeDiscovery';
+// Export type definitions
+export * from './types/nodeDefinitions';
+export * from './types/nodeExecutionTypes';
 
-export {
-  formatPortDefinitions,
-  validateNodeDefinition,
-  validatePorts
-} from './registry/nodeValidation';
+// Export utilities
+export * from './utils/nodeOutputUtils';
 
-// Export types from dedicated type modules only
-export {
-  NodeDefinition,
-  PortDefinition,
-  NodeSettings,
-  NodeSettingsField
-} from './types/nodeDefinitions';
-
-export {
-  NodeExecutionData,
-  WorkflowItem,
-  EnhancedNodeExecutor,
-  createWorkflowItem
-} from './types/nodeExecutionTypes';
-
-// Initialize function that sets up the entire node system
-export async function initializeNodeSystem(): Promise<void> {
-  const { initializeRegistry } = await import('./registry/nodeRegistry');
-  await initializeRegistry();
-}
+// Export base components
+export * from './base';

@@ -10,7 +10,7 @@
 
 import React from 'react';
 import { Send, ExternalLink } from 'lucide-react';
-import { BaseNode } from '../../../core/base/ui';
+import { BaseNode } from '../../../core/base';
 import { Badge } from '@/components/ui/badge';
 
 export default function SendToWebhookNode({ id, data }: { id: string, data: any }) {
