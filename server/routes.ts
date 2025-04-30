@@ -17,7 +17,7 @@ import { workflowGenerationService } from "./services/workflowGenerationService"
 import { createAgentCoordinator } from "./services/agentCoordinator";
 import { registerAllTools } from "./tools/implementations";
 import { registerWorkflowExecution, clearWorkflowExecution, checkForTimedOutWorkflows } from "./utils/timeoutManager";
-import { forwardWebhookToIntegrationEngine } from "./routes/webhookRoutes";
+
 
 // Define interface for node type handler
 interface NodeTypeHandler {
@@ -3159,98 +3159,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // ===== Webhook Routes =====
+  // ===== Webhook Redirect Routes =====
   
-  // 1. Generic webhook endpoint for custom paths
-  app.all('/api/webhooks/:path', async (req: Request, res: Response) => {
-    try {
-      // Get the custom path from the request
-      const customPath = req.params.path;
-      
-      console.log(`Webhook request received at custom path: ${customPath}`);
-      
-      // Look for a workflow with this custom webhook path
-      // We need to get all workflows and filter them
-      const allWorkflows = await storage.getWorkflows();
-      
-      // Find a workflow with a webhook_trigger node that has this path
-      let targetWorkflow: Workflow | undefined;
-      let targetNodeId: string | undefined;
-      
-      for (const workflow of allWorkflows) {
-        // Parse the flow data
-        let flowData: any;
-        try {
-          if (typeof workflow.flowData === 'string') {
-            flowData = JSON.parse(workflow.flowData);
-          } else {
-            flowData = workflow.flowData;
-          }
-          
-          // Look for webhook_trigger nodes with this custom path
-          const webhookNodes = flowData.nodes.filter((node: any) => 
-            node.type === 'webhook_trigger' && 
-            node.data?.settings?.path === customPath
-          );
-          
-          if (webhookNodes.length > 0) {
-            targetWorkflow = workflow;
-            targetNodeId = webhookNodes[0].id;
-            break;
-          }
-        } catch (e) {
-          console.error(`Error parsing flow data for workflow ${workflow.id}:`, e);
-        }
-      }
-      
-      if (!targetWorkflow || !targetNodeId) {
-        return res.status(404).json({
-          success: false,
-          message: `No workflow found with webhook path: ${customPath}`
-        });
-      }
-      
-      // Forward the webhook request to the Integration Engine
-      console.log(`Forwarding webhook from custom path to Integration Engine for workflow ${targetWorkflow.id}, node ${targetNodeId}`);
-      await forwardWebhookToIntegrationEngine(req, res, targetWorkflow.id, targetNodeId);
-      
-    } catch (error) {
-      console.error('Webhook processing error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error processing webhook',
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
+  // These routes redirect to the Integration Engine for direct webhook access
+  
+  // 1. Redirect for custom path webhooks
+  app.all('/api/webhooks/:path', (req: Request, res: Response) => {
+    const customPath = req.params.path;
+    console.log(`Redirecting webhook request at path: ${customPath} to Integration Engine`);
+    
+    // Redirect to the integration engine
+    res.redirect(307, `http://localhost:3001/webhooks/${customPath}`);
   });
   
-  // 2. Dynamic webhook endpoint for workflow/node specific webhooks
-  app.all('/api/webhooks/workflow/:workflowId/node/:nodeId', async (req: Request, res: Response) => {
-    try {
-      // Get workflow and node IDs from the request
-      const workflowId = parseInt(req.params.workflowId, 10);
-      const nodeId = req.params.nodeId;
-      
-      if (isNaN(workflowId)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid workflow ID'
-        });
+  // 2. Redirect for workflow/node specific webhooks
+  app.all('/api/webhooks/workflow/:workflowId/node/:nodeId', (req: Request, res: Response) => {
+    const workflowId = req.params.workflowId;
+    const nodeId = req.params.nodeId;
+    console.log(`Redirecting webhook request for workflow ${workflowId}, node ${nodeId} to Integration Engine`);
+    
+    // Redirect to the integration engine
+    res.redirect(307, `http://localhost:3001/webhooks/workflow/${workflowId}/node/${nodeId}`);
+  });
+  
+  // 3. Webhook documentation route
+  app.get('/api/webhooks', (req: Request, res: Response) => {
+    res.json({
+      success: true,
+      message: 'Webhook API endpoints documentation',
+      note: 'Webhooks are now handled directly by the Integration Engine',
+      integrationEngineEndpoints: {
+        base_url: 'http://localhost:3001',
+        custom_path: {
+          url: '/webhooks/:path',
+          method: 'Any',
+          description: 'Send a webhook to a workflow with custom path'
+        },
+        direct_workflow: {
+          url: '/webhooks/workflow/:workflowId/node/:nodeId',
+          method: 'Any',
+          description: 'Send a webhook directly to a specific workflow node'
+        },
+        stats: {
+          url: '/api/webhook-stats',
+          method: 'GET',
+          description: 'Get statistics about pending webhook responses'
+        }
+      },
+      legacyEndpoints: {
+        note: 'These endpoints redirect to the Integration Engine',
+        custom_path: '/api/webhooks/:path',
+        direct_workflow: '/api/webhooks/workflow/:workflowId/node/:nodeId'
       }
-      
-      console.log(`Webhook request received for workflow ${workflowId}, node ${nodeId}`);
-      
-      // Forward the webhook request to the Integration Engine
-      await forwardWebhookToIntegrationEngine(req, res, workflowId, nodeId);
-      
-    } catch (error) {
-      console.error('Webhook processing error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error processing webhook',
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
+    });
   });
   
   return server;
