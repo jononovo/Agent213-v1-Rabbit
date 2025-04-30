@@ -3159,128 +3159,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // ===== Webhook Redirect Routes =====
+  // ===== Webhook Routes =====
   
-  // These routes redirect to the Integration Engine for direct webhook access
-  
-  /**
-   * Helper to forward webhook requests to the Integration Engine
-   * This simplifies and centralizes the webhook forwarding logic
-   */
-  async function redirectWebhookToIntegrationEngine(req: Request, res: Response, targetPath: string) {
-    console.log(`Forwarding webhook to Integration Engine: ${targetPath}`);
-    
-    // We include the original method and headers
-    const targetUrl = `http://localhost:3001${targetPath}`;
-    
-    try {
-      // Create options for the forwarded request
-      const fetchOptions: any = {
-        method: req.method,
-        headers: {
-          'Content-Type': req.headers['content-type'] || 'application/json'
-        }
-      };
-      
-      // Add body if present
-      if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
-        fetchOptions.body = JSON.stringify(req.body);
-      }
-      
-      // Forward the request to the integration engine
-      const response = await fetch(targetUrl, fetchOptions);
-      
-      // Get response data
-      const contentType = response.headers.get('content-type');
-      let responseData;
-      
-      if (contentType && contentType.includes('application/json')) {
-        responseData = await response.json();
-      } else {
-        responseData = await response.text();
-      }
-      
-      // Forward the integration engine's response back to the client
-      res.status(response.status);
-      
-      // Set response headers
-      for (const [key, value] of response.headers.entries()) {
-        // Skip headers that Express will set
-        if (!['content-length', 'connection'].includes(key.toLowerCase())) {
-          res.setHeader(key, value);
-        }
-      }
-      
-      // Send the response
-      if (typeof responseData === 'string') {
-        res.send(responseData);
-      } else {
-        res.json(responseData);
-      }
-    } catch (error) {
-      console.error('Error forwarding webhook to Integration Engine:', error);
-      
-      // Send error response
-      res.status(500).json({
-        success: false,
-        message: 'Error forwarding webhook to Integration Engine',
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  }
-  
-  // IMPORTANT: Order of routes matters - most specific routes must come first
-  
-  // 1. Redirect for workflow/node specific webhooks - MOST SPECIFIC FIRST
-  app.all('/api/webhooks/workflow/:workflowId/node/:nodeId', (req: Request, res: Response) => {
-    const workflowId = req.params.workflowId;
-    const nodeId = req.params.nodeId;
-    
-    console.log(`Redirecting webhook request for workflow ${workflowId}, node ${nodeId} to Integration Engine`);
-    redirectWebhookToIntegrationEngine(req, res, `/webhooks/workflow/${workflowId}/node/${nodeId}`);
-  });
-  
-  // 2. Redirect for custom path webhooks - GENERAL PATH ROUTE COMES SECOND
-  app.all('/api/webhooks/:path', (req: Request, res: Response) => {
-    const customPath = req.params.path;
-    
-    // Guard against conflicts with the specific workflow/node route
-    if (customPath === 'workflow') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid webhook path. Use /api/webhooks/workflow/:workflowId/node/:nodeId for workflow targeting'
-      });
-    }
-    
-    console.log(`Redirecting webhook request at path: ${customPath} to Integration Engine`);
-    redirectWebhookToIntegrationEngine(req, res, `/webhooks/${customPath}`);
-  });
-  
-  // 3. Also handle requests at root level (without /api prefix) - for backward compatibility
-  // Again, most specific route first
-  app.all('/webhooks/workflow/:workflowId/node/:nodeId', (req: Request, res: Response) => {
-    const workflowId = req.params.workflowId;
-    const nodeId = req.params.nodeId;
-    
-    console.log(`Redirecting direct webhook request for workflow ${workflowId}, node ${nodeId} to Integration Engine`);
-    redirectWebhookToIntegrationEngine(req, res, `/webhooks/workflow/${workflowId}/node/${nodeId}`);
-  });
-  
-  // 4. Handle custom path requests at root level (without /api prefix)
-  app.all('/webhooks/:path', (req: Request, res: Response) => {
-    const customPath = req.params.path;
-    
-    // Guard against conflicts
-    if (customPath === 'workflow') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid webhook path. Use /webhooks/workflow/:workflowId/node/:nodeId for workflow targeting'
-      });
-    }
-    
-    console.log(`Redirecting direct webhook request at path: ${customPath} to Integration Engine`);
-    redirectWebhookToIntegrationEngine(req, res, `/webhooks/${customPath}`);
-  });
+  // Webhooks are now handled directly by the Integration Engine
+  // The redirect code has been removed as part of the clean-break approach
+  // All webhook requests should now be sent directly to:
+  // - http://localhost:3001/webhooks/workflow/:workflowId/node/:nodeId
+  // - http://localhost:3001/webhooks/:path
   
   // 5. Webhook documentation route
   app.get('/api/webhooks', (req: Request, res: Response) => {
@@ -3288,7 +3173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       success: true,
       message: 'Webhook API endpoints documentation',
       note: 'Webhooks are now handled directly by the Integration Engine',
-      integrationEngineEndpoints: {
+      endpoints: {
         base_url: 'http://localhost:3001',
         custom_path: {
           url: '/webhooks/:path',
@@ -3305,11 +3190,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           method: 'GET',
           description: 'Get statistics about pending webhook responses'
         }
-      },
-      legacyEndpoints: {
-        note: 'These endpoints redirect to the Integration Engine',
-        custom_path: '/api/webhooks/:path',
-        direct_workflow: '/api/webhooks/workflow/:workflowId/node/:nodeId'
       }
     });
   });
