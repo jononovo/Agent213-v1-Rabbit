@@ -144,7 +144,7 @@ const TestResultsPanel: React.FC<TestResultsPanelProps> = ({
         <Tabs defaultValue="standard">
           <TabsList className="w-full mb-4">
             <TabsTrigger value="standard" className="flex-1">Standard Tests</TabsTrigger>
-            {hasIntegrationTests && (
+            {selectedNode.category === 'Integration' && (
               <TabsTrigger value="integration" className="flex-1">
                 Integration Tests
               </TabsTrigger>
@@ -201,7 +201,7 @@ const TestResultsPanel: React.FC<TestResultsPanelProps> = ({
           </TabsContent>
           
           <TabsContent value="integration">
-            {hasIntegrationTests && selectedNode.integrationTestResults && selectedNode.integrationTestResults.length > 0 ? (
+            {selectedNode.integrationTestResults && selectedNode.integrationTestResults.length > 0 ? (
               <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-4">
                   {selectedNode.integrationTestResults.map((testResult: TestResult, index: number) => {

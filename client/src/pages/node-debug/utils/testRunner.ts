@@ -289,19 +289,45 @@ export const initNodeForTesting = (
   // Add integration tests only for Integration category nodes
   if (node.category === 'Integration') {
     console.log(`Adding integration tests for Integration node: ${node.type}`);
+    console.log(`Integration node tests available: ${integrationNodeTests.length}`);
     
+    // Initialize an empty array for integration tests
+    updatedNode.integrationTestResults = [];
+    
+    // Add our standard integration tests
     integrationNodeTests.forEach(test => {
-      updatedNode.integrationTestResults?.push({
+      updatedNode.integrationTestResults!.push({
         name: test.name,
         test: test.category as TestType,
         status: 'running'
       });
       
       // Log integration test being added
-      console.log(`Adding integration test: ${test.name} with category: ${test.category}`);
+      console.log(`Added integration test: ${test.name} with category: ${test.category}`);
     });
     
-    console.log(`Added ${integrationNodeTests.length} integration tests`);
+    // If we have no integration tests, add placeholder tests
+    if (integrationNodeTests.length === 0) {
+      console.log('No integration tests found, adding placeholders');
+      
+      // Add placeholder tests for integration capabilities
+      updatedNode.integrationTestResults.push({
+        name: 'Integration Capabilities',
+        test: 'integration' as TestType,
+        status: 'pending',
+        message: 'Tests that the node defines its integration capabilities'
+      });
+      
+      // Add placeholder tests for integration requirements
+      updatedNode.integrationTestResults.push({
+        name: 'Integration Requirements',
+        test: 'integration' as TestType,
+        status: 'pending',
+        message: 'Tests that the node specifies its requirements'
+      });
+    }
+    
+    console.log(`Added total of ${updatedNode.integrationTestResults.length} integration tests`);
   }
   
   // Set up custom tests if available
