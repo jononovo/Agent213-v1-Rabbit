@@ -24,9 +24,10 @@ import NodeListTable from '@/components/node-list-table';
 import TestResultsPanel from './components/TestResultsPanel';
 import { 
   NodeType, TestResult, CustomTestResult, TestType,
-  STANDARD_TESTS, loadCustomTests, runCustomTests, 
+  loadCustomTests, runCustomTests, runStandardTests,
   calculateTestStatus, initNodeForTesting
 } from './utils/testRunner';
+import { standardNodeTests, integrationNodeTests } from './utils/standardTests';
 
 import { getAllNodes, initializeRegistry } from '@/lib/unifiedNodeRegistry';
 
@@ -168,171 +169,56 @@ const NodeDebugPanel: React.FC = () => {
     const updatedNode = initNodeForTesting(node, customTests);
     setSelectedNode(updatedNode);
     
-    // Standard tests
-    const standardTestsToRun = STANDARD_TESTS.length;
+    // Set up progress update function
+    const updateProgressFn = (progress: number) => {
+      setTestProgress(progress);
+    };
+    
+    // Update node function
+    const updateNodeFn = (updated: NodeType) => {
+      setSelectedNode({...updated});
+    };
     
     try {
-      // Create test input data with a meaningful test message
-      const testData = {
-        input: { message: "This is a test input from node-debug testing facility" }
-      };
+      console.log(`Running standard tests for node ${node.type}`);
       
-      console.log(`Testing node ${node.type} with real node-debug API endpoint`);
+      // Start the test progress at 10%
+      updateProgressFn(10);
       
-      // Update progress to show activity
-      setTestProgress(10);
-      
-      // Call the node-debug API endpoint to test the node type with real execution
-      const response = await fetch('/api/node-debug', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      // Run standard tests first
+      await runStandardTests(
+        updatedNode,
+        (node) => {
+          // Standard tests complete, 75% progress
+          updateProgressFn(75);
         },
-        body: JSON.stringify({
-          nodeType: node.type,
-          data: {}, // Node configuration data
-          inputs: {
-            // Default input that all nodes should accept
-            default: {
-              items: [{ json: testData.input }],
-              meta: {
-                startTime: new Date(),
-                endTime: new Date()
-              }
-            }
-          }
-        })
-      });
+        updateNodeFn
+      );
       
-      // Process the response
-      const nodeTestResult = await response.json();
-      console.log("Node debug API response:", nodeTestResult);
-      
-      // Update progress to indicate response received
-      setTestProgress(50);
-      
-      // Update progress to indicate processing results
-      setTestProgress(75);
-      
-      // Generate test results based on the actual API response
-      const results: TestResult[] = STANDARD_TESTS.map((test) => {
-        let status: 'passed' | 'failed' = 'failed';
-        let message = '';
-        
-        // Determine test status based on the API response and test type
-        if (nodeTestResult.success) {
-          // Check if the result contains an error message
-          const hasError = nodeTestResult.result && 
-                          nodeTestResult.result.meta && 
-                          nodeTestResult.result.meta.error === true;
-          
-          if (hasError) {
-            // Node has error in the result
-            message = nodeTestResult.result.meta.errorMessage || "Unknown error in node execution";
-            
-            // For error handling test, we expect an error
-            if (test.id === 'error') {
-              status = 'passed';
-            } else {
-              status = 'failed';
-            }
-          } else {
-            // No error, basic structure tests pass
-            if (test.id === 'definition' || test.id === 'interface') {
-              status = 'passed';
-            }
-            
-            // Check if the node produced any outputs
-            if (test.id === 'execution' && nodeTestResult.result) {
-              // Check for simulated data - mark as failed if using simulated data
-              const isSimulated = nodeTestResult.result.meta && 
-                                 nodeTestResult.result.meta.isSimulated === true;
-              
-              if (isSimulated) {
-                status = 'failed';
-                message = "Node is using simulated data, not real execution";
-              } else {
-                status = 'passed';
-              }
-            }
-            
-            // Check error handling - only pass if we expect proper error handling
-            if (test.id === 'error') {
-              status = 'passed';
-            }
-            
-            // Integration tests
-            if (test.id === 'integration') {
-              status = 'passed';
-            }
-          }
-        } else {
-          // API call failed, get the error message
-          message = nodeTestResult.error || 'Unknown error occurred during node execution';
-        }
-        
-        // Use a realistic duration value
-        const duration = Math.floor(Math.random() * 300) + 50;
-        
-        // Create a test result object
-        return {
-          name: test.name,
-          test: test.id,
-          status,
-          duration,
-          message: message || undefined
-        };
-      });
-      
-      // Update the node's test results
-      if (updatedNode.testResults) {
-        updatedNode.testResults = results;
-        
-        // Determine overall status based on test results
-        const hasFailures = results.some(r => r.status === 'failed');
-        
-        if (hasFailures) {
-          updatedNode.status = 'failed';
-        } else {
-          updatedNode.status = 'validated';
-        }
-        
-        setSelectedNode({ ...updatedNode });
-      }
-      
-      // Set progress to 100%
-      setTestProgress(100);
+      // Standard tests are complete, set progress to 75%
+      updateProgressFn(75);
       
       // Now run custom tests if available
       if (hasCustomTests && customTests) {
-        runCustomTests(
+        console.log(`Running custom tests for node ${node.type}`);
+        
+        await runCustomTests(
           updatedNode, 
           customTests, 
           finishTesting,
-          (node) => setSelectedNode({...node})
+          updateNodeFn
         );
       } else {
         // No custom tests, we're done
         finishTesting(updatedNode);
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error running node tests:", error);
       
-      // Update with error results
-      if (updatedNode.testResults) {
-        // Mark all tests as failed due to the error
-        updatedNode.testResults = STANDARD_TESTS.map(test => ({
-          name: test.name,
-          test: test.id,
-          status: 'failed',
-          duration: 0,
-          message: `Test execution error: ${error instanceof Error ? error.message : String(error)}`
-        }));
-        
-        updatedNode.status = 'failed';
-        setSelectedNode({ ...updatedNode });
-      }
+      // Update the status to failed
+      updatedNode.status = 'failed';
+      setSelectedNode({ ...updatedNode });
       
       // Set progress to 100% even on error
       setTestProgress(100);
@@ -434,10 +320,13 @@ const NodeDebugPanel: React.FC = () => {
     
     // Create a delay before initializing tests to ensure state update
     setTimeout(() => {
+      // Use our standard tests array
+      const testsToUse = standardNodeTests.concat(integrationNodeTests);
+      
       // Create initial results array
-      const initialResults: TestResult[] = STANDARD_TESTS.map(test => ({
+      const initialResults: TestResult[] = testsToUse.map(test => ({
         name: test.name,
-        test: test.id,
+        test: test.category as TestType,
         status: 'running'
       }));
       
@@ -458,7 +347,7 @@ const NodeDebugPanel: React.FC = () => {
       
       // Run the test suite with artificial delays
       const testDelay = 800; // ms per test
-      const testsToRun = STANDARD_TESTS.length;
+      const testsToRun = testsToUse.length;
       
       // Run tests sequentially with timeouts
       let completed = 0;
@@ -471,14 +360,14 @@ const NodeDebugPanel: React.FC = () => {
           
           // Generate a result (random for demo)
           const result: TestResult = {
-            name: STANDARD_TESTS[i].name,
-            test: STANDARD_TESTS[i].id,
+            name: testsToUse[i].name,
+            test: testsToUse[i].category as TestType,
             status: Math.random() > 0.2 ? 'passed' : 'failed',
             duration: Math.floor(Math.random() * 300) + 50
           };
           
           if (result.status === 'failed') {
-            result.message = `Test failed in ${nodeFolderPath}: ${STANDARD_TESTS[i].name} validation error`;
+            result.message = `Test failed in ${nodeFolderPath}: ${testsToUse[i].name} validation error`;
           }
           
           // Update state in function form to ensure we have the latest state
