@@ -19,14 +19,24 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { NodeType, TestResult, CustomTestResult, TestType } from '../utils/testRunner';
 
 // Icons for test types (original test types)
-const TEST_ICONS: Record<TestType, React.ElementType> = {
+const TEST_ICONS: Partial<Record<TestType, React.ElementType>> = {
   'definition': FileSymlink,
   'interface': Link,
   'execution': Play,
   'integration': Zap,
   'ui': LayoutGrid,
   'performance': Clock,
-  'error': AlertIcon
+  'error': AlertIcon,
+  
+  // Add new test types
+  'structure': FileCode,
+  'error-handling': AlertIcon,
+  'file-structure': FileCode,
+  'metadata': Database, 
+  'validation': FileSymlink,
+  'port-definition': Link,
+  'executor-signature': Play,
+  'output-format': Workflow
 };
 
 // Icons for our new test categories

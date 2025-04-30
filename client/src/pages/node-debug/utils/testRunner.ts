@@ -37,7 +37,9 @@ export interface CustomTestResult {
   details?: Record<string, any>;
 }
 
-export type TestType = 'definition' | 'interface' | 'execution' | 'error' | 'ui' | 'performance' | 'integration';
+export type TestType = 'definition' | 'interface' | 'execution' | 'error' | 'ui' | 'performance' | 'integration' |
+  // New categories
+  'structure' | 'error-handling' | 'file-structure' | 'metadata' | 'validation' | 'port-definition' | 'executor-signature' | 'output-format';
 
 export interface TestDefinition {
   id: TestType;
@@ -224,6 +226,9 @@ export const initNodeForTesting = (
       test: test.category as TestType, // Map the test category to TestType
       status: 'running'
     });
+    
+    // Log test being added for debugging
+    console.log(`Adding test: ${test.name} with category: ${test.category}`);
   });
   
   // Set up custom tests if available
