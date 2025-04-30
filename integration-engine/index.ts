@@ -42,11 +42,29 @@ router.get('/health', (req: Request, res: Response) => {
 
 // === Direct Webhook Routes (without /api prefix) ===
 
-// Handle direct webhook at root level with custom path
+// IMPORTANT: Order matters for Express routing!
+// The more specific route must come BEFORE the more general route
+// or the general route will catch everything
+
+// 1. Handle direct webhook with workflow/node targeting - MUST COME FIRST for proper routing
+app.all('/webhooks/workflow/:workflowId/node/:nodeId', (req: Request, res: Response) => {
+  console.log(`[Integration Engine] Direct webhook request for workflow ${req.params.workflowId}, node ${req.params.nodeId}`);
+  handleWebhookRequest(req, res);
+});
+
+// 2. Handle direct webhook at root level with custom path - MUST COME AFTER the more specific route
 app.all('/webhooks/:path', async (req: Request, res: Response) => {
   try {
     // Get the custom path from the request
     const customPath = req.params.path;
+    
+    // Catch requests that should go to the workflow/node endpoint but were caught here
+    if (customPath === 'workflow') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid webhook path. Use /webhooks/workflow/:workflowId/node/:nodeId for direct workflow targeting'
+      });
+    }
     
     console.log(`[Integration Engine] Direct webhook request received at custom path: ${customPath}`);
     
@@ -99,6 +117,7 @@ app.all('/webhooks/:path', async (req: Request, res: Response) => {
     req.params.nodeId = targetNodeId;
     
     // Forward to our webhook handler
+    console.log(`[Integration Engine] Forwarding path webhook to workflow ${req.params.workflowId}, node ${req.params.nodeId}`);
     return handleWebhookRequest(req, res);
   } catch (error) {
     console.error('[Integration Engine] Error processing direct webhook:', error);
@@ -112,9 +131,6 @@ app.all('/webhooks/:path', async (req: Request, res: Response) => {
     }
   }
 });
-
-// Handle direct webhook with workflow/node targeting
-app.all('/webhooks/workflow/:workflowId/node/:nodeId', handleWebhookRequest);
 
 // === Webhook API Endpoints ===
 
@@ -130,7 +146,7 @@ router.get('/webhook-stats', (req: Request, res: Response) => {
 });
 
 // Webhook documentation endpoint
-router.get('/webhooks', (req: Request, res: Response) => {
+app.get('/api/webhooks', (req: Request, res: Response) => {
   res.json({
     success: true,
     message: 'Webhook API endpoints documentation',
@@ -196,12 +212,57 @@ app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', server: 'integration-engine' });
 });
 
+// Log all registered routes for debugging
+function printRoutes(app: Express) {
+  console.log('\n=== REGISTERED ROUTES ===');
+  
+  // Direct routes on app
+  console.log('Direct routes:');
+  const routes: any[] = [];
+  app._router.stack.forEach((middleware: any) => {
+    if (middleware.route) {
+      // Routes registered directly on the app
+      const path = middleware.route.path;
+      const methods = Object.keys(middleware.route.methods)
+        .filter(method => middleware.route.methods[method])
+        .map(method => method.toUpperCase());
+      routes.push({ path, methods });
+    } else if (middleware.name === 'router') {
+      // Routes registered on a router
+      middleware.handle.stack.forEach((handler: any) => {
+        if (handler.route) {
+          const path = handler.route.path;
+          const methods = Object.keys(handler.route.methods)
+            .filter(method => handler.route.methods[method])
+            .map(method => method.toUpperCase());
+          routes.push({ path: '/api' + path, methods }); // Assuming router is mounted at /api
+        }
+      });
+    }
+  });
+  
+  // Sort and print
+  routes.sort((a, b) => a.path.localeCompare(b.path));
+  routes.forEach(route => {
+    console.log(`${route.methods.join(', ')}\t${route.path}`);
+  });
+  
+  console.log('=== END ROUTES ===\n');
+}
+
 // Start the server - detect if this is the main module
 const isMainModule = import.meta.url.endsWith(process.argv[1]);
 if (isMainModule) {
   app.listen(port, () => {
     console.log(`Integration Engine Server running on port ${port}`);
     log(`Integration Engine Server running on port ${port}`, 'integration-engine');
+    
+    // Print registered routes for debugging
+    try {
+      printRoutes(app);
+    } catch (error) {
+      console.error('Error printing routes:', error);
+    }
   });
 } else {
   // For testing or programmatic use
