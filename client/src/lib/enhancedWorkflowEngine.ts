@@ -24,25 +24,7 @@ export async function registerAllEnhancedNodeExecutors(): Promise<void> {
     // Ensure the unified registry is initialized
     await initializeRegistry();
     
-    // List of built-in node types we need to ensure are registered
-    const criticalNodeTypes = [
-      'text_input', 
-      'claude',
-      'text_template',
-      'http_request'
-    ];
-    
-    // Check the unified registry for critical node types
-    for (const nodeType of criticalNodeTypes) {
-      const executor = getNodeExecutor(nodeType);
-      
-      if (!executor) {
-        console.warn(`Critical node ${nodeType} not found in registry. Make sure it exists in the System folder.`);
-      } else {
-        console.log(`Verified critical node type ${nodeType} is registered`);
-      }
-    }
-    
+    // Log available node types for debugging purposes
     console.log('All node executors registered successfully');
     console.log(`Available node types: ${getAllNodeTypes().join(', ')}`);
   } catch (error) {
