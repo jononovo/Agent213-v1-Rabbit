@@ -1,38 +1,42 @@
 /**
  * Integration Engine Server
  * 
- * This module serves as the entry point for the Integration Engine server
- * which handles webhooks and third-party API integrations.
+ * This is the entry point for the Integration Engine server that handles
+ * webhooks and third-party API integrations.
  * 
  * Port: 3001
  */
 
-import { startWebhookServer } from './webhook-server';
+import { startSimpleWebhookServer } from './simple-webhook-server';
 import { log } from '../server/vite';
 
 // Set port
 const port = process.env.INTEGRATION_ENGINE_PORT || 3001;
 
-// Start the webhook server when this module is directly executed
+// Start server if this is the main module
 if (import.meta.url.endsWith(process.argv[1])) {
   try {
-    const server = startWebhookServer();
-    console.log(`[Integration Engine] Started webhook server on port ${port}`);
-    log(`[Integration Engine] Started webhook server on port ${port}`, 'integration-engine');
+    console.log('Starting Integration Engine with Simple Webhook Server...');
+    log('Starting Integration Engine with Simple Webhook Server...', 'integration-engine');
+    
+    const server = startSimpleWebhookServer();
     
     // Handle graceful shutdown
     process.on('SIGTERM', () => {
-      console.log('SIGTERM signal received: closing webhook server');
+      console.log('SIGTERM signal received: closing Integration Engine server');
       server.close(() => {
-        console.log('Webhook server closed');
+        console.log('Integration Engine server closed');
       });
     });
+    
+    console.log(`Integration Engine running on port ${port}`);
+    log(`Integration Engine running on port ${port}`, 'integration-engine');
   } catch (error) {
-    console.error('[Integration Engine] Failed to start webhook server:', error);
-    log(`[Integration Engine] Failed to start webhook server: ${error}`, 'integration-engine');
+    console.error('Failed to start Integration Engine:', error);
+    log(`Failed to start Integration Engine: ${error}`, 'integration-engine');
     process.exit(1);
   }
 }
 
-// Export the webhook server starter function
-export { startWebhookServer };
+// Export the server starter function
+export { startSimpleWebhookServer };
