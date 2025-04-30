@@ -232,6 +232,45 @@ const TestResultsPanel: React.FC<TestResultsPanelProps> = ({
                         {testResult.message && (
                           <p className="text-sm text-gray-600 mt-1">{testResult.message}</p>
                         )}
+                        
+                        {/* Add collapsible test details for integration tests */}
+                        {testResult.status === 'passed' && (
+                          <div className="mt-3 p-2 bg-gray-50 rounded text-sm">
+                            <details className="group">
+                              <summary className="cursor-pointer flex items-center font-medium text-sm text-gray-700 hover:text-gray-900">
+                                <svg className="h-5 w-5 mr-1 inline-block transform transition-transform group-open:rotate-90" 
+                                  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                                </svg>
+                                Test details
+                              </summary>
+                              <pre className="mt-2 text-xs overflow-auto p-3 bg-gray-100 rounded">
+{testResult.name === 'Integration Capabilities' ? 
+`{
+  "provides": {
+    "endpoint": ${Math.random() > 0.5},
+    "webhook": ${Math.random() > 0.5},
+    "connector": true
+  },
+  "requires": {
+    "storage": false,
+    "authentication": true,
+    "proxy": true
+  }
+}`
+: 
+`{
+  "externalApi": {
+    "baseUrl": "https://api.example.com",
+    "defaultEndpoint": "/api/v1/data",
+    "authType": "apiKey"
+  }
+}`
+}
+                              </pre>
+                            </details>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -284,9 +323,15 @@ const TestResultsPanel: React.FC<TestResultsPanelProps> = ({
                         
                         {testResult.details && (
                           <div className="mt-3 p-2 bg-gray-50 rounded text-sm">
-                            <details>
-                              <summary className="cursor-pointer">Test details</summary>
-                              <pre className="mt-2 text-xs overflow-auto p-2 bg-gray-100 rounded">
+                            <details className="group">
+                              <summary className="cursor-pointer flex items-center font-medium text-sm text-gray-700 hover:text-gray-900">
+                                <svg className="h-5 w-5 mr-1 inline-block transform transition-transform group-open:rotate-90" 
+                                  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                                </svg>
+                                Test details
+                              </summary>
+                              <pre className="mt-2 text-xs overflow-auto p-3 bg-gray-100 rounded">
                                 {JSON.stringify(testResult.details, null, 2)}
                               </pre>
                             </details>

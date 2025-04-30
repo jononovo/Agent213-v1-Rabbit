@@ -51,7 +51,7 @@ function getNodeType(): { passed: boolean; nodeType?: string; message?: string }
   
   return {
     passed: true,
-    nodeType
+    nodeType: nodeType
   };
 }
 
