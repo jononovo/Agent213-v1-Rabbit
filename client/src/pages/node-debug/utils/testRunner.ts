@@ -122,77 +122,58 @@ export const runStandardTests = async (
   if (!node.integrationTestResults || node.integrationTestResults.length === 0) {
     node.integrationTestResults = [];
     
-    if (node.category === 'Integration') {
-      // For Integration nodes, run standard integration tests
-      console.log('Adding integration tests for Integration node');
-      integrationNodeTests.forEach(test => {
-        node.integrationTestResults!.push({
-          name: test.name,
-          test: test.category as TestType,
-          status: 'pending'
-        });
+    // Add integration tests for all nodes
+    console.log('Adding integration tests for all nodes');
+    integrationNodeTests.forEach(test => {
+      node.integrationTestResults!.push({
+        name: test.name,
+        test: test.category as TestType,
+        status: 'pending'
       });
-    } else {
-      // For non-Integration nodes, add a single "Not Applicable" test
-      console.log('Adding "Not Applicable" status for non-Integration node');
-      node.integrationTestResults.push({
-        name: 'Not Applicable',
-        test: 'integration' as TestType,
-        status: 'pending',
-        message: 'This node is not in the Integration category'
-      });
-    }
+    });
     
     updateNode({ ...node });
   }
   
-  // For Integration category nodes, run actual integration tests
-  if (node.category === 'Integration') {
-    console.log(`Found ${integrationNodeTests.length} integration tests to run`);
+  // Run integration tests for all nodes
+  console.log(`Found ${integrationNodeTests.length} integration tests to run`);
+  
+  // Run the actual integration tests for all nodes
+  for (let i = 0; i < integrationNodeTests.length; i++) {
+    const test = integrationNodeTests[i];
+    const testIndex = node.integrationTestResults.findIndex(t => t.name === test.name);
     
-    for (let i = 0; i < integrationNodeTests.length; i++) {
-      const test = integrationNodeTests[i];
-      const testIndex = node.integrationTestResults.findIndex(t => t.name === test.name);
+    if (testIndex === -1) continue; // Skip if test not found in results array
+    
+    try {
+      // Mark test as running
+      node.integrationTestResults[testIndex].status = 'running';
+      updateNode({ ...node });
       
-      if (testIndex === -1) continue; // Skip if test not found in results array
+      // Measure test execution time
+      const testStartTime = performance.now();
+      const result = await test.run();
+      const testDuration = Math.round(performance.now() - testStartTime);
       
-      try {
-        // Mark test as running
-        node.integrationTestResults[testIndex].status = 'running';
-        updateNode({ ...node });
-        
-        // Measure test execution time
-        const testStartTime = performance.now();
-        const result = await test.run();
-        const testDuration = Math.round(performance.now() - testStartTime);
-        
-        // Update test status
-        node.integrationTestResults[testIndex] = {
-          ...node.integrationTestResults[testIndex],
-          status: result.passed ? 'passed' : 'failed',
-          message: result.message,
-          duration: testDuration
-        };
-        
-        updateNode({ ...node });
-        
-        // Short delay between tests for UI update
-        await new Promise(resolve => setTimeout(resolve, 100));
-      } catch (error: any) {
-        // Handle test execution error
-        node.integrationTestResults[testIndex] = {
-          ...node.integrationTestResults[testIndex],
-          status: 'failed',
-          message: `Test execution error: ${error.message || String(error)}`
-        };
-        updateNode({ ...node });
-      }
-    }
-  } else {
-    // For non-Integration nodes, just mark the "Not Applicable" test as completed
-    const testIndex = node.integrationTestResults.findIndex(t => t.name === 'Not Applicable');
-    if (testIndex !== -1) {
-      node.integrationTestResults[testIndex].status = 'pending';
+      // Update test status
+      node.integrationTestResults[testIndex] = {
+        ...node.integrationTestResults[testIndex],
+        status: result.passed ? 'passed' : 'failed',
+        message: result.message,
+        duration: testDuration
+      };
+      
+      updateNode({ ...node });
+      
+      // Short delay between tests for UI update
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } catch (error: any) {
+      // Handle test execution error
+      node.integrationTestResults[testIndex] = {
+        ...node.integrationTestResults[testIndex],
+        status: 'failed',
+        message: `Test execution error: ${error.message || String(error)}`
+      };
       updateNode({ ...node });
     }
   }
@@ -314,48 +295,39 @@ export const initNodeForTesting = (
   // Initialize an empty array for integration tests
   updatedNode.integrationTestResults = [];
   
-  if (node.category === 'Integration') {
-    console.log(`Integration node tests available: ${integrationNodeTests.length}`);
-    
-    // Add standard integration tests if this is an Integration category node
-    integrationNodeTests.forEach(test => {
-      updatedNode.integrationTestResults!.push({
-        name: test.name,
-        test: test.category as TestType,
-        status: 'running'
-      });
-      
-      // Log integration test being added
-      console.log(`Added integration test: ${test.name} with category: ${test.category}`);
+  // Run integration tests for all nodes
+  console.log(`Integration tests available: ${integrationNodeTests.length}`);
+  
+  // Add all integration tests for every node
+  integrationNodeTests.forEach(test => {
+    updatedNode.integrationTestResults!.push({
+      name: test.name,
+      test: test.category as TestType,
+      status: 'running'
     });
     
-    // If we have no integration tests, add placeholder tests
-    if (integrationNodeTests.length === 0) {
-      console.log('No integration tests found, adding placeholders');
-      
-      // Add placeholder tests for integration capabilities
-      updatedNode.integrationTestResults.push({
-        name: 'Integration Capabilities',
-        test: 'integration' as TestType,
-        status: 'pending',
-        message: 'Tests that the node defines its integration capabilities'
-      });
-      
-      // Add placeholder tests for integration requirements
-      updatedNode.integrationTestResults.push({
-        name: 'Integration Requirements',
-        test: 'integration' as TestType,
-        status: 'pending',
-        message: 'Tests that the node specifies its requirements'
-      });
-    }
-  } else {
-    // Add a special empty test for non-Integration nodes
+    // Log integration test being added
+    console.log(`Added integration test: ${test.name} with category: ${test.category}`);
+  });
+  
+  // If we have no integration tests, add placeholder tests
+  if (integrationNodeTests.length === 0) {
+    console.log('No integration tests found, adding placeholders');
+    
+    // Add placeholder tests for integration capabilities
     updatedNode.integrationTestResults.push({
-      name: 'Not Applicable',
+      name: 'Integration Capabilities',
       test: 'integration' as TestType,
       status: 'pending',
-      message: 'This node is not in the Integration category'
+      message: 'Tests that the node defines its integration capabilities'
+    });
+    
+    // Add placeholder tests for integration requirements
+    updatedNode.integrationTestResults.push({
+      name: 'Integration Requirements',
+      test: 'integration' as TestType,
+      status: 'pending',
+      message: 'Tests that the node specifies its requirements'
     });
   }
   
