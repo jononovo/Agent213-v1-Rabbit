@@ -2,7 +2,8 @@
  * Workflow Execution Server
  * 
  * This is a separate Express server dedicated to handling workflow execution.
- * It provides endpoints for queuing workflows and checking execution status.
+ * It provides endpoints for queuing workflows, checking execution status,
+ * and now directly handling webhook responses.
  */
 
 import express, { Request, Response, NextFunction } from 'express';
@@ -11,10 +12,19 @@ import bodyParser from 'body-parser';
 import { createServer } from 'http';
 import { workflowQueue } from './simpleQueue';
 import { executeWorkflow } from './workflowEngine';
+import { v4 as uuidv4 } from 'uuid';
 
 // Create the express app
 const app = express();
 const PORT = process.env.WORKFLOW_PORT || 3002;
+
+// Store pending HTTP responses for webhook processing
+// This allows the Workflow Execution Server to directly respond to webhook requests
+const pendingResponses = new Map<string, {
+  res: Response;
+  timeout: NodeJS.Timeout;
+  workflowId: number;
+}>();
 
 // Set up middleware
 app.use(cors());
@@ -40,7 +50,157 @@ router.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', service: 'workflow-execution' });
 });
 
-// Execute workflow endpoint
+/**
+ * Execute webhook workflow endpoint that can hold the HTTP response
+ * 
+ * This endpoint executes a workflow triggered by a webhook and can
+ * directly respond to the original webhook caller when a send_to_webhook
+ * node with respondToOriginal=true is encountered.
+ */
+router.post('/webhook', async (req: Request, res: Response) => {
+  try {
+    const { workflowId, originalRequest, startNodeId } = req.body;
+    
+    if (!workflowId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Workflow ID is required'
+      });
+    }
+    
+    // Generate request ID for tracking
+    const requestId = uuidv4();
+    
+    // Extract webhook data from the original request
+    const webhookData = {
+      payload: req.body.payload || {},
+      headers: req.body.headers || {},
+      method: req.body.method || 'POST',
+      query: req.body.query || {},
+      params: req.body.params || {},
+      path: req.body.path || '',
+      // Add metadata for webhook response handling
+      requestId,
+      isWebhookRequest: true
+    };
+    
+    console.log(`[Workflow Execution] Webhook request received (ID: ${requestId}) for workflow ${workflowId}`);
+    
+    // Store the response object for later use
+    // Set timeout to automatically respond if no webhook node explicitly responds
+    const timeout = setTimeout(() => {
+      if (pendingResponses.has(requestId)) {
+        const { res } = pendingResponses.get(requestId)!;
+        
+        if (!res.headersSent) {
+          res.status(202).json({
+            success: true,
+            message: "Webhook received and processing started, but no explicit response was sent",
+            requestId
+          });
+        }
+        
+        pendingResponses.delete(requestId);
+        console.log(`[Workflow Execution] Auto-response sent for webhook ${requestId} (timeout reached)`);
+      }
+    }, 10000); // 10 second timeout
+    
+    // Store the response object
+    pendingResponses.set(requestId, { 
+      res, 
+      timeout,
+      workflowId 
+    });
+    
+    // Add job to the queue with the requestId
+    const jobId = await workflowQueue.addJob('execute-workflow', {
+      workflowId,
+      input: webhookData,
+      startNodeId,
+      executionMode: "webhook",
+      metaData: {
+        requestId,
+        isWebhook: true
+      }
+    });
+    
+    console.log(`[Workflow Execution] Webhook workflow queued with job ID: ${jobId}`);
+    
+    // Note: We don't send a response here - it will be sent either by a webhook node
+    // or by the timeout handler above
+  } catch (error) {
+    console.error('[Workflow Execution] Error processing webhook:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+/**
+ * Send a response to a pending webhook request
+ * This is called by send_to_webhook nodes to respond to the original webhook
+ */
+router.post('/webhook-response', async (req: Request, res: Response) => {
+  try {
+    const { requestId, data, statusCode = 200 } = req.body;
+    
+    if (!requestId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Request ID is required'
+      });
+    }
+    
+    // Look up the pending response
+    const pendingResponse = pendingResponses.get(requestId);
+    
+    if (!pendingResponse) {
+      return res.status(404).json({
+        success: false,
+        error: 'No pending response found for this request ID'
+      });
+    }
+    
+    // Clear the timeout
+    clearTimeout(pendingResponse.timeout);
+    
+    // Send the response to the original webhook caller
+    if (!pendingResponse.res.headersSent) {
+      pendingResponse.res.status(statusCode).json(data);
+      console.log(`[Workflow Execution] Webhook response sent for request ${requestId}`);
+    } else {
+      console.log(`[Workflow Execution] Response already sent for request ${requestId}`);
+    }
+    
+    // Clean up
+    pendingResponses.delete(requestId);
+    
+    // Respond to the webhook node
+    res.json({
+      success: true,
+      message: 'Webhook response sent successfully'
+    });
+  } catch (error) {
+    console.error('[Workflow Execution] Error sending webhook response:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+// Get stats about pending webhook responses
+router.get('/webhook-stats', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    pendingCount: pendingResponses.size,
+    pendingIds: Array.from(pendingResponses.keys()),
+    workflowIds: Array.from(pendingResponses.values()).map(pr => pr.workflowId)
+  });
+});
+
+// Standard execute workflow endpoint (for non-webhook workflows)
 router.post('/execute', async (req: Request, res: Response) => {
   try {
     const { workflowId, input, nodeId } = req.body;
@@ -136,5 +296,5 @@ export function startWorkflowExecutionServer() {
   return server;
 }
 
-// Export server for testing and integration
-export { app, server };
+// Export server, app, and the pending responses map for testing and integration
+export { app, server, pendingResponses };
