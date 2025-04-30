@@ -6,6 +6,7 @@
  */
 import { loadNodeTests } from '../../../lib/nodeTestLoader';
 import { NodeTest, NodeTestResult } from '../../../nodes/nodeTestsStandard';
+import { standardNodeTests, integrationNodeTests } from './standardTests';
 
 // Types imported from the main page
 export interface NodeType {
