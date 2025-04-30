@@ -1,8 +1,12 @@
 /**
- * Webhook Handler
+ * Webhook Handler - DEPRECATED
  * 
- * This module handles webhook requests and responses for the Workflow Execution Server.
- * It maintains a registry of pending webhook responses and manages timeouts.
+ * This module previously handled webhook responses for the Workflow Execution Server.
+ * In the new three-server architecture, webhook handling has been moved to the
+ * Integration Engine Server, as external communication responsibility belongs there.
+ * 
+ * This file is maintained for reference only and should be removed in future cleanup.
+ * All webhook functionality should be implemented in integration-engine/webhooks instead.
  */
 
 import { Response } from 'express';

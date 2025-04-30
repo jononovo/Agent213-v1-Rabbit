@@ -1,8 +1,12 @@
 /**
- * Webhook Controller
+ * Webhook Controller - DEPRECATED
  * 
- * This module handles incoming webhook requests for the Workflow Execution Server.
- * It provides the API endpoint for receiving and processing webhook requests.
+ * This module previously handled webhook requests for the Workflow Execution Server.
+ * In the new three-server architecture, webhook handling has been moved to the
+ * Integration Engine Server, as external communication responsibility belongs there.
+ * 
+ * This file is maintained for reference only and should be removed in future cleanup.
+ * All webhook functionality should be implemented in integration-engine/webhooks instead.
  */
 
 import { Request, Response } from 'express';
