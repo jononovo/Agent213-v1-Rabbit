@@ -12,6 +12,8 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import { integrationEngine } from './src/integrationEngine';
 import { log } from '../server/vite';
+import { handleWebhookRequest, handleWebhookResponse } from './webhooks/webhookController';
+import { getWebhookStats } from './webhooks/webhookHandler';
 
 // Create Express app
 const app: Express = express();
@@ -28,13 +30,35 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+// Create router for API routes
+const router = express.Router();
+
 // Health check endpoint
-app.get('/health', (req: Request, res: Response) => {
+router.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', server: 'integration-engine' });
 });
 
+// === Webhook Endpoints ===
+
+// Handle incoming webhooks with custom paths
+router.all('/webhooks/:path', handleWebhookRequest);
+
+// Handle incoming webhooks with direct workflow/node targeting
+router.all('/webhooks/workflow/:workflowId/node/:nodeId', handleWebhookRequest);
+
+// Send response to a pending webhook
+router.post('/webhook-response', handleWebhookResponse);
+
+// Get stats about pending webhook responses
+router.get('/webhook-stats', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    ...getWebhookStats()
+  });
+});
+
 // Default route - forward to integration engine
-app.all('*', async (req: Request, res: Response) => {
+router.all('*', async (req: Request, res: Response) => {
   try {
     // Get the path from the request
     const path = req.path;
@@ -60,6 +84,14 @@ app.all('*', async (req: Request, res: Response) => {
       });
     }
   }
+});
+
+// Mount router to /api path
+app.use('/api', router);
+
+// Health check at root level
+app.get('/health', (req: Request, res: Response) => {
+  res.json({ status: 'ok', server: 'integration-engine' });
 });
 
 // Start the server

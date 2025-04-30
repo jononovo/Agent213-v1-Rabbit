@@ -70,7 +70,7 @@ export async function executeWorkflow(job: Job): Promise<WorkflowExecutionOutput
       try {
         await storage.createLog({
           workflowId,
-          agentId: job.data?.agentId || null,
+          agentId: job.data?.agentId || undefined,
           status: 'failed',
           input: job.data?.input || {},
           output: {},
@@ -148,11 +148,11 @@ export async function executeWorkflow(job: Job): Promise<WorkflowExecutionOutput
     try {
       await storage.createLog({
         workflowId,
-        agentId: job.data?.agentId || null,
+        agentId: job.data?.agentId || undefined,
         status: output.status,
         input: job.data?.input || {},
         output: { results: output.results },
-        error: Object.keys(output.errors).length > 0 ? JSON.stringify(output.errors) : null,
+        error: Object.keys(output.errors).length > 0 ? JSON.stringify(output.errors) : undefined,
         executionPath: {
           executionTime: output.executionTime,
           nodeResults: Array.from(context.nodeResults.entries()).reduce((acc: Record<string, any>, [nodeId, result]) => {
