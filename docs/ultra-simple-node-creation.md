@@ -53,10 +53,10 @@ The fastest way to create a new node is to copy one of the node templates:
 1. **Copy the template directory**:
    ```bash
    # For regular processing nodes
-   cp -r client/src/nodes/_node_templates/base_node_template client/src/nodes/Custom/my_new_node
+   cp -r client/src/nodes/_node_templates/base_node_template client/src/nodes/categories/Custom/my_new_node
    
    # For data input/output nodes
-   cp -r client/src/nodes/_node_templates/data_node_template client/src/nodes/Custom/my_data_node
+   cp -r client/src/nodes/_node_templates/data_node_template client/src/nodes/categories/Custom/my_data_node
    ```
 
 2. **Update the file structure** to ensure you have these files:
