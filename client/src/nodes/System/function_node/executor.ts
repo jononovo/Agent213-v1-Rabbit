@@ -121,17 +121,12 @@ function process(input, data) {
       const functionWrapper = useAsyncFunction
         ? `
           ${code}
-          // Make sure we're calling an async function
+          // Simple validation
           if (typeof process !== 'function') {
             throw new Error('Process function is not defined');
           }
-          // Check if process is async
-          if (process.constructor.name === 'AsyncFunction') {
-            return await process(input, data);
-          } else {
-            // If not async but useAsyncFunction is true, wrap in Promise.resolve
-            return Promise.resolve(process(input, data));
-          }
+          // For async mode, we always return a promise (handled by the async IIFE wrapper)
+          return process(input, data);
         `
         : `
           ${code}
@@ -142,13 +137,26 @@ function process(input, data) {
         `;
       
       // Create the function with safety precautions and data parameter
-      processFunction = new Function('input', 'data', `
+      // For async function, we need to wrap it in an async IIFE
+      const functionTemplate = useAsyncFunction
+        ? `
+        return (async function() {
+          try {
+            ${functionWrapper}
+          } catch (error) {
+            return { __error__: true, message: error.message, stack: error.stack };
+          }
+        })();
+        `
+        : `
         try {
           ${functionWrapper}
         } catch (error) {
           return { __error__: true, message: error.message, stack: error.stack };
         }
-      `);
+        `;
+        
+      processFunction = new Function('input', 'data', functionTemplate);
     } catch (codeError: any) {
       return {
         items: input.items,
@@ -197,9 +205,10 @@ function process(input, data) {
               
               if (result && result.__error__ === true) {
                 // Function returned an error object
+                const errorMessage = result.message || 'Unknown error in function execution';
                 resolve({
-                  json: handleError(new Error(result.message)),
-                  text: `Error: ${result.message}`
+                  json: handleError(new Error(errorMessage)),
+                  text: `Error: ${errorMessage}`
                 });
               } else {
                 // Function executed successfully
