@@ -211,27 +211,27 @@ export const metadataCompletenessTest: NodeTest = {
   category: 'definition',
   run: async (): Promise<NodeTestResult> => {
     try {
-      const nodeType = window.__currentTestingNode?.type;
-      const category = window.__currentTestingNode?.category;
-      
-      if (!nodeType || !category) {
+      // Get node type using helper
+      const result = getNodeType();
+      if (!result.passed) {
         return {
           passed: false,
-          message: 'Cannot determine node type or category for testing'
+          message: result.message || 'Unknown error'
         };
       }
       
-      // Get definition
-      let definition;
-      try {
-        const definitionModule = await import(/* @vite-ignore */ `../../../nodes/${category}/${nodeType}/definition.ts`);
-        definition = definitionModule.definition;
-      } catch (e) {
+      const nodeType = result.nodeType!;
+      
+      // Get definition using the helper function
+      const defResult = await getNodeDefinition(nodeType);
+      if (!defResult.passed) {
         return {
           passed: false,
-          message: 'Failed to import definition module'
+          message: defResult.message || 'Failed to get definition'
         };
       }
+      
+      const definition = defResult.definition;
       
       // Required metadata fields
       const requiredFields = ['type', 'name', 'description', 'category', 'version'];
@@ -272,27 +272,27 @@ export const portDefinitionTest: NodeTest = {
   category: 'definition',
   run: async (): Promise<NodeTestResult> => {
     try {
-      const nodeType = window.__currentTestingNode?.type;
-      const category = window.__currentTestingNode?.category;
-      
-      if (!nodeType || !category) {
+      // Get node type using helper
+      const result = getNodeType();
+      if (!result.passed) {
         return {
           passed: false,
-          message: 'Cannot determine node type or category for testing'
+          message: result.message || 'Unknown error'
         };
       }
       
-      // Get definition
-      let definition;
-      try {
-        const definitionModule = await import(/* @vite-ignore */ `../../../nodes/${category}/${nodeType}/definition.ts`);
-        definition = definitionModule.definition;
-      } catch (e) {
+      const nodeType = result.nodeType!;
+      
+      // Get definition using the helper function
+      const defResult = await getNodeDefinition(nodeType);
+      if (!defResult.passed) {
         return {
           passed: false,
-          message: 'Failed to import definition module'
+          message: defResult.message || 'Failed to get definition'
         };
       }
+      
+      const definition = defResult.definition;
       
       // Check inputs
       if (!definition.inputs || typeof definition.inputs !== 'object') {
@@ -359,34 +359,27 @@ export const executorSignatureTest: NodeTest = {
   category: 'execution',
   run: async (): Promise<NodeTestResult> => {
     try {
-      const nodeType = window.__currentTestingNode?.type;
-      const category = window.__currentTestingNode?.category;
-      
-      if (!nodeType || !category) {
+      // Get node type using helper
+      const result = getNodeType();
+      if (!result.passed) {
         return {
           passed: false,
-          message: 'Cannot determine node type or category for testing'
+          message: result.message || 'Unknown error'
         };
       }
       
-      // Get executor
-      let execute;
-      try {
-        const executorModule = await import(/* @vite-ignore */ `../../../nodes/${category}/${nodeType}/executor.ts`);
-        execute = executorModule.execute;
-      } catch (e) {
+      const nodeType = result.nodeType!;
+      
+      // Get executor using the helper function
+      const execResult = await getNodeExecutor(nodeType);
+      if (!execResult.passed) {
         return {
           passed: false,
-          message: 'Failed to import executor module'
+          message: execResult.message || 'Failed to get executor'
         };
       }
       
-      if (!execute || typeof execute !== 'function') {
-        return {
-          passed: false,
-          message: 'Node does not export an execute function'
-        };
-      }
+      const execute = execResult.execute!;
       
       // Function.length reveals the number of formal parameters
       if (execute.length < 1) {
@@ -418,15 +411,16 @@ export const outputFormatTest: NodeTest = {
   category: 'execution',
   run: async (): Promise<NodeTestResult> => {
     try {
-      const nodeType = window.__currentTestingNode?.type;
-      const category = window.__currentTestingNode?.category;
-      
-      if (!nodeType || !category) {
+      // Get node type using helper
+      const typeResult = getNodeType();
+      if (!typeResult.passed) {
         return {
           passed: false,
-          message: 'Cannot determine node type or category for testing'
+          message: typeResult.message || 'Unknown error'
         };
       }
+      
+      const nodeType = typeResult.nodeType!;
       
       // Call the node debug API to execute the node with minimal input
       const response = await fetch('/api/node-debug', {
@@ -456,15 +450,15 @@ export const outputFormatTest: NodeTest = {
         };
       }
       
-      const result = await response.json();
+      const apiResult = await response.json();
       
       // Some nodes might return errors with valid inputs
-      if (!result.success || !result.result) {
+      if (!apiResult.success || !apiResult.result) {
         // If there's an explicit error message, the node may require specific inputs
-        if (result.error) {
+        if (apiResult.error) {
           return {
             passed: true,
-            message: `Node requires specific inputs, returning a proper error: ${result.error}`
+            message: `Node requires specific inputs, returning a proper error: ${apiResult.error}`
           };
         }
         
@@ -475,7 +469,7 @@ export const outputFormatTest: NodeTest = {
       }
       
       // Check basic structure - we accept either items array or output object with items
-      const output = result.result;
+      const output = apiResult.result;
       const hasItems = (output.items && Array.isArray(output.items)) || 
                      (output.output && output.output.items && Array.isArray(output.output.items));
                      
@@ -510,15 +504,16 @@ export const errorHandlingTest: NodeTest = {
   category: 'error-handling',
   run: async (): Promise<NodeTestResult> => {
     try {
-      const nodeType = window.__currentTestingNode?.type;
-      const category = window.__currentTestingNode?.category;
-      
-      if (!nodeType || !category) {
+      // Get node type using helper
+      const typeResult = getNodeType();
+      if (!typeResult.passed) {
         return {
           passed: false,
-          message: 'Cannot determine node type or category for testing'
+          message: typeResult.message || 'Unknown error'
         };
       }
+      
+      const nodeType = typeResult.nodeType!;
       
       // Call the node-debug API with explicitly invalid input to trigger an error
       const response = await fetch('/api/node-debug', {
@@ -593,15 +588,18 @@ export const integrationCapabilitiesTest: NodeTest = {
   category: 'integration',
   run: async (): Promise<NodeTestResult> => {
     try {
-      const nodeType = window.__currentTestingNode?.type;
-      const category = window.__currentTestingNode?.category;
-      
-      if (!nodeType || !category) {
+      // Get node type using helper
+      const typeResult = getNodeType();
+      if (!typeResult.passed) {
         return {
           passed: false,
-          message: 'Cannot determine node type or category for testing'
+          message: typeResult.message || 'Unknown error'
         };
       }
+      
+      const nodeType = typeResult.nodeType!;
+      // Category is used to skip non-integration nodes
+      const category = window.__currentTestingNode?.category;
       
       // Skip this test if not an integration node
       if (category !== 'Integration') {
@@ -661,15 +659,18 @@ export const integrationRequirementsTest: NodeTest = {
   category: 'integration',
   run: async (): Promise<NodeTestResult> => {
     try {
-      const nodeType = window.__currentTestingNode?.type;
-      const category = window.__currentTestingNode?.category;
-      
-      if (!nodeType || !category) {
+      // Get node type using helper
+      const typeResult = getNodeType();
+      if (!typeResult.passed) {
         return {
           passed: false,
-          message: 'Cannot determine node type or category for testing'
+          message: typeResult.message || 'Unknown error'
         };
       }
+      
+      const nodeType = typeResult.nodeType!;
+      // Category is used to skip non-integration nodes
+      const category = window.__currentTestingNode?.category;
       
       // Skip this test if not an integration node
       if (category !== 'Integration') {
