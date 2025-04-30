@@ -212,8 +212,26 @@ const TestResultsPanel: React.FC<TestResultsPanelProps> = ({
               </AlertDescription>
             </Alert>
             
-            {selectedNode.integrationTestResults && selectedNode.integrationTestResults.length > 0 && (
-              <ScrollArea className="h-[400px] pr-4 mt-4">
+            <div className="mt-4">
+              {/* Always add "Not Applicable" test for non-Integration nodes */}
+              {selectedNode.category !== 'Integration' && (
+                <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
+                  <div className="mt-0.5">
+                    {getTestStatusIcon('pending')}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-medium">Not Applicable</h3>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      This node is not in the Integration category
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Show integration test results if available */}
+              {selectedNode.integrationTestResults && selectedNode.integrationTestResults.length > 0 && (
                 <div className="space-y-4">
                   {selectedNode.integrationTestResults.map((testResult: TestResult, index: number) => (
                     <div key={`int-test-${index}`} className="flex items-start space-x-3 pb-3 border-b border-gray-100">
@@ -235,8 +253,8 @@ const TestResultsPanel: React.FC<TestResultsPanelProps> = ({
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
-            )}
+              )}
+            </div>
           </TabsContent>
           
           <TabsContent value="custom">
