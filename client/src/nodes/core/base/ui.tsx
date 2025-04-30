@@ -875,4 +875,11 @@ function BaseNode({
   );
 }
 
-export default memo(BaseNode);
+// Create a memoized version of the BaseNode
+const MemoizedBaseNode = memo(BaseNode);
+
+// Default export for direct imports
+export default MemoizedBaseNode;
+
+// Named export for consistent import pattern
+export { MemoizedBaseNode as BaseNode };

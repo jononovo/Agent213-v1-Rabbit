@@ -1,12 +1,8 @@
 /**
- * Base Node Implementation
+ * Base Node Exports
  * 
- * This is the base node implementation that serves as a
- * foundation for node types and as a fallback for node types
- * without specific implementations.
+ * This file exports the base node components that serve as the foundation
+ * for all other node types.
  */
 
-import BaseNode from './ui';
-
-export { BaseNode };
-export default BaseNode;
+export { default as BaseNode } from './ui';
