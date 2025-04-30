@@ -20,11 +20,16 @@ import { registerPendingResponse, sendWebhookResponse } from './webhookHandler';
  */
 export async function handleWebhookRequest(req: Request, res: Response): Promise<void> {
   try {
-    // Direct workflow/node webhook (custom path handling is now in the route handler)
-    const workflowId = parseInt(req.params.workflowId || req.body.workflowId, 10);
-    const nodeId = req.params.nodeId || req.body.startNodeId;
+    console.log(`[Integration Engine] Received webhook request at path: ${req.path}`);
+    console.log(`[Integration Engine] Method: ${req.method}, Content-Type: ${req.headers['content-type']}`);
     
+    // Extract required parameters
+    const workflowId = parseInt(req.params.workflowId, 10);
+    const nodeId = req.params.nodeId;
+    
+    // Validate parameters
     if (isNaN(workflowId) || !nodeId) {
+      console.error(`[Integration Engine] Invalid webhook parameters: workflowId=${req.params.workflowId}, nodeId=${nodeId}`);
       res.status(400).json({
         success: false,
         message: 'Missing required fields: workflowId and nodeId are required'
@@ -32,19 +37,33 @@ export async function handleWebhookRequest(req: Request, res: Response): Promise
       return;
     }
     
-    // Generate a unique request ID if not provided
-    const requestId = req.body.requestId || `webhook-${uuidv4()}`;
+    // Generate a unique request ID
+    const requestId = `webhook-${uuidv4()}`;
     
     console.log(`[Integration Engine] Processing webhook request ${requestId} for workflow ${workflowId}, node ${nodeId}`);
     
     // Register the response for later use
     registerPendingResponse(requestId, res, workflowId);
     
+    // Extract payload from the request body
+    let payload;
+    if (req.headers['content-type']?.includes('application/json')) {
+      // For JSON content, use the parsed body
+      payload = req.body;
+    } else {
+      // For other content types, preserve the raw body
+      payload = {
+        _raw: true,
+        body: req.body,
+        contentType: req.headers['content-type']
+      };
+    }
+    
     // Prepare the webhook request
     const webhookData: WebhookRequest = {
       workflowId,
       startNodeId: nodeId,
-      payload: req.body.payload || req.body,
+      payload,
       headers: req.headers as Record<string, string | string[] | undefined>,
       method: req.method,
       query: req.query,

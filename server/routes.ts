@@ -3164,17 +3164,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // These routes redirect to the Integration Engine for direct webhook access
   
   /**
-   * Helper to redirect webhook requests to the Integration Engine
-   * This simplifies and centralizes the redirection logic
+   * Helper to forward webhook requests to the Integration Engine
+   * This simplifies and centralizes the webhook forwarding logic
    */
-  function redirectWebhookToIntegrationEngine(req: Request, res: Response, targetPath: string) {
-    console.log(`Redirecting webhook to Integration Engine: ${targetPath}`);
+  async function redirectWebhookToIntegrationEngine(req: Request, res: Response, targetPath: string) {
+    console.log(`Forwarding webhook to Integration Engine: ${targetPath}`);
     
     // We include the original method and headers
     const targetUrl = `http://localhost:3001${targetPath}`;
     
-    // Perform the redirect with status 307 (Temporary Redirect) to preserve the HTTP method
-    res.redirect(307, targetUrl);
+    try {
+      // Create options for the forwarded request
+      const fetchOptions: any = {
+        method: req.method,
+        headers: {
+          'Content-Type': req.headers['content-type'] || 'application/json'
+        }
+      };
+      
+      // Add body if present
+      if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+        fetchOptions.body = JSON.stringify(req.body);
+      }
+      
+      // Forward the request to the integration engine
+      const response = await fetch(targetUrl, fetchOptions);
+      
+      // Get response data
+      const contentType = response.headers.get('content-type');
+      let responseData;
+      
+      if (contentType && contentType.includes('application/json')) {
+        responseData = await response.json();
+      } else {
+        responseData = await response.text();
+      }
+      
+      // Forward the integration engine's response back to the client
+      res.status(response.status);
+      
+      // Set response headers
+      for (const [key, value] of response.headers.entries()) {
+        // Skip headers that Express will set
+        if (!['content-length', 'connection'].includes(key.toLowerCase())) {
+          res.setHeader(key, value);
+        }
+      }
+      
+      // Send the response
+      if (typeof responseData === 'string') {
+        res.send(responseData);
+      } else {
+        res.json(responseData);
+      }
+    } catch (error) {
+      console.error('Error forwarding webhook to Integration Engine:', error);
+      
+      // Send error response
+      res.status(500).json({
+        success: false,
+        message: 'Error forwarding webhook to Integration Engine',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
   }
   
   // IMPORTANT: Order of routes matters - most specific routes must come first

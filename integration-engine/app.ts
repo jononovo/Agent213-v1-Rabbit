@@ -124,6 +124,66 @@ router.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', server: 'integration-engine' });
 });
 
+// Debug route to see configured routes
+router.get('/debug/routes', (req: Request, res: Response) => {
+  // Collect registered routes
+  const routes: any[] = [];
+  
+  // Add direct routes
+  app._router.stack.forEach((middleware: any) => {
+    if (middleware.route) {
+      const path = middleware.route.path;
+      const methods = Object.keys(middleware.route.methods)
+        .filter((m: string) => middleware.route.methods[m])
+        .map((m: string) => m.toUpperCase());
+      
+      routes.push({ path, methods });
+    } else if (middleware.name === 'router') {
+      middleware.handle.stack.forEach((handler: any) => {
+        if (handler.route) {
+          const path = '/api' + handler.route.path;
+          const methods = Object.keys(handler.route.methods)
+            .filter((m: string) => handler.route.methods[m])
+            .map((m: string) => m.toUpperCase());
+          
+          routes.push({ path, methods });
+        }
+      });
+    }
+  });
+  
+  // Sort routes by path
+  routes.sort((a, b) => a.path.localeCompare(b.path));
+  
+  res.json({
+    success: true,
+    routes
+  });
+});
+
+// Test webhook endpoint
+router.post('/test-webhook', (req: Request, res: Response) => {
+  try {
+    const { workflowId, nodeId, payload } = req.body;
+    
+    res.json({
+      success: true,
+      message: 'Test webhook available',
+      status: 'Use direct webhook endpoints for testing',
+      testInstructions: {
+        direct: `curl -X POST http://localhost:3001/webhooks/workflow/${workflowId || '1'}/node/${nodeId || 'webhook_trigger-1'} -H "Content-Type: application/json" -d '${JSON.stringify(payload || { test: true })}'`,
+        legacy: `curl -X POST http://localhost:5000/api/webhooks/workflow/${workflowId || '1'}/node/${nodeId || 'webhook_trigger-1'} -H "Content-Type: application/json" -d '${JSON.stringify(payload || { test: true })}'`
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error generating test instructions',
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
 // Webhook response endpoint
 router.post('/webhook-response', handleWebhookResponse);
 
