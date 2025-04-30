@@ -116,8 +116,24 @@ export const runStandardTests = async (
   }
   
   // Run integration tests if this is an Integration node
-  if (node.category === 'Integration' && node.integrationTestResults && node.integrationTestResults.length > 0) {
+  if (node.category === 'Integration') {
     console.log(`Running integration tests for node ${node.type}`);
+    
+    // Initialize integration test results array if it doesn't exist yet
+    if (!node.integrationTestResults || node.integrationTestResults.length === 0) {
+      console.log('Initializing integration test results');
+      node.integrationTestResults = [];
+      integrationNodeTests.forEach(test => {
+        node.integrationTestResults!.push({
+          name: test.name,
+          test: test.category as TestType,
+          status: 'pending'
+        });
+      });
+      updateNode({ ...node });
+    }
+    
+    console.log(`Found ${integrationNodeTests.length} integration tests to run`);
     
     for (let i = 0; i < integrationNodeTests.length; i++) {
       const test = integrationNodeTests[i];
