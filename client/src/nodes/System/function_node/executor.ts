@@ -54,7 +54,7 @@ const resultCache = new Map<string, any>();
  */
 export async function execute(
   nodeData: FunctionNodeData,
-  input: NodeExecutionData
+  input?: NodeExecutionData
 ): Promise<NodeExecutionData> {
   const startTime = new Date();
   const meta = {
@@ -65,6 +65,18 @@ export async function execute(
     errorMessage: '',
     cached: false
   };
+  
+  // Validate input - ensure we have valid items to process
+  if (!input || !input.items || !Array.isArray(input.items)) {
+    // Create a default input with a single empty item if none is provided
+    input = {
+      items: [{ json: {} }],
+      meta: {
+        startTime,
+        endTime: new Date()
+      }
+    };
+  }
   
   try {
     // Extract settings from node data with defaults
@@ -177,10 +189,23 @@ function process(input, data) {
       return new Promise((resolve) => {
         // Create timeout
         const timeoutId = setTimeout(() => {
-          resolve({
-            json: handleError(new Error(`Function execution timed out after ${timeout}ms`)),
-            text: `Execution timed out after ${timeout}ms`
-          });
+          const errorMessage = `Function execution timed out after ${timeout}ms`;
+          if (errorHandling === 'return') {
+            resolve({
+              json: { error: true, message: errorMessage },
+              text: `Error: ${errorMessage}`
+            });
+          } else if (errorHandling === 'null') {
+            resolve({
+              json: null,
+              text: `Error handled as null: ${errorMessage}`
+            });
+          } else {
+            resolve({
+              json: { error: true, message: errorMessage },
+              text: `Error: ${errorMessage}`
+            });
+          }
         }, timeout);
         
         // Handle errors according to configuration
@@ -206,10 +231,24 @@ function process(input, data) {
               if (result && result.__error__ === true) {
                 // Function returned an error object
                 const errorMessage = result.message || 'Unknown error in function execution';
-                resolve({
-                  json: handleError(new Error(errorMessage)),
-                  text: `Error: ${errorMessage}`
-                });
+                // In return mode, don't call handleError again as it already returns an error object
+                if (errorHandling === 'return') {
+                  resolve({
+                    json: { error: true, message: errorMessage },
+                    text: `Error: ${errorMessage}`
+                  });
+                } else if (errorHandling === 'null') {
+                  resolve({
+                    json: null,
+                    text: `Error handled as null: ${errorMessage}`
+                  });
+                } else {
+                  // Default throw behavior
+                  resolve({
+                    json: { error: true, message: errorMessage },
+                    text: `Error: ${errorMessage}`
+                  });
+                }
               } else {
                 // Function executed successfully
                 resolve({
@@ -221,18 +260,46 @@ function process(input, data) {
             .catch(execError => {
               // Execution error
               clearTimeout(timeoutId);
-              resolve({
-                json: handleError(execError),
-                text: `Error: ${execError.message}`
-              });
+              const errorMessage = execError.message || 'Unknown execution error';
+              
+              if (errorHandling === 'return') {
+                resolve({
+                  json: { error: true, message: errorMessage, stack: execError.stack },
+                  text: `Error: ${errorMessage}`
+                });
+              } else if (errorHandling === 'null') {
+                resolve({
+                  json: null,
+                  text: `Error handled as null: ${errorMessage}`
+                });
+              } else {
+                resolve({
+                  json: { error: true, message: errorMessage },
+                  text: `Error: ${errorMessage}`
+                });
+              }
             });
         } catch (syncError: any) {
           // Sync execution error
           clearTimeout(timeoutId);
-          resolve({
-            json: handleError(syncError),
-            text: `Error: ${syncError.message}`
-          });
+          const errorMessage = syncError.message || 'Unknown synchronous error';
+          
+          if (errorHandling === 'return') {
+            resolve({
+              json: { error: true, message: errorMessage, stack: syncError.stack },
+              text: `Error: ${errorMessage}`
+            });
+          } else if (errorHandling === 'null') {
+            resolve({
+              json: null,
+              text: `Error handled as null: ${errorMessage}`
+            });
+          } else {
+            resolve({
+              json: { error: true, message: errorMessage },
+              text: `Error: ${errorMessage}`
+            });
+          }
         }
       });
     };
@@ -268,31 +335,49 @@ function process(input, data) {
       }
     };
     
-    // Store in cache if caching is enabled
-    if (cacheResults && !hasErrors) {
-      const cacheKey = JSON.stringify({
-        code,
-        inputs: input.items.map(item => item.json)
-      });
-      
-      resultCache.set(cacheKey, JSON.parse(JSON.stringify(executionResult)));
-      
-      // Limit cache size to prevent memory issues
-      if (resultCache.size > 100) {
-        // Delete oldest entry - crude but simple approach
-        const firstKey = resultCache.keys().next().value;
-        if (firstKey) resultCache.delete(firstKey);
+    // Store in cache if caching is enabled and input is valid
+    if (cacheResults && !hasErrors && input && input.items && Array.isArray(input.items)) {
+      try {
+        const cacheKey = JSON.stringify({
+          code,
+          inputs: input.items.map(item => item?.json || {})
+        });
+        
+        resultCache.set(cacheKey, JSON.parse(JSON.stringify(executionResult)));
+        
+        // Limit cache size to prevent memory issues
+        if (resultCache.size > 100) {
+          // Delete oldest entry - crude but simple approach
+          const firstKey = resultCache.keys().next().value;
+          if (firstKey) resultCache.delete(firstKey);
+        }
+      } catch (cacheError) {
+        console.warn('Cache error in function_node:', cacheError);
+        // Continue execution even if caching fails
       }
     }
     
     return executionResult;
   } catch (error: any) {
     // Catch any unexpected errors in the executor itself
-    return {
-      items: input.items.map((item: WorkflowItem) => ({
+    let items = [];
+    
+    // Safely create error items - handle case where input might be invalid
+    if (input && input.items && Array.isArray(input.items)) {
+      items = input.items.map((item: WorkflowItem) => ({
         json: { error: true, message: error.message },
         text: `Error: ${error.message}`
-      })),
+      }));
+    } else {
+      // If input is not valid, create a single error item
+      items = [{
+        json: { error: true, message: error.message },
+        text: `Error: ${error.message}`
+      }];
+    }
+    
+    return {
+      items,
       meta: {
         ...meta,
         endTime: new Date(),
