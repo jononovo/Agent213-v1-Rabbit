@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { NodeProps } from 'reactflow';
-import { BaseNode } from '@/nodes/Base';
+import { BaseNode } from '@/nodes/core/base';
 import { Package } from 'lucide-react'; // Default icon, change as needed
 import { BaseNodeTemplateData, defaultData } from './definition';
 

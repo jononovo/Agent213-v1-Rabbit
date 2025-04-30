@@ -121,17 +121,17 @@ export async function loadNodeComponent(nodeType: string): Promise<any> {
   
   if (!node) {
     console.warn(`Node ${nodeType} not found in registry, using BaseNode`);
-    const { default: BaseNode } = await import('../nodes/Base/ui');
+    const { BaseNode } = await import('../nodes/core/base');
     return BaseNode;
   }
   
   try {
     // Load UI component directly from ui.tsx using the folder from registry
-    const uiModule = await import(/* @vite-ignore */ `../nodes/${node.folderPath}/${nodeType}/ui`);
+    const uiModule = await import(/* @vite-ignore */ `../nodes/categories/${node.folderPath}/${nodeType}/ui`);
     return uiModule.default;
   } catch (error) {
     console.warn(`Failed to load UI for ${nodeType}, using BaseNode`);
-    const { default: BaseNode } = await import('../nodes/Base/ui');
+    const { BaseNode } = await import('../nodes/core/base');
     return BaseNode;
   }
 }
@@ -163,10 +163,10 @@ async function discoverNodeDefinitions(): Promise<void> {
     let count = 0;
     
     // Use static patterns for import.meta.glob (it doesn't support dynamic templates)
-    const systemDefinitions = import.meta.glob('../nodes/System/*/definition.ts', { eager: true });
-    const customDefinitions = import.meta.glob('../nodes/Custom/*/definition.ts', { eager: true });
-    const integrationDefinitions = import.meta.glob('../nodes/Integration/*/definition.ts', { eager: true });
-    const agentsDefinitions = import.meta.glob('../nodes/Agents/*/definition.ts', { eager: true });
+    const systemDefinitions = import.meta.glob('../nodes/categories/System/*/definition.ts', { eager: true });
+    const customDefinitions = import.meta.glob('../nodes/categories/Custom/*/definition.ts', { eager: true });
+    const integrationDefinitions = import.meta.glob('../nodes/categories/Integration/*/definition.ts', { eager: true });
+    const agentsDefinitions = import.meta.glob('../nodes/categories/Agents/*/definition.ts', { eager: true });
     
     // Process each folder with its corresponding definitions
     count += processDefinitions('System', systemDefinitions);
@@ -363,7 +363,7 @@ async function loadNodeExecutors(): Promise<void> {
   
   for (const nodeType of nodeTypes) {
     const node = nodeRegistry.get(nodeType)!;
-    const executorPath = `../nodes/${node.folderPath}/${nodeType}/executor`;
+    const executorPath = `../nodes/categories/${node.folderPath}/${nodeType}/executor`;
     
     try {
       // Dynamically import the executor
@@ -644,8 +644,8 @@ export function getSchedulerProviders(): RegisteredNode[] {
  */
 export function getNodeExecutorPath(nodeType: string): string {
   const node = nodeRegistry.get(nodeType);
-  if (!node) return `../nodes/System/${nodeType}/executor`;
-  return `../nodes/${node.folderPath}/${nodeType}/executor`;
+  if (!node) return `../nodes/categories/System/${nodeType}/executor`;
+  return `../nodes/categories/${node.folderPath}/${nodeType}/executor`;
 }
 
 /**
@@ -653,8 +653,8 @@ export function getNodeExecutorPath(nodeType: string): string {
  */
 export function getNodeDefinitionPath(nodeType: string): string {
   const node = nodeRegistry.get(nodeType);
-  if (!node) return `../nodes/System/${nodeType}/definition`;
-  return `../nodes/${node.folderPath}/${nodeType}/definition`;
+  if (!node) return `../nodes/categories/System/${nodeType}/definition`;
+  return `../nodes/categories/${node.folderPath}/${nodeType}/definition`;
 }
 
 /**
@@ -662,8 +662,8 @@ export function getNodeDefinitionPath(nodeType: string): string {
  */
 export function getNodeUIPath(nodeType: string): string {
   const node = nodeRegistry.get(nodeType);
-  if (!node) return `../nodes/System/${nodeType}/ui`;
-  return `../nodes/${node.folderPath}/${nodeType}/ui`;
+  if (!node) return `../nodes/categories/System/${nodeType}/ui`;
+  return `../nodes/categories/${node.folderPath}/${nodeType}/ui`;
 }
 
 // Note: The registry is no longer initialized automatically on module import

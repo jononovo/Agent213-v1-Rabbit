@@ -10,7 +10,7 @@
 
 import { z } from 'zod';
 import { Send } from 'lucide-react';
-import { NodeDefinition } from '../../../core/types/nodeDefinitions';
+import { NodeDefinition } from '../../utils';
 
 // Default configuration for the node
 const defaultData = {

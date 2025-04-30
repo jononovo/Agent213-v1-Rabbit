@@ -11,7 +11,7 @@ import { Globe } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 // Import the BaseNode component
-import { BaseNode } from '@/nodes/Base';
+import { BaseNode } from '@/nodes/core/base';
 
 import { WebhookIntegrationData, defaultData } from './definition';
 

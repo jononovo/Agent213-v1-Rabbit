@@ -41,7 +41,7 @@ import NodeSettingsDrawer from './NodeSettingsDrawer';
 // Import loading placeholder node
 import LoadingNode from '../flow/nodes/LoadingNode';
 // Import base node component as the fallback
-import BaseNode from '../../nodes/Base';
+import { BaseNode } from '../../nodes/core/base';
 
 // Create node types with fallbacks
 const createNodeTypes = () => {

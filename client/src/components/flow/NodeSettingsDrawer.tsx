@@ -356,7 +356,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     if (node?.type === 'function_node' && fieldId === 'selectedTemplate' && value) {
       try {
         // Dynamically import the function node definition which contains our templates
-        import('@/nodes/System/function_node/definition').then((module) => {
+        import('@/nodes/categories/System/function_node/definition').then((module) => {
           // Access the template library and type it properly
           const templateLibrary = module.nodeMetadata?.templateLibrary as Record<string, string> || {};
           

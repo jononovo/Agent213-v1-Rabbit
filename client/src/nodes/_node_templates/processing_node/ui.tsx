@@ -8,7 +8,7 @@
 import React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Code } from 'lucide-react';
-import { BaseNode } from '@/nodes/Base';
+import { BaseNode } from '@/nodes/core/base';
 import { ProcessingNodeData } from './executor';
 
 /**
