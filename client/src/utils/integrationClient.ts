@@ -58,13 +58,11 @@ export async function registerIntegration(
   registrationData: IntegrationRegistrationRequest
 ): Promise<EndpointInfo> {
   try {
-    const response = await apiRequest('/api/integration/register', {
-      method: 'POST',
-      body: JSON.stringify(registrationData),
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await apiRequest(
+      'POST',
+      '/api/integration/register',
+      registrationData
+    );
     
     return response;
   } catch (error) {
@@ -81,13 +79,11 @@ export async function registerIntegration(
  */
 export async function unregisterIntegration(path: string): Promise<{ success: boolean }> {
   try {
-    const response = await apiRequest('/api/integration/unregister', {
-      method: 'POST',
-      body: JSON.stringify({ path }),
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await apiRequest(
+      'POST',
+      '/api/integration/unregister',
+      { path }
+    );
     
     return response;
   } catch (error) {
@@ -103,9 +99,10 @@ export async function unregisterIntegration(path: string): Promise<{ success: bo
  */
 export async function getIntegrationEndpoints(): Promise<EndpointInfo[]> {
   try {
-    const response = await apiRequest('/api/integration/endpoints', {
-      method: 'GET'
-    });
+    const response = await apiRequest(
+      'GET',
+      '/api/integration/endpoints'
+    );
     
     return response;
   } catch (error) {
@@ -120,15 +117,18 @@ export async function getIntegrationEndpoints(): Promise<EndpointInfo[]> {
  * @returns The base URL for constructing webhook or API endpoints
  */
 export function getIntegrationBaseUrl(): string {
-  // Default to current host if in browser
+  // Get the current hostname - only replace the port
+  // This ensures that the webhook URLs will work in any environment
   if (typeof window !== 'undefined') {
     const protocol = window.location.protocol;
-    const host = window.location.host;
-    return `${protocol}//${host}/api/integration`;
+    const hostname = window.location.hostname;
+    
+    // Use port 3001 for the integration engine
+    return `${protocol}//${hostname}:3001`;
   }
   
   // Fallback for non-browser environments (unlikely to be needed)
-  return '/api/integration';
+  return 'http://localhost:3001';
 }
 
 /**
@@ -203,13 +203,11 @@ export async function makeApiRequest(options: ApiRequestOptions): Promise<any> {
     };
     
     // Make the request through our proxy endpoint
-    const response = await apiRequest('/api/integration/request', {
-      method: 'POST',
-      body: JSON.stringify(requestPayload),
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await apiRequest(
+      'POST',
+      '/api/integration/request',
+      requestPayload
+    );
     
     return response;
   } catch (error) {

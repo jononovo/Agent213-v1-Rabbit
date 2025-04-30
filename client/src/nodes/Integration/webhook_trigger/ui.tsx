@@ -17,11 +17,37 @@ export default function WebhookTriggerNode({ id, data }: { id: string, data: any
   const [copied, setCopied] = useState(false);
   const [registered, setRegistered] = useState(false);
   
+  // Get current workflow ID from URL
+  const getWorkflowIdFromUrl = () => {
+    // Extract workflow ID from URL if possible
+    if (typeof window !== 'undefined') {
+      const urlMatch = window.location.pathname.match(/\/workflow-editor\/(\d+)/);
+      if (urlMatch && urlMatch[1]) {
+        return urlMatch[1];
+      }
+    }
+    return null;
+  };
+
   // Register and generate the webhook URL when the component mounts or settings change
   useEffect(() => {
     // Use the custom path if provided, otherwise generate a URL with workflowId and nodeId
     const path = data?.settings?.path;
-    const workflowId = data?.workflowId || 'unknown';
+    
+    // Try to get workflowId from multiple sources in order of reliability:
+    // 1. From data props if available
+    // 2. From URL if this is an edit view
+    // 3. Use 'unknown' as a fallback only if nothing else works
+    let workflowId = data?.workflowId;
+    if (!workflowId || workflowId === 'unknown') {
+      const urlWorkflowId = getWorkflowIdFromUrl();
+      if (urlWorkflowId) {
+        workflowId = urlWorkflowId;
+      } else {
+        workflowId = 'unknown';
+      }
+    }
+    
     const methods = data?.settings?.methods || ['POST'];
     
     // Create a webhook path pattern with webhooks/ prefix
@@ -58,7 +84,7 @@ export default function WebhookTriggerNode({ id, data }: { id: string, data: any
         setRegistered(false);
       });
     }
-  }, [id, data?.settings?.path, data?.workflowId, data?.settings?.methods]);
+  }, [id, data?.settings?.path, data?.workflowId, data?.settings?.methods, getWorkflowIdFromUrl]);
   
   // Function to copy the webhook URL to clipboard
   const copyToClipboard = () => {
