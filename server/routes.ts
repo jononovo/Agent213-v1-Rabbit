@@ -407,6 +407,10 @@ export async function runWorkflow(
  * 
  * This function proxies webhook requests from the main server to the Integration Engine,
  * which is now responsible for webhook handling in the three-server architecture.
+ * 
+ * Note: In the current implementation, we directly import and use the webhook handler
+ * from the Integration Engine to avoid starting a separate server. In a production
+ * environment, these would be separate processes.
  */
 async function forwardWebhookToIntegrationEngine(
   req: Request,
@@ -415,48 +419,19 @@ async function forwardWebhookToIntegrationEngine(
   nodeId: string
 ): Promise<void> {
   try {
-    // Create URL for the Integration Engine's webhook endpoint
-    const integrationEngineUrl = 'http://localhost:3001/api/webhooks/workflow/' + workflowId + '/node/' + nodeId;
+    console.log(`Forwarding webhook for workflow ${workflowId}, node ${nodeId} to Integration Engine`);
     
-    console.log(`Forwarding webhook request to Integration Engine: ${integrationEngineUrl}`);
+    // Direct import of the webhook handler from the Integration Engine
+    // This is a simplified approach for development; in production these would be separate services
+    const { handleWebhookRequest } = await import('../integration-engine/webhooks/webhookController');
     
-    // Extract relevant request components
-    const method = req.method;
-    const headers = { ...req.headers };
+    // Set the necessary parameters that the webhook handler expects
+    req.params.workflowId = workflowId.toString();
+    req.params.nodeId = nodeId;
     
-    // Remove headers that might cause issues in forwarding
-    delete headers.host;
-    delete headers['content-length'];
+    // Directly call the Integration Engine's webhook handler
+    await handleWebhookRequest(req, res);
     
-    // Prepare body data to forward
-    let bodyData: any = null;
-    if (req.body && Object.keys(req.body).length > 0) {
-      bodyData = req.body;
-    }
-    
-    // Create fetch options
-    const fetchOptions: any = {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers
-      },
-      redirect: 'follow'
-    };
-    
-    // Only add body for non-GET requests
-    if (method !== 'GET' && bodyData) {
-      fetchOptions.body = JSON.stringify(bodyData);
-    }
-    
-    // Forward the request to the integration engine
-    const response = await fetch(integrationEngineUrl, fetchOptions);
-    
-    // Read response data
-    const responseData = await response.json();
-    
-    // Forward the integration engine's response back to the original caller
-    res.status(response.status).json(responseData);
   } catch (error) {
     console.error('Error forwarding webhook to Integration Engine:', error);
     res.status(500).json({

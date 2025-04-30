@@ -72,11 +72,11 @@ export async function handleWebhookRequest(req: Request, res: Response): Promise
       console.log(`[Integration Engine] Workflow execution initiated for webhook ${requestId}`);
       
       // If execution failed immediately, send error response
-      if (!result.success) {
+      if (result && typeof result === 'object' && 'success' in result && !result.success) {
         sendWebhookResponse(requestId, {
           success: false,
           message: 'Error executing workflow',
-          error: result.error || 'Unknown error'
+          error: (result as any).error || 'Unknown error'
         }, 500);
       }
       
