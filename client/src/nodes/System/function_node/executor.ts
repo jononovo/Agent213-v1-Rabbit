@@ -168,7 +168,12 @@ function process(input, data) {
         }
         `;
         
-      processFunction = new Function('input', 'data', functionTemplate);
+      // Support both 'input' and '$input' variables for compatibility
+      processFunction = new Function('input', '$input', 'data', `
+        // Make input available as both 'input' and '$input' for compatibility
+        $input = input; 
+        ${functionTemplate}
+      `);
     } catch (codeError: any) {
       return {
         items: input.items,
@@ -223,7 +228,8 @@ function process(input, data) {
         
         try {
           // Execute the function - wrap in Promise.resolve to handle both async and sync functions
-          Promise.resolve(processFunction(item.json, data))
+          // Pass the same value as both input and $input for compatibility
+          Promise.resolve(processFunction(item.json, item.json, data))
             .then(result => {
               // Clear timeout and resolve with result
               clearTimeout(timeoutId);
