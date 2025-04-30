@@ -93,6 +93,71 @@ export const loadCustomTests = async (nodeType: string): Promise<NodeTest[] | nu
 };
 
 /**
+ * Run standard tests for a node
+ */
+export const runStandardTests = async (
+  node: NodeType,
+  onTestComplete: (node: NodeType) => void,
+  updateNode: (updatedNode: NodeType) => void
+): Promise<void> => {
+  if (!node.testResults) return;
+  
+  // Set current node type and category on the window object for test context
+  window.__currentTestingNode = {
+    type: node.type,
+    category: node.category
+  };
+  
+  // Choose which tests to run based on node category
+  const testsToRun = node.category === 'Integration' ? 
+    [...standardNodeTests, ...integrationNodeTests] : 
+    standardNodeTests;
+  
+  // Run each standard test
+  for (let i = 0; i < testsToRun.length; i++) {
+    const test = testsToRun[i];
+    const testIndex = node.testResults.findIndex(t => t.name === test.name);
+    
+    if (testIndex === -1) continue; // Skip if test not found in results array
+    
+    try {
+      // Mark test as running
+      node.testResults[testIndex].status = 'running';
+      updateNode({ ...node });
+      
+      // Measure test execution time
+      const testStartTime = performance.now();
+      const result = await test.run();
+      const testDuration = Math.round(performance.now() - testStartTime);
+      
+      // Update test status
+      node.testResults[testIndex] = {
+        ...node.testResults[testIndex],
+        status: result.passed ? 'passed' : 'failed',
+        message: result.message,
+        duration: testDuration
+      };
+      
+      updateNode({ ...node });
+      
+      // Short delay between tests for UI update
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } catch (error: any) {
+      // Handle test execution error
+      node.testResults[testIndex] = {
+        ...node.testResults[testIndex],
+        status: 'failed',
+        message: `Test execution error: ${error.message || String(error)}`
+      };
+      updateNode({ ...node });
+    }
+  }
+  
+  // Standard tests are complete
+  onTestComplete(node);
+};
+
+/**
  * Run custom tests for a node
  */
 export const runCustomTests = async (
@@ -130,7 +195,7 @@ export const runCustomTests = async (
       
       // Short delay between tests for UI update
       await new Promise(resolve => setTimeout(resolve, 200));
-    } catch (error) {
+    } catch (error: any) {
       // Handle test execution error
       node.customTestResults[i] = {
         name: customTest.name,
@@ -185,10 +250,14 @@ export const initNodeForTesting = (
   updatedNode.customTestResults = [];
   
   // Set up standard tests
-  STANDARD_TESTS.forEach(test => {
+  const testsToRun = node.category === 'Integration' ? 
+    [...standardNodeTests, ...integrationNodeTests] : 
+    standardNodeTests;
+    
+  testsToRun.forEach(test => {
     updatedNode.testResults?.push({
       name: test.name,
-      test: test.id,
+      test: test.category as TestType, // Map the test category to TestType
       status: 'running'
     });
   });

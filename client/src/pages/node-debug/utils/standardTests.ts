@@ -16,6 +16,13 @@ declare global {
   }
 }
 
+// Define port type interface to prevent unknown type errors
+interface PortDefinition {
+  type: string;
+  description: string;
+  [key: string]: any;
+}
+
 /**
  * Tests that the node has the required files
  */
@@ -128,7 +135,7 @@ export const exportValidationTest: NodeTest = {
         passed: true,
         message: 'Node exports all required components'
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         passed: false,
         message: `Error validating exports: ${error.message}`
@@ -189,7 +196,7 @@ export const metadataCompletenessTest: NodeTest = {
         passed: true,
         message: 'Node contains all required metadata fields'
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         passed: false,
         message: `Error checking metadata: ${error.message}`
@@ -250,14 +257,16 @@ export const portDefinitionTest: NodeTest = {
       let hasValidOutput = false;
       
       for (const [key, port] of Object.entries(definition.inputs)) {
-        if (port.type && port.description) {
+        const typedPort = port as PortDefinition;
+        if (typedPort.type && typedPort.description) {
           hasValidInput = true;
           break;
         }
       }
       
       for (const [key, port] of Object.entries(definition.outputs)) {
-        if (port.type && port.description) {
+        const typedPort = port as PortDefinition;
+        if (typedPort.type && typedPort.description) {
           hasValidOutput = true;
           break;
         }
@@ -274,7 +283,7 @@ export const portDefinitionTest: NodeTest = {
         passed: true,
         message: 'Node ports are properly defined'
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         passed: false,
         message: `Error checking port definitions: ${error.message}`
@@ -333,7 +342,7 @@ export const executorSignatureTest: NodeTest = {
         passed: true,
         message: 'Executor function has the correct signature'
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         passed: false,
         message: `Error checking executor signature: ${error.message}`
@@ -425,7 +434,7 @@ export const outputFormatTest: NodeTest = {
         passed: true,
         message: 'Executor returns data in the expected format'
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         passed: false,
         message: `Error checking output format: ${error.message}`
@@ -506,7 +515,7 @@ export const errorHandlingTest: NodeTest = {
         passed: true,
         message: 'Node responded to invalid input, which is acceptable'
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         passed: false,
         message: `Error testing error handling: ${error.message}`
@@ -576,7 +585,7 @@ export const integrationCapabilitiesTest: NodeTest = {
         passed: true,
         message: 'Node has properly defined integration capabilities'
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         passed: false,
         message: `Error checking integration capabilities: ${error.message}`
@@ -644,7 +653,7 @@ export const integrationRequirementsTest: NodeTest = {
         passed: true,
         message: 'Node has properly defined integration requirements'
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         passed: false,
         message: `Error checking integration requirements: ${error.message}`
