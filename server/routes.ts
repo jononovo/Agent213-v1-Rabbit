@@ -17,6 +17,7 @@ import { workflowGenerationService } from "./services/workflowGenerationService"
 import { createAgentCoordinator } from "./services/agentCoordinator";
 import { registerAllTools } from "./tools/implementations";
 import { registerWorkflowExecution, clearWorkflowExecution, checkForTimedOutWorkflows } from "./utils/timeoutManager";
+import { forwardWebhookToIntegrationEngine } from "./routes/webhookRoutes";
 
 // Define interface for node type handler
 interface NodeTypeHandler {
