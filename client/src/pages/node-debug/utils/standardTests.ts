@@ -24,6 +24,90 @@ interface PortDefinition {
 }
 
 /**
+ * Helper function to try importing a module from both System and Integration folders
+ */
+async function tryImportFromBothFolders(nodeType: string, filename: string) {
+  try {
+    // Try System folder first
+    return await import(/* @vite-ignore */ `../../../nodes/System/${nodeType}/${filename}`);
+  } catch (e) {
+    // Try Integration folder next
+    return await import(/* @vite-ignore */ `../../../nodes/Integration/${nodeType}/${filename}`);
+  }
+}
+
+/**
+ * Helper function to get node type from context or return error
+ */
+function getNodeType(): { passed: boolean; nodeType?: string; message?: string } {
+  const nodeType = window.__currentTestingNode?.type;
+  
+  if (!nodeType) {
+    return {
+      passed: false,
+      message: 'Cannot determine node type for testing'
+    };
+  }
+  
+  return {
+    passed: true,
+    nodeType
+  };
+}
+
+/**
+ * Helper to get definition module and definition object or return error
+ */
+async function getNodeDefinition(nodeType: string): Promise<{ passed: boolean; definition?: any; message?: string }> {
+  try {
+    const definitionModule = await tryImportFromBothFolders(nodeType, 'definition.ts');
+    
+    if (!definitionModule.definition) {
+      return {
+        passed: false,
+        message: 'Node does not export a definition object'
+      };
+    }
+    
+    return {
+      passed: true,
+      definition: definitionModule.definition
+    };
+  } catch (e) {
+    return {
+      passed: false,
+      message: 'Failed to import definition module (checked both System and Integration folders)'
+    };
+  }
+}
+
+/**
+ * Helper to get executor module and execute function or return error
+ */
+async function getNodeExecutor(nodeType: string): Promise<{ passed: boolean; execute?: Function; message?: string }> {
+  try {
+    const executorModule = await tryImportFromBothFolders(nodeType, 'executor.ts');
+    
+    if (!executorModule.execute || typeof executorModule.execute !== 'function') {
+      return {
+        passed: false,
+        message: 'Node does not export an execute function'
+      };
+    }
+    
+    return {
+      passed: true,
+      execute: executorModule.execute
+    };
+  } catch (e) {
+    return {
+      passed: false,
+      message: 'Failed to import executor module (checked both System and Integration folders)'
+    };
+  }
+}
+
+/**
  * Tests that the node has the required files
  */
 export const fileStructureTest: NodeTest = {
@@ -32,73 +116,32 @@ export const fileStructureTest: NodeTest = {
   category: 'structure',
   run: async (): Promise<NodeTestResult> => {
     try {
-      // Get node type and category from context
-      const nodeType = window.__currentTestingNode?.type;
-      const category = window.__currentTestingNode?.category;
-      
-      if (!nodeType) {
+      // Get node type using helper
+      const result = getNodeType();
+      if (!result.passed) {
         return {
           passed: false,
-          message: 'Cannot determine node type for testing'
+          message: result.message
         };
       }
       
-      // We'll check both System and Integration folders directly, so we don't need nodePath
+      const nodeType = result.nodeType!;
       
-      // Check for definition.ts by trying both System and Integration folders
-      let definitionFound = false;
-      
-      // Try System folder first
+      // Just check if both files are importable
       try {
-        await import(/* @vite-ignore */ `../../../nodes/System/${nodeType}/definition.ts`);
-        definitionFound = true;
+        await tryImportFromBothFolders(nodeType, 'definition.ts');
+        await tryImportFromBothFolders(nodeType, 'executor.ts');
+        
+        return {
+          passed: true,
+          message: 'Node has all required files'
+        };
       } catch (e) {
-        // Try Integration folder next
-        try {
-          await import(/* @vite-ignore */ `../../../nodes/Integration/${nodeType}/definition.ts`);
-          definitionFound = true;
-        } catch (err) {
-          // Neither location worked
-          definitionFound = false;
-        }
-      }
-      
-      if (!definitionFound) {
         return {
           passed: false,
-          message: `Missing required file: definition.ts (Looked in System and Integration folders)`
+          message: `Missing required files (checked both System and Integration folders)`
         };
       }
-      
-      // Check for executor.ts by trying both System and Integration folders
-      let executorFound = false;
-      
-      // Try System folder first
-      try {
-        await import(/* @vite-ignore */ `../../../nodes/System/${nodeType}/executor.ts`);
-        executorFound = true;
-      } catch (e) {
-        // Try Integration folder next
-        try {
-          await import(/* @vite-ignore */ `../../../nodes/Integration/${nodeType}/executor.ts`);
-          executorFound = true;
-        } catch (err) {
-          // Neither location worked
-          executorFound = false;
-        }
-      }
-      
-      if (!executorFound) {
-        return {
-          passed: false,
-          message: `Missing required file: executor.ts (Looked in System and Integration folders)`
-        };
-      }
-      
-      return {
-        passed: true,
-        message: 'Node has all required files'
-      };
     } catch (error: any) {
       return {
         passed: false,
@@ -117,56 +160,32 @@ export const exportValidationTest: NodeTest = {
   category: 'structure',
   run: async (): Promise<NodeTestResult> => {
     try {
-      const nodeType = window.__currentTestingNode?.type;
-      const category = window.__currentTestingNode?.category;
-      
-      if (!nodeType || !category) {
+      // Get node type using helper
+      const result = getNodeType();
+      if (!result.passed) {
         return {
           passed: false,
-          message: 'Cannot determine node type or category for testing'
+          message: result.message
         };
       }
       
-      // Check definition exports by trying both System and Integration folders
-      let definitionModule;
-      
-      // Try System folder first
-      try {
-        definitionModule = await import(/* @vite-ignore */ `../../../nodes/System/${nodeType}/definition.ts`);
-      } catch (e) {
-        // Try Integration folder next
-        try {
-          definitionModule = await import(/* @vite-ignore */ `../../../nodes/Integration/${nodeType}/definition.ts`);
-        } catch (err) {
-          return {
-            passed: false,
-            message: 'Failed to import definition module (checked both System and Integration folders)'
-          };
-        }
-      }
-      
-      if (!definitionModule.definition) {
+      const nodeType = result.nodeType!;
+
+      // Check definition exports
+      const defResult = await getNodeDefinition(nodeType);
+      if (!defResult.passed) {
         return {
           passed: false,
-          message: 'Node does not export a definition object'
+          message: defResult.message
         };
       }
       
       // Check executor exports
-      let executorModule;
-      try {
-        executorModule = await import(/* @vite-ignore */ `../../../nodes/${category}/${nodeType}/executor.ts`);
-      } catch (e) {
+      const execResult = await getNodeExecutor(nodeType);
+      if (!execResult.passed) {
         return {
           passed: false,
-          message: 'Failed to import executor module'
-        };
-      }
-      
-      if (!executorModule.execute || typeof executorModule.execute !== 'function') {
-        return {
-          passed: false,
-          message: 'Node does not export an execute function'
+          message: execResult.message
         };
       }
       
