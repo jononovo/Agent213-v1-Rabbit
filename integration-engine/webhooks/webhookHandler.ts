@@ -160,3 +160,11 @@ export async function createWebhookResponse(
 export function getWebhookStats(): WebhookStats {
   return persistentStore.getWebhookStats();
 }
+
+/**
+ * Remove a webhook response from memory after it's been sent
+ */
+export function cleanupWebhookResponse(webhookId: string): void {
+  console.log(`Cleaning up webhook response for ${webhookId}`);
+  return persistentStore.cleanupWebhookResponse(webhookId);
+}

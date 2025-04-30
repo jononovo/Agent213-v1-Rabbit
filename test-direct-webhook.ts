@@ -7,6 +7,11 @@
 
 import fetch from 'node-fetch';
 
+// Configuration
+const MAIN_SERVER_URL = 'http://localhost:5000';
+const INTEGRATION_ENGINE_URL = 'http://localhost:3001';
+const WORKFLOW_EXECUTION_URL = 'http://localhost:3002';
+
 /**
  * Check if the server is running
  */
@@ -14,14 +19,14 @@ async function checkServer(port: number, name: string): Promise<boolean> {
   try {
     const response = await fetch(`http://localhost:${port}/health`);
     if (response.ok) {
-      console.log(`✓ ${name} is running on port ${port}`);
+      console.log(`✅ ${name} is running on port ${port}`);
       return true;
     } else {
-      console.error(`✗ ${name} is not responding properly on port ${port}`);
+      console.log(`❌ ${name} on port ${port} returned non-OK response: ${response.status}`);
       return false;
     }
   } catch (error) {
-    console.error(`✗ ${name} is not running on port ${port}: ${error}`);
+    console.log(`❌ ${name} is NOT running on port ${port}: ${error}`);
     return false;
   }
 }
@@ -30,71 +35,33 @@ async function checkServer(port: number, name: string): Promise<boolean> {
  * Test the direct webhook endpoint
  */
 async function testDirectWebhook() {
+  console.log('\n🔄 Testing direct webhook to integration engine...');
+  
   try {
-    const workflowId = 1; // Test workflow ID from the test data
-    const nodeId = 'webhook_trigger-1'; // Default webhook trigger node ID
-    
-    // Test data
-    const testPayload = {
-      message: 'Test direct webhook',
-      timestamp: new Date().toISOString(),
-      testId: `direct-test-${Date.now()}`
-    };
-    
-    console.log('\n=== Testing Direct Webhook ===');
-    console.log(`Target: Workflow ${workflowId}, Node ${nodeId}`);
-    console.log('Payload:', testPayload);
-    
-    // First, let's check the available webhooks documentation
-    console.log('\nChecking webhook documentation...');
-    const docsResponse = await fetch('http://localhost:3001/api/webhooks');
-    if (docsResponse.ok) {
-      const docsData = await docsResponse.json();
-      console.log('Webhook documentation:', docsData);
-    } else {
-      console.log(`Documentation endpoint returned status: ${docsResponse.status}`);
-    }
-    
-    // Check workflows in the system
-    console.log('\nChecking available workflows...');
-    const workflowsResponse = await fetch('http://localhost:5000/api/workflows');
-    if (workflowsResponse.ok) {
-      const workflows = await workflowsResponse.json();
-      console.log(`Found ${workflows.length} workflows:`);
-      workflows.forEach((wf: any) => {
-        console.log(`- ID: ${wf.id}, Name: ${wf.name}`);
-      });
-    } else {
-      console.log(`Workflows endpoint returned status: ${workflowsResponse.status}`);
-    }
-    
-    // Send the webhook directly to the integration engine
-    console.log('\nSending webhook directly to integration engine...');
-    const directResponse = await fetch(`http://localhost:3001/webhooks/workflow/${workflowId}/node/${nodeId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(testPayload)
-    });
-    
-    console.log(`Response status: ${directResponse.status}`);
-    
-    const responseText = await directResponse.text();
-    console.log('Raw response:', responseText);
-    
-    if (responseText) {
-      try {
-        const responseData = JSON.parse(responseText);
-        console.log('Parsed response data:', responseData);
-      } catch (e) {
-        console.log('Could not parse response as JSON');
+    // Test with a direct webhook request
+    const response = await fetch(
+      `${INTEGRATION_ENGINE_URL}/webhooks/workflow/1/node/webhook_trigger-1`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          test: true,
+          message: 'This is a direct webhook test',
+          timestamp: Date.now()
+        })
       }
-    }
+    );
     
-    console.log('\n✓ Direct webhook test completed');
+    const responseText = await response.text();
+    console.log(`🔄 Direct webhook response status: ${response.status}`);
+    console.log(`🔄 Direct webhook response: ${responseText}`);
+    
+    return response.ok;
   } catch (error) {
-    console.error('\n✗ Error in direct webhook test:', error);
+    console.error('❌ Error testing direct webhook:', error);
+    return false;
   }
 }
 
@@ -102,59 +69,33 @@ async function testDirectWebhook() {
  * Test the legacy redirect endpoint
  */
 async function testLegacyRedirect() {
+  console.log('\n🔄 Testing legacy webhook redirect through main server...');
+  
   try {
-    const workflowId = 1; // Test workflow ID from the test data
-    const nodeId = 'webhook_trigger-1'; // Default webhook trigger node ID
-    
-    // Test data
-    const testPayload = {
-      message: 'Test legacy webhook redirect',
-      timestamp: new Date().toISOString(),
-      testId: `legacy-test-${Date.now()}`
-    };
-    
-    console.log('\n=== Testing Legacy Webhook Redirect ===');
-    console.log(`Target: Workflow ${workflowId}, Node ${nodeId}`);
-    console.log('Payload:', testPayload);
-    
-    // Check documentation first
-    console.log('\nChecking webhook documentation at main server...');
-    const mainDocsResponse = await fetch('http://localhost:5000/api/webhooks');
-    if (mainDocsResponse.ok) {
-      const mainDocsData = await mainDocsResponse.json();
-      console.log('Main server webhook documentation:', mainDocsData);
-    } else {
-      console.log(`Main documentation endpoint returned status: ${mainDocsResponse.status}`);
-    }
-    
-    // Send the webhook to the main server which should redirect to integration engine
-    console.log('\nSending webhook to main server...');
-    const legacyResponse = await fetch(`http://localhost:5000/api/webhooks/workflow/${workflowId}/node/${nodeId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(testPayload),
-      redirect: 'follow' // Allow redirects
-    });
-    
-    console.log(`Response status: ${legacyResponse.status}`);
-    
-    const responseText = await legacyResponse.text();
-    console.log('Raw response:', responseText);
-    
-    if (responseText) {
-      try {
-        const responseData = JSON.parse(responseText);
-        console.log('Parsed response data:', responseData);
-      } catch (e) {
-        console.log('Could not parse response as JSON');
+    // Test with a legacy webhook request that should be redirected
+    const response = await fetch(
+      `${MAIN_SERVER_URL}/api/webhooks/workflow/1/node/webhook_trigger-1`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          test: true,
+          message: 'This is a legacy webhook redirect test',
+          timestamp: Date.now()
+        })
       }
-    }
+    );
     
-    console.log('\n✓ Legacy webhook redirect test completed');
+    const responseText = await response.text();
+    console.log(`🔄 Legacy webhook response status: ${response.status}`);
+    console.log(`🔄 Legacy webhook response: ${responseText}`);
+    
+    return response.ok;
   } catch (error) {
-    console.error('\n✗ Error in legacy webhook redirect test:', error);
+    console.error('❌ Error testing legacy webhook redirect:', error);
+    return false;
   }
 }
 
@@ -162,26 +103,44 @@ async function testLegacyRedirect() {
  * Main test function
  */
 async function runTests() {
-  console.log('=== WEBHOOK DIRECT ACCESS TEST SUITE ===');
-  console.log('Testing the new webhook implementation with direct integration engine access');
-  console.log('Testing server availability...');
+  console.log('🔍 Testing webhook architecture...');
   
   // Check if servers are running
   const mainServerRunning = await checkServer(5000, 'Main Server');
   const integrationEngineRunning = await checkServer(3001, 'Integration Engine');
-  const workflowExecutionRunning = await checkServer(3002, 'Workflow Execution Server');
+  const workflowExecutionRunning = await checkServer(3002, 'Workflow Execution');
   
   if (!mainServerRunning || !integrationEngineRunning || !workflowExecutionRunning) {
-    console.error('\n✗ One or more servers are not running. Please start them before testing.');
-    return;
+    console.error('❌ Cannot proceed with tests because one or more servers are not running.');
+    process.exit(1);
   }
   
-  // Run the tests
-  await testDirectWebhook();
-  await testLegacyRedirect();
+  // Run tests
+  const directWebhookSuccess = await testDirectWebhook();
+  console.log(directWebhookSuccess ? '✅ Direct webhook test passed' : '❌ Direct webhook test failed');
   
-  console.log('\n=== TEST SUITE COMPLETE ===');
+  const legacyRedirectSuccess = await testLegacyRedirect();
+  console.log(legacyRedirectSuccess ? '✅ Legacy webhook redirect test passed' : '❌ Legacy webhook redirect test failed');
+  
+  // Summary
+  console.log('\n=== Test Summary ===');
+  console.log(`Direct webhook test: ${directWebhookSuccess ? 'PASSED' : 'FAILED'}`);
+  console.log(`Legacy webhook redirect test: ${legacyRedirectSuccess ? 'PASSED' : 'FAILED'}`);
+  
+  if (directWebhookSuccess && legacyRedirectSuccess) {
+    console.log('✅ All tests passed! The webhook architecture is working correctly.');
+  } else {
+    console.log('❌ Some tests failed. Please check the logs for details.');
+    process.exit(1);
+  }
 }
 
-// Run the tests
-runTests().catch(console.error);
+// Run the tests if this is the main module
+if (import.meta.url.endsWith(process.argv[1])) {
+  runTests().catch(error => {
+    console.error('Error running tests:', error);
+    process.exit(1);
+  });
+}
+
+export { runTests, testDirectWebhook, testLegacyRedirect };
