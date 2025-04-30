@@ -68,7 +68,19 @@ export async function execute(
   
   try {
     // Extract settings from node data with defaults
-    const code = nodeData.code || 'function process(input) { return input; }';
+    const defaultCode = `
+/**
+ * Process function for transforming input data
+ * @param {any} input - The input data to process
+ * @param {object} data - Additional data including all items
+ * @returns {any} - The processed output
+ */
+function process(input, data) {
+  // Your code here
+  return input;
+}
+`;
+    const code = nodeData.code || defaultCode;
     const useAsyncFunction = nodeData.useAsyncFunction !== false;
     const timeout = nodeData.timeout || 5000;
     const errorHandling = nodeData.errorHandling || 'throw';
@@ -109,10 +121,23 @@ export async function execute(
       const functionWrapper = useAsyncFunction
         ? `
           ${code}
-          return await process(input, data);
+          // Make sure we're calling an async function
+          if (typeof process !== 'function') {
+            throw new Error('Process function is not defined');
+          }
+          // Check if process is async
+          if (process.constructor.name === 'AsyncFunction') {
+            return await process(input, data);
+          } else {
+            // If not async but useAsyncFunction is true, wrap in Promise.resolve
+            return Promise.resolve(process(input, data));
+          }
         `
         : `
           ${code}
+          if (typeof process !== 'function') {
+            throw new Error('Process function is not defined');
+          }
           return process(input, data);
         `;
       
