@@ -452,37 +452,133 @@ async function handleWebhookRequest(
       }
     };
 
-    // Execute the workflow with the webhook data
-    console.log(`[${requestId}] Executing workflow ${workflowId} via webhook trigger, node ${nodeId}`);
-    const result = await runWorkflow(workflowId, webhookInput, { 
-      includeDetail: false,
-      executionMode: "webhook",
-      debug: true // Enable debug mode for more detailed logs
-    });
-
-    console.log(`[${requestId}] Webhook execution complete:`, {
-      status: 'success',
-      workflowId,
-      nodeId,
-      executionTime: result.executionDetails?.executionTime,
-      nodesExecuted: result.executionDetails?.nodesExecuted
-    });
-
-    // Check if any send_to_webhook node detected and processed the webhook response
-    // If not, fall back to the legacy automatic response mode for backward compatibility
-    if (result.webhookResponseHandled) {
-      console.log(`[${requestId}] Webhook response handled by a node in the workflow`);
-      // Response already sent by a node in the workflow
-      return;
-    } else {
-      console.log(`[${requestId}] No webhook response node found. Using legacy automatic response.`);
-      // Legacy automatic response - return the workflow output as the HTTP response
-      res.json({
-        success: true,
-        message: "Webhook received and workflow executed",
-        requestId: requestId,
-        result: result.output
+    // Execute the workflow using the Workflow Execution Server
+    console.log(`[${requestId}] Submitting workflow ${workflowId} to Workflow Execution Server`);
+    
+    try {
+      // Submit the workflow to the execution server
+      const executeResponse = await fetch('http://localhost:3002/api/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          workflowId: workflowId,
+          input: webhookInput,
+          startNodeId: nodeId,
+          executionMode: "webhook",
+          // Include original request information for response handling
+          originalRequest: {
+            requestId: requestId,
+            responseObject: res,  // This will be serialized and lost, but indicates we need a response
+            path: req.path,
+            method: req.method,
+            responseNeeded: true
+          }
+        })
       });
+      
+      const executeResult = await executeResponse.json() as {
+        success: boolean;
+        jobId?: string;
+        error?: string;
+        webhookHandled?: boolean;
+      };
+      
+      if (!executeResult.success) {
+        throw new Error(`Failed to queue workflow: ${executeResult.error || 'Unknown error'}`);
+      }
+      
+      // Check if this is a synchronous webhook that was immediately handled
+      if (executeResult.webhookHandled) {
+        console.log(`[${requestId}] Webhook response already handled by execution server`);
+        return; // Response already sent
+      }
+      
+      // For async execution, we'll poll for status and wait for a response
+      const jobId = executeResult.jobId;
+      if (!jobId) {
+        throw new Error('No job ID returned from workflow execution server');
+      }
+      
+      console.log(`[${requestId}] Workflow queued successfully with job ID: ${jobId}`);
+      
+      // Set a timeout for webhook response (10 seconds)
+      const timeout = 10000;
+      const maxAttempts = 10;
+      const pollInterval = timeout / maxAttempts;
+      
+      let attempts = 0;
+      let completed = false;
+      
+      while (!completed && attempts < maxAttempts) {
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        
+        const statusResponse = await fetch(`http://localhost:3002/api/status/${jobId}`, {
+          method: 'GET'
+        });
+        
+        const statusResult = await statusResponse.json() as {
+          success: boolean;
+          job?: {
+            id: string;
+            status: 'pending' | 'processing' | 'completed' | 'failed';
+            result?: any;
+            error?: string;
+            webhookHandled?: boolean;
+          };
+          error?: string;
+        };
+        
+        if (!statusResult.success) {
+          console.error(`[${requestId}] Error checking status: ${statusResult.error || 'Unknown error'}`);
+          continue;
+        }
+        
+        const job = statusResult.job;
+        if (!job) {
+          continue;
+        }
+        
+        console.log(`[${requestId}] Job status: ${job.status} (attempt ${attempts}/${maxAttempts})`);
+        
+        // Check if the webhook was handled by the job
+        if (job.webhookHandled) {
+          console.log(`[${requestId}] Webhook response handled by the workflow execution server`);
+          completed = true;
+          return; // Response already sent
+        }
+        
+        // If job completed but webhook wasn't handled, we'll use the result as the response
+        if (job.status === 'completed' || job.status === 'failed') {
+          completed = true;
+          
+          if (job.status === 'completed') {
+            console.log(`[${requestId}] No webhook response node found. Using automatic response.`);
+            // Legacy automatic response - return the workflow output
+            res.json({
+              success: true,
+              message: "Webhook received and workflow executed",
+              requestId: requestId,
+              result: job.result
+            });
+          } else {
+            throw new Error(job.error || 'Workflow execution failed');
+          }
+        }
+      }
+      
+      // If we reach this point, the job timed out
+      if (!completed) {
+        console.log(`[${requestId}] Webhook processing timed out. Sending timeout response.`);
+        res.status(202).json({
+          success: true,
+          message: "Webhook received and processing started, but execution is taking longer than expected",
+          requestId: requestId,
+          jobId: jobId
+        });
+      }
     }
   } catch (error) {
     console.error(`[${requestId}] Webhook execution error:`, error);
