@@ -115,14 +115,16 @@ export const runStandardTests = async (
     }
   }
   
-  // Run integration tests if this is an Integration node
-  if (node.category === 'Integration') {
-    console.log(`Running integration tests for node ${node.type}`);
+  // Run integration tests for all nodes
+  console.log(`Initializing integration tests for node: ${node.type}`);
+  
+  // Initialize integration test results array if it doesn't exist yet
+  if (!node.integrationTestResults || node.integrationTestResults.length === 0) {
+    node.integrationTestResults = [];
     
-    // Initialize integration test results array if it doesn't exist yet
-    if (!node.integrationTestResults || node.integrationTestResults.length === 0) {
-      console.log('Initializing integration test results');
-      node.integrationTestResults = [];
+    if (node.category === 'Integration') {
+      // For Integration nodes, run standard integration tests
+      console.log('Adding integration tests for Integration node');
       integrationNodeTests.forEach(test => {
         node.integrationTestResults!.push({
           name: test.name,
@@ -130,9 +132,22 @@ export const runStandardTests = async (
           status: 'pending'
         });
       });
-      updateNode({ ...node });
+    } else {
+      // For non-Integration nodes, add a single "Not Applicable" test
+      console.log('Adding "Not Applicable" status for non-Integration node');
+      node.integrationTestResults.push({
+        name: 'Not Applicable',
+        test: 'integration' as TestType,
+        status: 'pending',
+        message: 'This node is not in the Integration category'
+      });
     }
     
+    updateNode({ ...node });
+  }
+  
+  // For Integration category nodes, run actual integration tests
+  if (node.category === 'Integration') {
     console.log(`Found ${integrationNodeTests.length} integration tests to run`);
     
     for (let i = 0; i < integrationNodeTests.length; i++) {
@@ -172,6 +187,13 @@ export const runStandardTests = async (
         };
         updateNode({ ...node });
       }
+    }
+  } else {
+    // For non-Integration nodes, just mark the "Not Applicable" test as completed
+    const testIndex = node.integrationTestResults.findIndex(t => t.name === 'Not Applicable');
+    if (testIndex !== -1) {
+      node.integrationTestResults[testIndex].status = 'pending';
+      updateNode({ ...node });
     }
   }
   
