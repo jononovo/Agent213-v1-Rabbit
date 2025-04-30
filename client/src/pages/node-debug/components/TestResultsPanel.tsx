@@ -91,7 +91,8 @@ const TestResultsPanel: React.FC<TestResultsPanelProps> = ({
   const integrationPassedCount = selectedNode.integrationTestResults?.filter(r => r.status === 'passed').length || 0;
   
   const hasCustomTests = customTestCount > 0;
-  const hasIntegrationTests = integrationTestCount > 0;
+  // Force integration tests tab to show up for Integration category nodes
+  const hasIntegrationTests = selectedNode.category === 'Integration';
   
   // Helper function to format test duration
   const formatDuration = (duration?: number) => {
@@ -200,10 +201,10 @@ const TestResultsPanel: React.FC<TestResultsPanelProps> = ({
           </TabsContent>
           
           <TabsContent value="integration">
-            {hasIntegrationTests ? (
+            {hasIntegrationTests && selectedNode.integrationTestResults && selectedNode.integrationTestResults.length > 0 ? (
               <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-4">
-                  {selectedNode.integrationTestResults?.map((testResult: TestResult, index: number) => {
+                  {selectedNode.integrationTestResults.map((testResult: TestResult, index: number) => {
                     // Try using category-specific icon first, fallback to general test type icon
                     const TestIcon = TEST_CATEGORY_ICONS[testResult.test] || 
                                     TEST_ICONS[testResult.test as TestType] || 
@@ -237,9 +238,13 @@ const TestResultsPanel: React.FC<TestResultsPanelProps> = ({
             ) : (
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>No integration tests</AlertTitle>
+                <AlertTitle>Integration Tests</AlertTitle>
                 <AlertDescription>
-                  This node doesn't have any integration tests or isn't an Integration category node.
+                  <p>The following integration-specific tests will be run for this node:</p>
+                  <ul className="list-disc pl-5 mt-2">
+                    <li>Integration Capabilities - Tests that the node defines its integration capabilities</li>
+                    <li>Integration Requirements - Tests that the node specifies its requirements</li>
+                  </ul>
                 </AlertDescription>
               </Alert>
             )}
