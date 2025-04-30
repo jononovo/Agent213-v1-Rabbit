@@ -402,6 +402,77 @@ export async function runWorkflow(
  * the Workflow Execution Server. This aligns with the architectural principle that
  * external communication should be handled by the Integration Engine.
  */
+/**
+ * Forward a webhook request to the Integration Engine
+ * 
+ * This function proxies webhook requests from the main server to the Integration Engine,
+ * which is now responsible for webhook handling in the three-server architecture.
+ */
+async function forwardWebhookToIntegrationEngine(
+  req: Request,
+  res: Response,
+  workflowId: number,
+  nodeId: string
+): Promise<void> {
+  try {
+    // Create URL for the Integration Engine's webhook endpoint
+    const integrationEngineUrl = 'http://localhost:3001/api/webhooks/workflow/' + workflowId + '/node/' + nodeId;
+    
+    console.log(`Forwarding webhook request to Integration Engine: ${integrationEngineUrl}`);
+    
+    // Extract relevant request components
+    const method = req.method;
+    const headers = { ...req.headers };
+    
+    // Remove headers that might cause issues in forwarding
+    delete headers.host;
+    delete headers['content-length'];
+    
+    // Prepare body data to forward
+    let bodyData: any = null;
+    if (req.body && Object.keys(req.body).length > 0) {
+      bodyData = req.body;
+    }
+    
+    // Create fetch options
+    const fetchOptions: any = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers
+      },
+      redirect: 'follow'
+    };
+    
+    // Only add body for non-GET requests
+    if (method !== 'GET' && bodyData) {
+      fetchOptions.body = JSON.stringify(bodyData);
+    }
+    
+    // Forward the request to the integration engine
+    const response = await fetch(integrationEngineUrl, fetchOptions);
+    
+    // Read response data
+    const responseData = await response.json();
+    
+    // Forward the integration engine's response back to the original caller
+    res.status(response.status).json(responseData);
+  } catch (error) {
+    console.error('Error forwarding webhook to Integration Engine:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error forwarding webhook to Integration Engine',
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+}
+
+/**
+ * Handle a webhook request (deprecated)
+ * 
+ * This function now forwards requests to the Integration Engine, which handles
+ * webhook processing in the new three-server architecture.
+ */
 async function handleWebhookRequest(
   req: Request,
   res: Response,
@@ -3164,8 +3235,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Handle the webhook request with the found workflow and node
-      await handleWebhookRequest(req, res, targetWorkflow.id, targetNodeId);
+      // Forward the webhook request to the Integration Engine
+      console.log(`Forwarding webhook from custom path to Integration Engine for workflow ${targetWorkflow.id}, node ${targetNodeId}`);
+      await forwardWebhookToIntegrationEngine(req, res, targetWorkflow.id, targetNodeId);
       
     } catch (error) {
       console.error('Webhook processing error:', error);
@@ -3193,8 +3265,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Webhook request received for workflow ${workflowId}, node ${nodeId}`);
       
-      // Handle the webhook request
-      await handleWebhookRequest(req, res, workflowId, nodeId);
+      // Forward the webhook request to the Integration Engine
+      await forwardWebhookToIntegrationEngine(req, res, workflowId, nodeId);
       
     } catch (error) {
       console.error('Webhook processing error:', error);
