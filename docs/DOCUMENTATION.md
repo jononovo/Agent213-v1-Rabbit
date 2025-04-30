@@ -136,26 +136,36 @@ The AI Agent Workflow Platform is built around a modular node-based architecture
 
 ### Architecture Overview
 
-The platform is built around a modular node-based workflow architecture with the following key components:
+The platform is built around a modular node-based workflow architecture with a three-server design for optimal separation of concerns:
 
 1. **Main Application Server** (Port 5000)
    - Serves the frontend application
    - Handles user authentication and permissions
    - Manages workflow and node configuration
    - Stores execution logs and results
-   - Proxies requests to specialized servers
+   - Central coordinator for the system
 
 2. **Workflow Execution Server** (Port 3002)
    - Executes workflows in isolation
    - Prevents workflow errors from affecting the main application
    - Provides job queuing and status tracking
    - Returns execution results to the main server
+   - Processes node execution requests
 
 3. **Integration Engine Server** (Port 3001)
    - Manages connections to external services
    - Handles API authentication and proxying
+   - Directly receives and processes webhook requests
    - Registers and manages webhook endpoints
-   - Standardizes integration patterns
+   - Provides persistent storage for webhook responses
+   - Communicates with the Workflow Execution Server for triggering workflows
+
+The three-server architecture provides several benefits:
+- **Separation of Concerns**: Each server has a specific, well-defined responsibility
+- **Improved Stability**: Issues in one server don't cascade to others
+- **Direct Communication**: Webhooks connect directly to the Integration Engine without proxying
+- **Enhanced Security**: Reduced attack surface by isolating critical components
+- **Better Performance**: Specialized servers can be optimized for their specific roles
 
 ## Node System
 
@@ -353,18 +363,21 @@ Nodes can implement custom tests specific to their functionality. These tests ar
 
 Custom tests can access the node's definition and executor, and run specific scenarios to validate node behavior.
 
-### Node Debug Panel
+### Node Debug System
 
-The Node Debug Panel provides a dedicated interface for testing and validating nodes:
+The Node Debug System provides a dedicated interface for testing, validating, and debugging nodes during development:
 
 ```
 client/src/pages/node-debug/
 ├── index.tsx                 // Main container component
 ├── components/               // UI components
 │   ├── TestResultsPanel.tsx  // Test results display
+│   ├── NodeExecutionPanel.tsx // Node execution interface
+│   ├── NodeInputForm.tsx     // Input configuration interface
 │   └── ...
 └── utils/                    // Utilities
     ├── testRunner.ts         // Test execution logic
+    ├── nodeExecutor.ts       // Node execution utilities
     └── ...
 ```
 
@@ -383,6 +396,25 @@ client/src/pages/node-debug/
 3. **Visual Dashboard**: Comprehensive UI for test results review
 4. **Status Tracking**: Maintains the validation status of each node
 5. **Folder-based Testing**: Supports testing entire node folders at once
+6. **Interactive Testing**: Allows executing nodes with custom inputs
+7. **Real-time Results**: Displays execution results in a structured format
+8. **Debugging Tools**: Provides detailed error information and execution traces
+9. **Performance Metrics**: Shows execution time and resource usage statistics
+
+### Node Testing Interface
+
+The Node Debug Panel offers several testing modes:
+
+1. **Automated Tests**: Runs predefined test suites (standard, integration, and custom)
+2. **Manual Testing**: Allows developers to configure and execute nodes with custom inputs
+3. **Batch Testing**: Runs tests on multiple nodes simultaneously for comprehensive validation
+
+When executing manual tests, developers can:
+- Select specific input values for each node input port
+- Configure node settings for the test run
+- View the complete execution results in JSON format
+- Examine error details when execution fails
+- Compare results with expected outputs
 
 ### Test Discovery System
 
@@ -754,11 +786,43 @@ This testing approach allows developers to verify the execution engine's behavio
 
 ## Integration Engine
 
-The Integration Engine runs on port 3001 and manages all external service integrations. It provides:
+The Integration Engine runs on port 3001 and manages all external service integrations. It operates as a standalone server dedicated to handling external communications, providing:
 
-1. **API Proxying**: Routes API requests through a single endpoint for security and monitoring.
-2. **Authentication Management**: Handles authentication to external services.
-3. **Endpoint Registration**: Manages webhook endpoints and callbacks.
+1. **API Proxying**: Routes API requests through a single endpoint for security and monitoring
+2. **Authentication Management**: Handles authentication to external services
+3. **Direct Webhook Handling**: Receives and processes webhook requests without proxying through the main server
+4. **Endpoint Registration**: Manages webhook endpoints and callbacks
+5. **Persistent Storage**: Stores webhook responses for debugging and replay
+
+### Direct Webhook Architecture
+
+The Integration Engine implements a direct webhook handling approach where:
+
+1. **Direct Request Reception**: Webhook requests are received directly by the Integration Engine without proxying through the main application server
+2. **Workflow Triggering**: The Integration Engine communicates with the Workflow Execution Server to trigger workflows when webhooks are received
+3. **Self-Contained Nodes**: Webhook trigger nodes are self-contained, handling their own URL generation and registration
+4. **Performance**: Eliminating proxying reduces latency and improves reliability
+
+#### Webhook Flow
+
+The webhook request flow follows these steps:
+
+1. External system sends a request to a webhook URL (e.g., `/webhooks/workflow/123/node/456`)
+2. The Integration Engine receives and validates the request
+3. The Integration Engine communicates with the Workflow Execution Engine to trigger the workflow
+4. The workflow executes with the webhook payload as input
+5. Results are returned to the Integration Engine
+6. The Integration Engine responds to the original webhook request
+
+#### Webhook Registration
+
+Webhook registration is handled by the Integration Engine through:
+
+1. **Dynamic Registration**: Webhook nodes register themselves with the Integration Engine during workflow save
+2. **Lazy Registration**: Registration occurs when needed, preventing "unknown" workflow ID issues
+3. **User Feedback**: UI provides clear guidance when a webhook URL requires a workflow to be saved first
+
+### Integration Capabilities
 
 The Integration Engine exposes a standardized interface for all integration nodes:
 
@@ -955,36 +1019,50 @@ All nodes follow UI design inspired by simple-ai.dev to maintain consistency acr
 
 ### Webhook Integration System
 
-The platform provides a robust webhook system for bidirectional communication with external applications:
+The platform provides a robust webhook system for bidirectional communication with external applications, now with a direct architecture through the Integration Engine:
 
-1. **Webhook Endpoint Architecture**:
-   - Generic path: `/api/webhooks/:path` - Custom webhook endpoints for flexible integration  
-   - Direct node triggering: `/api/webhooks/workflow/:workflowId/node/:nodeId` - For targeted workflow execution
+1. **Direct Webhook Architecture**:
+   - Integration Engine directly receives webhook requests at port 3001 
+   - No proxying through main application server for reduced latency and better performance
+   - Generic path: `/webhooks/:path` - Custom webhook endpoints for flexible integration  
+   - Direct workflow triggering: `/webhooks/workflow/:workflowId/node/:nodeId` - For targeted workflow execution
    - Support for multiple HTTP methods (GET, POST, PUT, DELETE) with automatic content negotiation
 
-2. **Webhook Authentication Options**:
+2. **Self-Contained Webhook Nodes**:
+   - Webhook trigger nodes handle their own URL generation and registration
+   - Nodes register with the Integration Engine when workflows are saved
+   - UI provides clear messaging when URLs require workflow save ("Save workflow to generate URL")
+   - No external dependencies for URL generation logic
+
+3. **Webhook Authentication Options**:
    - API Key authentication via X-API-Key header
    - Bearer token authentication via Authorization header
    - Open webhooks for public endpoints and testing
    - Secret key verification for enhanced security
 
-3. **Webhook Request Processing Pipeline**:
+4. **Webhook Request Processing Pipeline**:
    - Headers normalized and passed to workflow
    - Request body parsed based on Content-Type (JSON, form data, etc.)
    - Method and path parameters preserved
    - Structured conversion to node-compatible data format
+   - Persistent storage of webhook responses for debugging
 
-4. **Webhook Response Handling Strategies**:
+5. **Webhook Response Handling Strategies**:
    - Synchronous webhooks return complete workflow results
    - Asynchronous processing with acknowledgment response
    - Standardized status and data response format
    - Configurable timeouts and error handling
 
-5. **Outbound Webhook Features**:
+6. **Outbound Webhook Features**:
    - Ability to dispatch data to external endpoints
    - Customizable headers and payload formats
    - Retry logic with configurable attempts and backoff
    - Response status and data capture
+   
+7. **Three-Server Coordination**:
+   - Integration Engine (port 3001): Receives webhook requests and registers endpoints
+   - Workflow Execution Server (port 3002): Executes workflows triggered by webhooks
+   - Main Application Server (port 5000): Manages UI and settings
 
 ### Data Structures
 
