@@ -147,29 +147,49 @@ export default function WebhookTriggerNode({ id, data }: { id: string, data: any
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="text-xs font-mono bg-background p-1.5 rounded border flex-1 truncate">
-            {webhookUrl}
+        
+        {webhookUrl.includes('/unknown/') ? (
+          // Show message when workflow ID is unknown (not saved yet)
+          <div className="flex flex-col gap-1">
+            <div className="text-xs text-amber-500 font-semibold bg-amber-500/10 p-2 rounded border border-amber-200">
+              ⚠️ Save the workflow to generate a valid webhook URL
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              The webhook URL will be available after saving.
+            </div>
           </div>
-          <button 
-            onClick={copyToClipboard}
-            className="p-1 hover:bg-muted rounded"
-            title="Copy webhook URL"
-          >
-            {copied ? (
-              <span className="text-xs text-green-500">Copied!</span>
-            ) : (
-              <Link className="h-4 w-4" />
-            )}
-          </button>
-        </div>
-        <div className="text-xs text-muted-foreground mt-1">
-          Allowed methods: <span className="font-semibold">{allowedMethods}</span>
-        </div>
+        ) : (
+          // Show normal URL display when workflow is saved
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <div className="text-xs font-mono bg-background p-1.5 rounded border flex-1 truncate">
+                {webhookUrl}
+              </div>
+              <button 
+                onClick={copyToClipboard}
+                className="p-1 hover:bg-muted rounded"
+                title="Copy webhook URL"
+              >
+                {copied ? (
+                  <span className="text-xs text-green-500">Copied!</span>
+                ) : (
+                  <Link className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Allowed methods: <span className="font-semibold">{allowedMethods}</span>
+            </div>
+          </div>
+        )}
       </div>
       
-      <div className="text-xs text-muted-foreground">
-        <p>This webhook is immediately available through the Integration Engine.</p>
+      <div className="text-xs text-muted-foreground mt-2">
+        {webhookUrl.includes('/unknown/') ? (
+          <p>Webhook will be registered when the workflow is saved.</p>
+        ) : (
+          <p>This webhook is immediately available through the Integration Engine.</p>
+        )}
       </div>
     </div>
   );
