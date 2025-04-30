@@ -8,8 +8,7 @@
  * for webhook response handling.
  */
 
-import { createNodeOutput, createErrorOutput } from '../../../core/utils/nodeOutputUtils';
-import { NodeExecutionData } from '../../../core/types/nodeExecutionTypes';
+import { createNodeOutput, createErrorOutput, NodeExecutionData } from '../../../../core';
 
 // Define the send to webhook node data interface
 interface SendToWebhookNodeData {

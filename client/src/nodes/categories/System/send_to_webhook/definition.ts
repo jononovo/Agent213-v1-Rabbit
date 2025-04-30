@@ -28,14 +28,13 @@ const definition: NodeDefinition = {
   name: 'Send to Webhook',
   description: 'Sends data from your workflow to an external webhook URL or API endpoint',
   category: 'actions',
-  icon: Send,
+  icon: Send as unknown as string,
   version: '1.0.0',
   defaultData: defaultData,
   inputs: {
     data: {
       type: 'any',
-      description: 'Data to send to the webhook endpoint',
-      required: true
+      description: 'Data to send to the webhook endpoint'
     }
   },
   outputs: {
