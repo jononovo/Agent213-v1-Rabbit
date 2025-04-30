@@ -58,6 +58,22 @@ The typical request flow is:
 3. Specialized servers process the request and return results
 4. Main Application Server delivers results to the user
 
+## Migration Status
+
+The migration to the three-server architecture is currently in progress:
+
+| Component                    | Status      | Description                                                     |
+|------------------------------|-------------|-----------------------------------------------------------------|
+| Main Application Server      | In Progress | The core server continues to run while other components migrate |
+| Workflow Execution Server    | ✓ Completed | Successfully migrated to `/workflow-execution` directory        |
+| Integration Engine Server    | ✓ Completed | Successfully migrated to `/integration-engine` directory        |
+| Shared Types                 | In Progress | Migrating types to `/shared/types` directory                   |
+| Migration Documentation      | ✓ Completed | Documentation of the architecture and migration paths          |
+
+The migration process is being done incrementally to maintain system stability while
+restructuring the codebase. The transition uses import/export redirection to allow
+for backward compatibility during the migration period.
+
 ## Benefits of This Architecture
 
 - **Separation of Concerns**: Each server has a single, clear responsibility
@@ -73,3 +89,4 @@ This architecture is designed to support future enhancements:
 - Distributed execution across multiple instances
 - Cloud deployment with independent scaling
 - Microservice decomposition for larger components
+- Independent development and deployment of each server component

@@ -1,39 +1,41 @@
 /**
  * Shared Workflow Types
  * 
- * This file contains the core type definitions for workflow execution and job processing,
- * used by both the main server and workflow execution server.
+ * This file contains type definitions used for workflow execution
+ * and job management across the three-server architecture.
  */
 
-import { NodeExecutionData, WorkflowItem } from '../nodeTypes';
+import { NodeExecutionData } from '../nodeTypes';
 
 /**
- * Job interface for workflow queue
+ * Job represents a pending workflow execution request
  */
 export interface Job {
   id: string;
-  type: string;
-  data: any;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  result?: any;
-  error?: string;
+  data: {
+    workflowId: number;
+    input?: any;
+    agentId?: number;
+    startNodeId?: string;
+    [key: string]: any;
+  };
+  options?: WorkflowExecutionOptions;
   createdAt: Date;
-  updatedAt: Date;
-  startedAt?: Date;
-  completedAt?: Date;
 }
 
 /**
- * Pending webhook response tracking
+ * Configuration options for workflow execution
  */
-export interface PendingWebhookResponse {
-  res: any; // Express Response object (typed as any to avoid circular dependencies)
-  timeout: NodeJS.Timeout;
-  workflowId: number;
+export interface WorkflowExecutionOptions {
+  includeDetail?: boolean;
+  executionMode?: 'normal' | 'debug' | 'webhook';
+  debug?: boolean;
+  timeout?: number;
 }
 
 /**
- * Workflow execution context for tracking state during workflow runs
+ * Execution context for a workflow
+ * Tracks the state during execution
  */
 export interface WorkflowExecutionContext {
   workflowId: number;
@@ -44,7 +46,7 @@ export interface WorkflowExecutionContext {
 }
 
 /**
- * Workflow validation result
+ * Results of validating a workflow before execution
  */
 export interface WorkflowValidationResult {
   valid: boolean;
@@ -52,11 +54,12 @@ export interface WorkflowValidationResult {
 }
 
 /**
- * Workflow execution output
+ * Output from a workflow execution
  */
 export interface WorkflowExecutionOutput {
   results: any[];
   errors: Record<string, string>;
   executionTime: number;
-  status: 'completed' | 'completed_with_errors' | 'aborted' | 'failed';
+  status: 'completed' | 'completed_with_errors' | 'failed' | 'aborted';
+  webhookResponseHandled?: boolean;
 }
