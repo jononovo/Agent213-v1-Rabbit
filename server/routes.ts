@@ -396,13 +396,11 @@ export async function runWorkflow(
 /**
  * Helper function to handle incoming webhook requests
  * This is used by both custom path webhooks and dynamic path webhooks
- */
-/**
- * Helper function to handle incoming webhook requests
- * This is used by both custom path webhooks and dynamic path webhooks
  * 
- * It forwards the request directly to the Workflow Execution Server
- * which handles both execution and response.
+ * DEPRECATED: This function is being replaced by forwardWebhookToIntegrationEngine
+ * which routes webhooks to the Integration Engine Server instead of directly to
+ * the Workflow Execution Server. This aligns with the architectural principle that
+ * external communication should be handled by the Integration Engine.
  */
 async function handleWebhookRequest(
   req: Request,
@@ -410,71 +408,8 @@ async function handleWebhookRequest(
   workflowId: number,
   nodeId: string
 ): Promise<void> {
-  try {
-    // Get the workflow to verify it exists
-    const workflow = await storage.getWorkflow(workflowId);
-    if (!workflow) {
-      console.log(`Webhook error: Workflow ${workflowId} not found`);
-      return res.status(404).json({ 
-        success: false, 
-        message: "Webhook target workflow not found" 
-      });
-    }
-    
-    console.log(`Forwarding webhook request to Workflow Execution Server for workflow ${workflowId}, node ${nodeId}`);
-    
-    // Forward the request directly to the Workflow Execution Server
-    // The execution server will hold the response and handle it
-    try {
-      // Prepare the request body to forward
-      const forwardBody = {
-        workflowId,
-        startNodeId: nodeId,
-        payload: req.body,
-        headers: req.headers,
-        method: req.method,
-        query: req.query,
-        params: req.params,
-        path: req.path
-      };
-      
-      // Pipe the request through to the execution server
-      // The execution server will respond directly back through this response object
-      await fetch('http://localhost:3002/api/webhook', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(forwardBody)
-      }).then(executionResponse => {
-        // Copy status code
-        res.status(executionResponse.status);
-        
-        // Copy headers
-        executionResponse.headers.forEach((value, key) => {
-          // Skip certain headers to avoid conflicts
-          if (!['content-length', 'connection'].includes(key.toLowerCase())) {
-            res.setHeader(key, value);
-          }
-        });
-        
-        // Pipe the response body
-        return executionResponse.json();
-      }).then(body => {
-        res.json(body);
-      });
-    } catch (error) {
-      console.error('Error forwarding webhook to execution server:', error);
-      throw error;
-    }
-  } catch (error) {
-    console.error(`Webhook execution error:`, error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Error processing webhook", 
-      error: error instanceof Error ? error.message : String(error)
-    });
-  }
+  // Forward to integration engine instead
+  return forwardWebhookToIntegrationEngine(req, res, workflowId, nodeId);
 }
 
 /**

@@ -14,11 +14,6 @@ import { createServer } from 'http';
 // Import components from new structure
 import { workflowQueue } from './queue/simpleQueue';
 import { executeWorkflow } from './engine/workflowEngine';
-import { 
-  sendWebhookResponse, 
-  getWebhookStats 
-} from './webhooks/webhookHandler';
-import { handleWebhookRequest } from './webhooks/webhookController';
 
 // Create the express app
 const app = express();
@@ -48,61 +43,8 @@ router.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', service: 'workflow-execution' });
 });
 
-/**
- * Execute webhook workflow endpoint that can hold the HTTP response
- * 
- * This endpoint executes a workflow triggered by a webhook and can
- * directly respond to the original webhook caller when a send_to_webhook
- * node with respondToOriginal=true is encountered.
- */
-router.post('/webhook', handleWebhookRequest);
-
-/**
- * Send a response to a pending webhook request
- * This is called by send_to_webhook nodes to respond to the original webhook
- */
-router.post('/webhook-response', async (req: Request, res: Response) => {
-  try {
-    const { requestId, data, statusCode = 200 } = req.body;
-    
-    if (!requestId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Request ID is required'
-      });
-    }
-    
-    // Send the response to the original webhook caller
-    const sent = sendWebhookResponse(requestId, data, statusCode);
-    
-    // Respond to the webhook node
-    if (sent) {
-      res.json({
-        success: true,
-        message: 'Webhook response sent successfully'
-      });
-    } else {
-      res.status(404).json({
-        success: false,
-        error: 'No pending response found for this request ID or response already sent'
-      });
-    }
-  } catch (error) {
-    console.error('[Workflow Execution] Error sending webhook response:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : String(error)
-    });
-  }
-});
-
-// Get stats about pending webhook responses
-router.get('/webhook-stats', (_req: Request, res: Response) => {
-  res.json({
-    success: true,
-    ...getWebhookStats()
-  });
-});
+// Webhook routes have been moved to the Integration Engine Server
+// This ensures proper separation of concerns in the three-server architecture
 
 // Standard execute workflow endpoint (for non-webhook workflows)
 router.post('/execute', async (req: Request, res: Response) => {
