@@ -94,8 +94,9 @@ app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', server: 'integration-engine' });
 });
 
-// Start the server
-if (require.main === module) {
+// Start the server - detect if this is the main module
+const isMainModule = import.meta.url.endsWith(process.argv[1]);
+if (isMainModule) {
   app.listen(port, () => {
     console.log(`Integration Engine Server running on port ${port}`);
     log(`Integration Engine Server running on port ${port}`, 'integration-engine');

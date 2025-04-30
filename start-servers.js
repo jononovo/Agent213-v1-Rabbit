@@ -12,16 +12,21 @@
  * The main server (port 5000) should be started separately with npm run dev
  */
 
-const { spawn } = require('child_process');
-const path = require('path');
+import { spawn } from 'child_process';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Get current filename and directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Start the Integration Engine Server
 function startIntegrationEngine() {
   console.log('Starting Integration Engine Server...');
   
-  const integrationEngine = spawn('node', [
-    '--loader=ts-node/esm',
-    path.join(__dirname, 'integration-engine', 'index.ts')
+  const integrationEngine = spawn('npx', [
+    'tsx',
+    join(__dirname, 'integration-engine', 'index.ts')
   ], {
     env: {
       ...process.env,
@@ -47,9 +52,9 @@ function startIntegrationEngine() {
 function startWorkflowExecution() {
   console.log('Starting Workflow Execution Server...');
   
-  const workflowExecution = spawn('node', [
-    '--loader=ts-node/esm',
-    path.join(__dirname, 'workflow-execution', 'index.ts')
+  const workflowExecution = spawn('npx', [
+    'tsx',
+    join(__dirname, 'workflow-execution', 'index.ts')
   ], {
     env: {
       ...process.env,
