@@ -5,6 +5,7 @@
  * and job management across the three-server architecture.
  */
 
+import { Response } from 'express';
 import { NodeExecutionData } from '../nodeTypes';
 
 /**
@@ -62,4 +63,42 @@ export interface WorkflowExecutionOutput {
   executionTime: number;
   status: 'completed' | 'completed_with_errors' | 'failed' | 'aborted';
   webhookResponseHandled?: boolean;
+}
+
+/**
+ * Pending webhook response
+ * Used to track HTTP responses that are waiting for workflow execution
+ */
+export interface PendingWebhookResponse {
+  /** Express response object */
+  res: Response;
+  /** Timeout handler ID */
+  timeout: NodeJS.Timeout;
+  /** ID of the associated workflow */
+  workflowId: number;
+}
+
+/**
+ * Webhook request data
+ * Contains all information needed to process a webhook request
+ */
+export interface WebhookRequest {
+  /** Workflow ID to trigger */
+  workflowId: number;
+  /** Node ID to start execution from */
+  startNodeId: string;
+  /** Request payload (body) */
+  payload: any;
+  /** HTTP headers */
+  headers: Record<string, string | string[] | undefined>;
+  /** HTTP method */
+  method: string;
+  /** Query parameters */
+  query: Record<string, any>;
+  /** Path parameters */
+  params: Record<string, string>;
+  /** Original request path */
+  path: string;
+  /** Unique request ID */
+  requestId?: string;
 }

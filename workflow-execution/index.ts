@@ -10,16 +10,15 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { createServer } from 'http';
-import { v4 as uuidv4 } from 'uuid';
 
 // Import components from new structure
 import { workflowQueue } from './queue/simpleQueue';
 import { executeWorkflow } from './engine/workflowEngine';
 import { 
-  registerPendingResponse, 
   sendWebhookResponse, 
   getWebhookStats 
 } from './webhooks/webhookHandler';
+import { handleWebhookRequest } from './webhooks/webhookController';
 
 // Create the express app
 const app = express();
@@ -56,62 +55,7 @@ router.get('/health', (_req: Request, res: Response) => {
  * directly respond to the original webhook caller when a send_to_webhook
  * node with respondToOriginal=true is encountered.
  */
-router.post('/webhook', async (req: Request, res: Response) => {
-  try {
-    const { workflowId, originalRequest, startNodeId } = req.body;
-    
-    if (!workflowId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Workflow ID is required'
-      });
-    }
-    
-    // Generate request ID for tracking
-    const requestId = uuidv4();
-    
-    // Extract webhook data from the original request
-    const webhookData = {
-      payload: req.body.payload || {},
-      headers: req.body.headers || {},
-      method: req.body.method || 'POST',
-      query: req.body.query || {},
-      params: req.body.params || {},
-      path: req.body.path || '',
-      // Add metadata for webhook response handling
-      requestId,
-      isWebhookRequest: true
-    };
-    
-    console.log(`[Workflow Execution] Webhook request received (ID: ${requestId}) for workflow ${workflowId}`);
-    
-    // Register the pending response
-    registerPendingResponse(requestId, res, workflowId);
-    
-    // Add job to the queue with the requestId
-    const jobId = await workflowQueue.addJob('execute-workflow', {
-      workflowId,
-      input: webhookData,
-      startNodeId,
-      executionMode: "webhook",
-      metaData: {
-        requestId,
-        isWebhook: true
-      }
-    });
-    
-    console.log(`[Workflow Execution] Webhook workflow queued with job ID: ${jobId}`);
-    
-    // Note: We don't send a response here - it will be sent either by a webhook node
-    // or by the timeout handler
-  } catch (error) {
-    console.error('[Workflow Execution] Error processing webhook:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : String(error)
-    });
-  }
-});
+router.post('/webhook', handleWebhookRequest);
 
 /**
  * Send a response to a pending webhook request
