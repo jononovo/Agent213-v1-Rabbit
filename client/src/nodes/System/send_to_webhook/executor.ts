@@ -79,12 +79,15 @@ export const execute = async (
       
       // Return the result indicating we're handling the webhook response
       return createNodeOutput(
-        webhookResponseOutput,
+        {
+          webhookResponseHandled: true,
+          ...webhookResponseOutput
+        },
         {
           startTime,
           additionalMeta: {
             isWebhookResponse: true,
-            webhookResponseHandled: true
+            isHandled: true // Flag for the meta info
           }
         }
       );

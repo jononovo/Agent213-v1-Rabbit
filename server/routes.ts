@@ -455,7 +455,7 @@ async function handleWebhookRequest(
     // Execute the workflow with the webhook data
     console.log(`[${requestId}] Executing workflow ${workflowId} via webhook trigger, node ${nodeId}`);
     const result = await runWorkflow(workflowId, webhookInput, { 
-      includeDetail: true, // Always include node details for webhook responses
+      includeDetail: false,
       executionMode: "webhook",
       debug: true // Enable debug mode for more detailed logs
     });
@@ -468,29 +468,14 @@ async function handleWebhookRequest(
       nodesExecuted: result.executionDetails?.nodesExecuted
     });
 
-    // Find the send_to_webhook node's output from the nodeOutputs
-    const webhookNodeOutput = result.nodeOutputs ? 
-      Object.values(result.nodeOutputs).find((output: any) => 
-        output?.output?.webhookResponseHandled === true
-      ) : null;
-      
-    if (webhookNodeOutput) {
-      // Use the response data from the webhook node
+    // Check if any send_to_webhook node detected and processed the webhook response
+    // If not, fall back to the legacy automatic response mode for backward compatibility
+    if (result.webhookResponseHandled) {
       console.log(`[${requestId}] Webhook response handled by a node in the workflow`);
-      const responseData = webhookNodeOutput.output?.response || webhookNodeOutput.output;
-      res.json(responseData);
-      return;
-    } else if (result.webhookResponseHandled) {
-      // This case is for backward compatibility - it shouldn't happen with proper node outputs
-      console.log(`[${requestId}] Webhook response flag set, but no response data found`);
-      res.json({
-        success: true,
-        message: "Webhook processed - no specific response",
-        requestId: requestId
-      });
+      // Response already sent by a node in the workflow
       return;
     } else {
-      console.log(`[${requestId}] No webhook response node found. Using automatic response.`);
+      console.log(`[${requestId}] No webhook response node found. Using legacy automatic response.`);
       // Legacy automatic response - return the workflow output as the HTTP response
       res.json({
         success: true,
