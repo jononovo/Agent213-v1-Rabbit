@@ -8,7 +8,7 @@ import { importWebhookTestWorkflow } from "./importTestWorkflow";
 // Import the Integration Engine server
 import { startIntegrationServer } from './integration';
 // Import the Workflow Execution server
-import { startWorkflowExecutionServer } from './workflow-execution';
+import { startWorkflowExecutionServer } from '../workflow-execution';
 
 const app = express();
 app.use(express.json());
