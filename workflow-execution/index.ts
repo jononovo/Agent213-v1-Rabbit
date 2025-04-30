@@ -2,8 +2,10 @@
  * Workflow Execution Server
  * 
  * This is a separate Express server dedicated to handling workflow execution.
- * It provides endpoints for queuing workflows, checking execution status,
- * and directly handling webhook responses.
+ * It provides endpoints for queuing workflows and checking execution status.
+ * 
+ * Note: Webhook handling has been moved to the Integration Engine Server in the
+ * three-server architecture to ensure proper separation of concerns.
  */
 
 import express, { Request, Response, NextFunction } from 'express';
