@@ -87,7 +87,11 @@ const TestResultsPanel: React.FC<TestResultsPanelProps> = ({
   const customTestCount = selectedNode.customTestResults?.length || 0;
   const customPassedCount = selectedNode.customTestResults?.filter(r => r.status === 'passed').length || 0;
   
+  const integrationTestCount = selectedNode.integrationTestResults?.length || 0;
+  const integrationPassedCount = selectedNode.integrationTestResults?.filter(r => r.status === 'passed').length || 0;
+  
   const hasCustomTests = customTestCount > 0;
+  const hasIntegrationTests = integrationTestCount > 0;
   
   // Helper function to format test duration
   const formatDuration = (duration?: number) => {
@@ -109,6 +113,11 @@ const TestResultsPanel: React.FC<TestResultsPanelProps> = ({
             {hasCustomTests && (
               <Badge variant="outline" className="text-xs">
                 Custom: {customPassedCount}/{customTestCount}
+              </Badge>
+            )}
+            {hasIntegrationTests && (
+              <Badge variant="outline" className="text-xs">
+                Integration: {integrationPassedCount}/{integrationTestCount}
               </Badge>
             )}
           </div>
@@ -134,6 +143,11 @@ const TestResultsPanel: React.FC<TestResultsPanelProps> = ({
         <Tabs defaultValue="standard">
           <TabsList className="w-full mb-4">
             <TabsTrigger value="standard" className="flex-1">Standard Tests</TabsTrigger>
+            {hasIntegrationTests && (
+              <TabsTrigger value="integration" className="flex-1">
+                Integration Tests
+              </TabsTrigger>
+            )}
             <TabsTrigger value="custom" className="flex-1" disabled={!hasCustomTests}>
               Custom Tests
             </TabsTrigger>
@@ -180,6 +194,52 @@ const TestResultsPanel: React.FC<TestResultsPanelProps> = ({
                 <AlertTitle>No test results</AlertTitle>
                 <AlertDescription>
                   Run tests on this node to see results.
+                </AlertDescription>
+              </Alert>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="integration">
+            {hasIntegrationTests ? (
+              <ScrollArea className="h-[400px] pr-4">
+                <div className="space-y-4">
+                  {selectedNode.integrationTestResults?.map((testResult: TestResult, index: number) => {
+                    // Try using category-specific icon first, fallback to general test type icon
+                    const TestIcon = TEST_CATEGORY_ICONS[testResult.test] || 
+                                    TEST_ICONS[testResult.test as TestType] || 
+                                    AlertIcon;
+                    
+                    return (
+                      <div key={`int-test-${index}`} className="flex items-start space-x-3 pb-3 border-b border-gray-100">
+                        <div className="mt-0.5">
+                          {getTestStatusIcon(testResult.status)}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <TestIcon className="h-4 w-4 text-purple-500" />
+                              <h3 className="font-medium">{testResult.name}</h3>
+                            </div>
+                            {testResult.duration !== undefined && (
+                              <span className="text-xs text-slate-500 ml-2">{formatDuration(testResult.duration)}</span>
+                            )}
+                          </div>
+                          
+                          {testResult.message && (
+                            <p className="text-sm text-gray-600 mt-1">{testResult.message}</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            ) : (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>No integration tests</AlertTitle>
+                <AlertDescription>
+                  This node doesn't have any integration tests or isn't an Integration category node.
                 </AlertDescription>
               </Alert>
             )}

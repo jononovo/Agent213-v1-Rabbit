@@ -16,6 +16,7 @@ export interface NodeType {
   status?: 'validated' | 'partial' | 'failed' | 'pending';
   testResults?: TestResult[];
   customTestResults?: CustomTestResult[];
+  integrationTestResults?: TestResult[]; // Add integration test results
   customFolder?: string; // Path to custom folder for folder-based nodes
 }
 
@@ -74,14 +75,9 @@ export const runStandardTests = async (
     category: node.category
   };
   
-  // Choose which tests to run based on node category
-  const testsToRun = node.category === 'Integration' ? 
-    [...standardNodeTests, ...integrationNodeTests] : 
-    standardNodeTests;
-  
   // Run each standard test
-  for (let i = 0; i < testsToRun.length; i++) {
-    const test = testsToRun[i];
+  for (let i = 0; i < standardNodeTests.length; i++) {
+    const test = standardNodeTests[i];
     const testIndex = node.testResults.findIndex(t => t.name === test.name);
     
     if (testIndex === -1) continue; // Skip if test not found in results array
@@ -119,7 +115,51 @@ export const runStandardTests = async (
     }
   }
   
-  // Standard tests are complete
+  // Run integration tests if this is an Integration node
+  if (node.category === 'Integration' && node.integrationTestResults && node.integrationTestResults.length > 0) {
+    console.log(`Running integration tests for node ${node.type}`);
+    
+    for (let i = 0; i < integrationNodeTests.length; i++) {
+      const test = integrationNodeTests[i];
+      const testIndex = node.integrationTestResults.findIndex(t => t.name === test.name);
+      
+      if (testIndex === -1) continue; // Skip if test not found in results array
+      
+      try {
+        // Mark test as running
+        node.integrationTestResults[testIndex].status = 'running';
+        updateNode({ ...node });
+        
+        // Measure test execution time
+        const testStartTime = performance.now();
+        const result = await test.run();
+        const testDuration = Math.round(performance.now() - testStartTime);
+        
+        // Update test status
+        node.integrationTestResults[testIndex] = {
+          ...node.integrationTestResults[testIndex],
+          status: result.passed ? 'passed' : 'failed',
+          message: result.message,
+          duration: testDuration
+        };
+        
+        updateNode({ ...node });
+        
+        // Short delay between tests for UI update
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (error: any) {
+        // Handle test execution error
+        node.integrationTestResults[testIndex] = {
+          ...node.integrationTestResults[testIndex],
+          status: 'failed',
+          message: `Test execution error: ${error.message || String(error)}`
+        };
+        updateNode({ ...node });
+      }
+    }
+  }
+  
+  // All tests are complete
   onTestComplete(node);
 };
 
@@ -184,7 +224,8 @@ export const runCustomTests = async (
 export const calculateTestStatus = (node: NodeType): 'validated' | 'partial' | 'failed' => {
   const standardFailures = node.testResults?.some(r => r.status === 'failed') || false;
   const customFailures = node.customTestResults?.some(r => r.status === 'failed') || false;
-  const hasFailures = standardFailures || customFailures;
+  const integrationFailures = node.integrationTestResults?.some(r => r.status === 'failed') || false;
+  const hasFailures = standardFailures || customFailures || integrationFailures;
   
   if (hasFailures) {
     return 'failed';
@@ -192,7 +233,8 @@ export const calculateTestStatus = (node: NodeType): 'validated' | 'partial' | '
   
   const hasPending = 
     (node.testResults?.some(r => r.status === 'pending' || r.status === 'running') || false) ||
-    (node.customTestResults?.some(r => r.status === 'pending' || r.status === 'running') || false);
+    (node.customTestResults?.some(r => r.status === 'pending' || r.status === 'running') || false) ||
+    (node.integrationTestResults?.some(r => r.status === 'pending' || r.status === 'running') || false);
     
   if (hasPending) {
     return 'partial';
@@ -214,13 +256,10 @@ export const initNodeForTesting = (
   // Reset test results
   updatedNode.testResults = [];
   updatedNode.customTestResults = [];
+  updatedNode.integrationTestResults = [];
   
-  // Set up standard tests
-  const testsToRun = node.category === 'Integration' ? 
-    [...standardNodeTests, ...integrationNodeTests] : 
-    standardNodeTests;
-    
-  testsToRun.forEach(test => {
+  // Add standard tests for all nodes
+  standardNodeTests.forEach(test => {
     updatedNode.testResults?.push({
       name: test.name,
       test: test.category as TestType, // Map the test category to TestType
@@ -228,8 +267,22 @@ export const initNodeForTesting = (
     });
     
     // Log test being added for debugging
-    console.log(`Adding test: ${test.name} with category: ${test.category}`);
+    console.log(`Adding standard test: ${test.name} with category: ${test.category}`);
   });
+  
+  // Add integration tests only for Integration category nodes
+  if (node.category === 'Integration') {
+    integrationNodeTests.forEach(test => {
+      updatedNode.integrationTestResults?.push({
+        name: test.name,
+        test: test.category as TestType,
+        status: 'running'
+      });
+      
+      // Log integration test being added
+      console.log(`Adding integration test: ${test.name} with category: ${test.category}`);
+    });
+  }
   
   // Set up custom tests if available
   if (hasCustomTests && customTests) {
