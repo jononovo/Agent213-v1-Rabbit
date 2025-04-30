@@ -2395,6 +2395,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           { nodes: [], edges: [] } : processedFlowData
       });
       
+      // Register webhook nodes with integration engine for the new workflow
+      if (workflow && workflow.flowData) {
+        const flowData = typeof workflow.flowData === 'string' 
+          ? JSON.parse(workflow.flowData) 
+          : workflow.flowData;
+          
+        // Find all webhook_trigger nodes
+        if (flowData.nodes && Array.isArray(flowData.nodes)) {
+          const webhookNodes = flowData.nodes.filter(node => node.type === 'webhook_trigger');
+          
+          // Register each webhook node with integration engine
+          webhookNodes.forEach(async (node) => {
+            try {
+              // Forward registration to integration engine
+              const webhookData = {
+                ...node.data,
+                workflowId: workflow.id,
+                nodeId: node.id
+              };
+              
+              // Use the integration client's API
+              await fetch(`${process.env.INTEGRATION_ENGINE_URL || 'http://localhost:3001'}/api/register-webhook`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(webhookData)
+              });
+              
+              console.log(`Registered webhook for node ${node.id} in new workflow ${workflow.id}`);
+            } catch (error) {
+              console.error(`Failed to register webhook for node ${node.id}:`, error);
+            }
+          });
+        }
+      }
+      
       // Return the created workflow
       res.status(201).json(workflow);
     } catch (error) {
@@ -2460,6 +2495,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Update the workflow
       const updatedWorkflow = await storage.updateWorkflow(id, updateData);
+      
+      // Register webhook nodes with integration engine
+      if (updatedWorkflow && updatedWorkflow.flowData) {
+        const flowData = typeof updatedWorkflow.flowData === 'string' 
+          ? JSON.parse(updatedWorkflow.flowData) 
+          : updatedWorkflow.flowData;
+          
+        // Find all webhook_trigger nodes
+        if (flowData.nodes && Array.isArray(flowData.nodes)) {
+          const webhookNodes = flowData.nodes.filter(node => node.type === 'webhook_trigger');
+          
+          // Register each webhook node with integration engine
+          webhookNodes.forEach(async (node) => {
+            try {
+              // Forward registration to integration engine
+              const webhookData = {
+                ...node.data,
+                workflowId: updatedWorkflow.id,
+                nodeId: node.id
+              };
+              
+              // Use the integration client's API
+              await fetch(`${process.env.INTEGRATION_ENGINE_URL || 'http://localhost:3001'}/api/register-webhook`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(webhookData)
+              });
+              
+              console.log(`Registered webhook for node ${node.id} in workflow ${updatedWorkflow.id}`);
+            } catch (error) {
+              console.error(`Failed to register webhook for node ${node.id}:`, error);
+            }
+          });
+        }
+      }
       
       // Return the updated workflow
       res.json(updatedWorkflow);

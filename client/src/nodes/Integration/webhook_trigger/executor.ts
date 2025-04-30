@@ -37,8 +37,10 @@ export const execute = async (
     const startTime = new Date();
     const { path, methods, workflowId, nodeId } = nodeData;
     
-    // Register with the integration engine
-    await registerWithIntegrationEngine(nodeData);
+    // Only register if not in preview mode and IDs are available
+    if (workflowId && nodeId && !inputs?._isPreview) {
+      await registerWithIntegrationEngine(nodeData);
+    }
     
     // For testing purposes, simulate a webhook payload
     // In a real scenario, this data would come from an HTTP request
