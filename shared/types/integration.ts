@@ -84,3 +84,57 @@ export interface WebhookPayload {
     }
   };
 }
+
+/**
+ * Pending webhook response
+ * Used to track HTTP responses that are waiting for a response
+ */
+export interface PendingWebhookResponse {
+  /** Express response object */
+  res: Response;
+  /** Timeout handler ID */
+  timeout: NodeJS.Timeout;
+  /** ID of the associated workflow */
+  workflowId: number;
+}
+
+/**
+ * Webhook request data
+ * Contains all information needed to process a webhook request
+ */
+export interface WebhookRequest {
+  /** Workflow ID to trigger */
+  workflowId: number;
+  /** Node ID to start execution from */
+  startNodeId: string;
+  /** Request payload (body) */
+  payload: any;
+  /** HTTP headers */
+  headers: Record<string, string | string[] | undefined>;
+  /** HTTP method */
+  method: string;
+  /** Query parameters */
+  query: Record<string, any>;
+  /** Path parameters */
+  params: Record<string, string>;
+  /** Original request path */
+  path: string;
+  /** Unique request ID */
+  requestId?: string;
+}
+
+/**
+ * Webhook execution result
+ */
+export interface WebhookExecutionResult {
+  /** Whether the execution was successful */
+  success: boolean;
+  /** Message describing the result */
+  message: string;
+  /** Output data from execution */
+  output?: any;
+  /** Error details if execution failed */
+  error?: string;
+  /** Whether the webhook response was handled */
+  webhookResponseHandled?: boolean;
+}

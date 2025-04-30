@@ -13,6 +13,8 @@ import { NodeExecutionData } from '../nodeTypes';
  */
 export interface Job {
   id: string;
+  type?: string;
+  status?: string;
   data: {
     workflowId: number;
     input?: any;
@@ -22,6 +24,11 @@ export interface Job {
   };
   options?: WorkflowExecutionOptions;
   createdAt: Date;
+  startedAt?: Date;
+  completedAt?: Date;
+  result?: any;
+  error?: string;
+  updatedAt?: Date;
 }
 
 /**
