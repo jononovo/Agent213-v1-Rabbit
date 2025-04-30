@@ -1,8 +1,8 @@
 /**
  * Integration Nodes
  * 
- * This module exports all integration nodes that allow connecting
- * to external services and APIs.
+ * This module exports all integration nodes that connect to
+ * external APIs and services.
  */
 
 // Export the node types from this category

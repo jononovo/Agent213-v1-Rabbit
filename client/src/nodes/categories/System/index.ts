@@ -1,18 +1,21 @@
 /**
  * System Nodes
  * 
- * This module exports all system nodes.
+ * This module exports all system nodes that provide core
+ * functionality for the workflow engine.
  */
 
+// Import the node definitions
+import sendToWebhookDefinition from './send_to_webhook/definition';
+
 // Export the node types from this category
-export const SYSTEM_NODE_TYPES = [
-  'claude',
-  'function_node',
+export const SYSTEM_NODE_TYPES: string[] = [
   'send_to_webhook',
-  // Additional nodes will be added as they are migrated
+  // Other system nodes will be added as they are migrated
 ];
 
-// Export node definitions for direct import
-export { default as claude } from './claude/definition';
-export { default as function_node } from './function_node/definition';
+// Export the node definitions
 export { default as send_to_webhook } from './send_to_webhook/definition';
+
+// Export the node executors
+export { execute as execute_send_to_webhook } from './send_to_webhook/executor';

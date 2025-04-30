@@ -1,7 +1,8 @@
 /**
  * Custom Nodes
  * 
- * This module exports all custom nodes that are specific to the application.
+ * This module exports all custom nodes that are specific to
+ * the application's unique requirements.
  */
 
 // Export the node types from this category
