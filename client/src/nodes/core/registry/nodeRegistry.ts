@@ -6,10 +6,42 @@
  * to ensure consistency across the entire application.
  */
 
-import { NodeDefinition } from '../types/nodeDefinitions';
-import { EnhancedNodeExecutor, NodeExecutionData } from '../types/nodeExecutionTypes';
-import { discoverNodeDefinitions } from './nodeDiscovery';
-import { validateNodeDefinition, formatPortDefinitions } from './nodeValidation';
+import { discoverNodeDefinitions, setRegisterNodeDefinitionFn } from './nodeDiscovery';
+import { NodeDefinition, validateNodeDefinition, formatPortDefinitions } from './nodeValidation';
+
+// Define locally to avoid circular dependencies
+export interface WorkflowItem {
+  json: any;
+  meta?: {
+    source?: string;
+    timestamp?: Date;
+    outputType?: string;
+    context?: Record<string, any>;
+  };
+  binary?: {
+    mimeType: string;
+    data: string;
+    filename?: string;
+  };
+}
+
+export interface NodeExecutionData {
+  items: WorkflowItem[];
+  meta: {
+    startTime: Date;
+    endTime: Date;
+    source?: string;
+    error?: boolean;
+    errorMessage?: string;
+    warning?: string;
+    [key: string]: any;
+  };
+}
+
+export interface EnhancedNodeExecutor {
+  definition?: Record<string, any>;
+  execute: (nodeData: Record<string, any>, inputs: Record<string, NodeExecutionData>) => Promise<NodeExecutionData>;
+}
 
 // Integration node capabilities
 export interface IntegrationCapabilities {
@@ -78,6 +110,9 @@ export async function initializeRegistry(): Promise<void> {
   console.log('🔄 Initializing Unified Node Registry...');
   
   try {
+    // Set the registration function for node discovery
+    setRegisterNodeDefinitionFn(registerNodeDefinition);
+    
     // Discover all node definitions from the filesystem
     await discoverNodeDefinitions();
     

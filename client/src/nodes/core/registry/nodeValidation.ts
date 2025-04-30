@@ -5,7 +5,26 @@
  * It ensures that nodes have all required fields and follow the expected format.
  */
 
-import { NodeDefinition, PortDefinition } from '../types/nodeDefinitions';
+// Define interface types locally to avoid circular dependencies
+export interface PortDefinition {
+  type: string;
+  description: string;
+  optional?: boolean;
+  defaultValue?: any;
+}
+
+export interface NodeDefinition {
+  type: string;
+  name: string;
+  description: string;
+  category: string;
+  version: string;
+  inputs?: Record<string, PortDefinition>;
+  outputs?: Record<string, PortDefinition>;
+  defaultData?: Record<string, any>;
+  icon?: string;
+  [key: string]: any;
+}
 
 // Required fields for validation
 const REQUIRED_NODE_FIELDS = [

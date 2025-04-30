@@ -6,7 +6,14 @@
  */
 
 import { NodeDefinition } from '../types/nodeDefinitions';
-import { registerNodeDefinition } from './nodeRegistry';
+// Forward declaration to avoid circular dependency
+export type RegisterNodeDefinitionFn = (definition: NodeDefinition, folderPath: string) => boolean;
+let registerNodeDefinitionFn: RegisterNodeDefinitionFn | null = null;
+
+// Set the registration function from registry
+export function setRegisterNodeDefinitionFn(fn: RegisterNodeDefinitionFn) {
+  registerNodeDefinitionFn = fn;
+}
 
 // Define all supported node folder locations - single source of truth
 export const NODE_FOLDERS = ['System', 'Custom', 'Integration', 'Agents'];
@@ -21,7 +28,7 @@ export function processDefinitions(folder: string, definitionModules: Record<str
     const module = definitionModules[path] as any;
     const nodeDef = module.default as NodeDefinition;
     
-    if (registerNodeDefinition(nodeDef, folder)) {
+    if (registerNodeDefinitionFn && registerNodeDefinitionFn(nodeDef, folder)) {
       count++;
     }
   }
