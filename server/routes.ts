@@ -400,9 +400,8 @@ export async function runWorkflow(
  * Helper function to handle incoming webhook requests
  * This is used by both custom path webhooks and dynamic path webhooks
  * 
- * Updated to support two webhook response modes:
- * 1. Legacy automatic mode - Return workflow result as HTTP response
- * 2. Node-based response mode - Store response context for send_to_webhook nodes to use
+ * It forwards the request to the Workflow Execution Server and
+ * allows send_to_webhook nodes to respond to the original request.
  */
 async function handleWebhookRequest(
   req: Request,
@@ -410,182 +409,27 @@ async function handleWebhookRequest(
   workflowId: number,
   nodeId: string
 ): Promise<void> {
-  const requestId = uuidv4();
-  console.log(`[${requestId}] Webhook request received:`, {
-    workflowId,
-    nodeId,
-    method: req.method,
-    path: req.path,
-    headers: req.headers,
-    body: req.body,
-    query: req.query,
-    params: req.params
-  });
+  // Import the webhook proxy service
+  const { forwardWebhookToExecutionServer } = require('./services/webhookProxy');
   
   try {
-    // Get the workflow
+    // Get the workflow to verify it exists
     const workflow = await storage.getWorkflow(workflowId);
     if (!workflow) {
-      console.log(`[${requestId}] Webhook error: Workflow ${workflowId} not found`);
+      console.log(`Webhook error: Workflow ${workflowId} not found`);
       return res.status(404).json({ 
         success: false, 
         message: "Webhook target workflow not found" 
       });
     }
 
-    // Prepare the input data for the workflow
-    const webhookInput = {
-      payload: req.body,
-      headers: req.headers,
-      method: req.method,
-      query: req.query,
-      params: req.params,
-      nodeId: nodeId,
-      requestId: requestId,
-      // Add response context that send_to_webhook nodes can use
-      responseContext: {
-        isWebhookResponse: true,
-        originalWebhookRequest: {
-          path: req.path,
-          method: req.method,
-        }
-      }
-    };
-
-    // Execute the workflow using the Workflow Execution Server
-    console.log(`[${requestId}] Submitting workflow ${workflowId} to Workflow Execution Server`);
-    
-    try {
-      // Submit the workflow to the execution server
-      const executeResponse = await fetch('http://localhost:3002/api/execute', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          workflowId: workflowId,
-          input: webhookInput,
-          startNodeId: nodeId,
-          executionMode: "webhook",
-          // Include original request information for response handling
-          originalRequest: {
-            requestId: requestId,
-            responseObject: res,  // This will be serialized and lost, but indicates we need a response
-            path: req.path,
-            method: req.method,
-            responseNeeded: true
-          }
-        })
-      });
-      
-      const executeResult = await executeResponse.json() as {
-        success: boolean;
-        jobId?: string;
-        error?: string;
-        webhookHandled?: boolean;
-      };
-      
-      if (!executeResult.success) {
-        throw new Error(`Failed to queue workflow: ${executeResult.error || 'Unknown error'}`);
-      }
-      
-      // Check if this is a synchronous webhook that was immediately handled
-      if (executeResult.webhookHandled) {
-        console.log(`[${requestId}] Webhook response already handled by execution server`);
-        return; // Response already sent
-      }
-      
-      // For async execution, we'll poll for status and wait for a response
-      const jobId = executeResult.jobId;
-      if (!jobId) {
-        throw new Error('No job ID returned from workflow execution server');
-      }
-      
-      console.log(`[${requestId}] Workflow queued successfully with job ID: ${jobId}`);
-      
-      // Set a timeout for webhook response (10 seconds)
-      const timeout = 10000;
-      const maxAttempts = 10;
-      const pollInterval = timeout / maxAttempts;
-      
-      let attempts = 0;
-      let completed = false;
-      
-      while (!completed && attempts < maxAttempts) {
-        attempts++;
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
-        
-        const statusResponse = await fetch(`http://localhost:3002/api/status/${jobId}`, {
-          method: 'GET'
-        });
-        
-        const statusResult = await statusResponse.json() as {
-          success: boolean;
-          job?: {
-            id: string;
-            status: 'pending' | 'processing' | 'completed' | 'failed';
-            result?: any;
-            error?: string;
-            webhookHandled?: boolean;
-          };
-          error?: string;
-        };
-        
-        if (!statusResult.success) {
-          console.error(`[${requestId}] Error checking status: ${statusResult.error || 'Unknown error'}`);
-          continue;
-        }
-        
-        const job = statusResult.job;
-        if (!job) {
-          continue;
-        }
-        
-        console.log(`[${requestId}] Job status: ${job.status} (attempt ${attempts}/${maxAttempts})`);
-        
-        // Check if the webhook was handled by the job
-        if (job.webhookHandled) {
-          console.log(`[${requestId}] Webhook response handled by the workflow execution server`);
-          completed = true;
-          return; // Response already sent
-        }
-        
-        // If job completed but webhook wasn't handled, we'll use the result as the response
-        if (job.status === 'completed' || job.status === 'failed') {
-          completed = true;
-          
-          if (job.status === 'completed') {
-            console.log(`[${requestId}] No webhook response node found. Using automatic response.`);
-            // Legacy automatic response - return the workflow output
-            res.json({
-              success: true,
-              message: "Webhook received and workflow executed",
-              requestId: requestId,
-              result: job.result
-            });
-          } else {
-            throw new Error(job.error || 'Workflow execution failed');
-          }
-        }
-      }
-      
-      // If we reach this point, the job timed out
-      if (!completed) {
-        console.log(`[${requestId}] Webhook processing timed out. Sending timeout response.`);
-        res.status(202).json({
-          success: true,
-          message: "Webhook received and processing started, but execution is taking longer than expected",
-          requestId: requestId,
-          jobId: jobId
-        });
-      }
-    }
+    // Forward to the Workflow Execution Server using our proxy service
+    await forwardWebhookToExecutionServer(req, res, workflowId, nodeId);
   } catch (error) {
-    console.error(`[${requestId}] Webhook execution error:`, error);
+    console.error(`Webhook execution error:`, error);
     res.status(500).json({ 
       success: false, 
       message: "Error processing webhook", 
-      requestId: requestId,
       error: error instanceof Error ? error.message : String(error)
     });
   }
