@@ -14,6 +14,8 @@ import { integrationEngine } from './src/integrationEngine';
 import { log } from '../server/vite';
 import { handleWebhookRequest, handleWebhookResponse } from './webhooks/webhookController';
 import { getWebhookStats } from './webhooks/webhookHandler';
+import fetch from 'node-fetch';
+import { storage } from '../server/storage';
 
 // Create Express app
 const app: Express = express();
@@ -38,13 +40,83 @@ router.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', server: 'integration-engine' });
 });
 
-// === Webhook Endpoints ===
+// === Direct Webhook Routes (without /api prefix) ===
 
-// Handle incoming webhooks with custom paths
-router.all('/webhooks/:path', handleWebhookRequest);
+// Handle direct webhook at root level with custom path
+app.all('/webhooks/:path', async (req: Request, res: Response) => {
+  try {
+    // Get the custom path from the request
+    const customPath = req.params.path;
+    
+    console.log(`[Integration Engine] Direct webhook request received at custom path: ${customPath}`);
+    
+    // Find a workflow with matching webhook path
+    // Query our storage to find matching workflows
+    let targetWorkflow;
+    let targetNodeId;
+    
+    try {
+      const workflows = await storage.getWorkflows();
+      
+      for (const workflow of workflows) {
+        try {
+          if (!workflow.flowData) continue;
+          
+          // Parse flow data to find webhook nodes
+          const flowData = typeof workflow.flowData === 'string' ? 
+            JSON.parse(workflow.flowData) : workflow.flowData;
+          
+          // Find webhook trigger nodes with matching path
+          const nodes = flowData.nodes || [];
+          const webhookNodes = nodes.filter((node: any) => 
+            node.type === 'webhook_trigger' && 
+            node.data?.settings?.path === customPath
+          );
+          
+          if (webhookNodes.length > 0) {
+            targetWorkflow = workflow;
+            targetNodeId = webhookNodes[0].id;
+            break;
+          }
+        } catch (e) {
+          console.error(`[Integration Engine] Error parsing flow data for workflow ${workflow.id}:`, e);
+        }
+      }
+    } catch (error) {
+      console.error('[Integration Engine] Error finding workflow for webhook path:', error);
+    }
+    
+    if (!targetWorkflow || !targetNodeId) {
+      return res.status(404).json({
+        success: false,
+        message: `No workflow found with webhook path: ${customPath}`
+      });
+    }
+    
+    // Now we have the workflow and node, we can process the webhook
+    // We modify the request to include the workflow and node IDs
+    req.params.workflowId = String(targetWorkflow.id);
+    req.params.nodeId = targetNodeId;
+    
+    // Forward to our webhook handler
+    return handleWebhookRequest(req, res);
+  } catch (error) {
+    console.error('[Integration Engine] Error processing direct webhook:', error);
+    
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        message: 'Error processing webhook',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+});
 
-// Handle incoming webhooks with direct workflow/node targeting
-router.all('/webhooks/workflow/:workflowId/node/:nodeId', handleWebhookRequest);
+// Handle direct webhook with workflow/node targeting
+app.all('/webhooks/workflow/:workflowId/node/:nodeId', handleWebhookRequest);
+
+// === Webhook API Endpoints ===
 
 // Send response to a pending webhook
 router.post('/webhook-response', handleWebhookResponse);
@@ -54,6 +126,36 @@ router.get('/webhook-stats', (req: Request, res: Response) => {
   res.json({
     success: true,
     ...getWebhookStats()
+  });
+});
+
+// Webhook documentation endpoint
+router.get('/webhooks', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    message: 'Webhook API endpoints documentation',
+    endpoints: {
+      custom_path: {
+        url: '/webhooks/:path',
+        method: 'Any',
+        description: 'Send a webhook to a workflow with custom path'
+      },
+      direct_workflow: {
+        url: '/webhooks/workflow/:workflowId/node/:nodeId',
+        method: 'Any',
+        description: 'Send a webhook directly to a specific workflow node'
+      },
+      response: {
+        url: '/api/webhook-response',
+        method: 'POST',
+        description: 'Send a response to a pending webhook request'
+      },
+      stats: {
+        url: '/api/webhook-stats',
+        method: 'GET',
+        description: 'Get statistics about pending webhook responses'
+      }
+    }
   });
 });
 

@@ -6,13 +6,32 @@
  */
 
 import { Response } from 'express';
-import { PendingWebhookResponse } from '../../shared/types/integration';
+import { PendingWebhookResponse, WebhookStats } from '../../shared/types/webhook';
+import { persistentStore } from './persistentStore';
 
 // Store pending HTTP responses for webhook processing
 const pendingResponses = new Map<string, PendingWebhookResponse>();
 
 // Default timeout for webhook responses (in milliseconds)
 const DEFAULT_TIMEOUT = 30000; // 30 seconds
+
+// Initialize by loading any persisted webhooks
+async function initializePersistence(): Promise<void> {
+  try {
+    // Clean up any stale webhooks first
+    const cleanupCount = await persistentStore.cleanupStaleWebhooks();
+    if (cleanupCount > 0) {
+      console.log(`[Integration Engine] Cleaned up ${cleanupCount} stale webhook entries`);
+    }
+    
+    // Note: We can't restore actual response objects, so this is mainly for cleanup
+  } catch (error) {
+    console.error('[Integration Engine] Error initializing webhook persistence:', error);
+  }
+}
+
+// Initialize persistence system
+initializePersistence().catch(console.error);
 
 /**
  * Register a pending webhook response
@@ -42,16 +61,23 @@ export function registerPendingResponse(
       }
       
       pendingResponses.delete(requestId);
+      persistentStore.removeResponse(requestId).catch(console.error);
       console.log(`[Integration Engine] Auto-response sent for webhook ${requestId} (timeout reached)`);
     }
   }, timeoutMs);
+  
+  const now = Date.now();
   
   // Store the response object
   pendingResponses.set(requestId, { 
     res, 
     timeout,
-    workflowId 
+    workflowId,
+    timestamp: now
   });
+  
+  // Persist basic metadata for recovery
+  persistentStore.saveResponse(requestId, { workflowId }).catch(console.error);
   
   console.log(`[Integration Engine] Registered pending response for requestId ${requestId} (workflow ${workflowId})`);
 }
@@ -87,12 +113,14 @@ export function sendWebhookResponse(
     
     // Clean up
     pendingResponses.delete(requestId);
+    persistentStore.removeResponse(requestId).catch(console.error);
     return true;
   } else {
     console.log(`[Integration Engine] Response already sent for request ${requestId}`);
     
     // Clean up anyway
     pendingResponses.delete(requestId);
+    persistentStore.removeResponse(requestId).catch(console.error);
     return false;
   }
 }
@@ -100,11 +128,7 @@ export function sendWebhookResponse(
 /**
  * Get statistics about pending webhook responses
  */
-export function getWebhookStats(): {
-  pendingCount: number;
-  pendingIds: string[];
-  workflowIds: number[];
-} {
+export function getWebhookStats(): WebhookStats {
   return {
     pendingCount: pendingResponses.size,
     pendingIds: Array.from(pendingResponses.keys()),

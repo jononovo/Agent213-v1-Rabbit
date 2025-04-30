@@ -8,7 +8,7 @@
 import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import fetch from 'node-fetch';
-import { WebhookRequest, WebhookExecutionResult } from '../../shared/types/integration';
+import { WebhookRequest, WebhookExecutionResult } from '../../shared/types/webhook';
 import { registerPendingResponse, sendWebhookResponse } from './webhookHandler';
 
 /**
@@ -20,7 +20,7 @@ import { registerPendingResponse, sendWebhookResponse } from './webhookHandler';
  */
 export async function handleWebhookRequest(req: Request, res: Response): Promise<void> {
   try {
-    // Extract workflow and node IDs from the request parameters or body
+    // Direct workflow/node webhook (custom path handling is now in the route handler)
     const workflowId = parseInt(req.params.workflowId || req.body.workflowId, 10);
     const nodeId = req.params.nodeId || req.body.startNodeId;
     
