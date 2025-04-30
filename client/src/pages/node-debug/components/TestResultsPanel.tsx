@@ -144,11 +144,9 @@ const TestResultsPanel: React.FC<TestResultsPanelProps> = ({
         <Tabs defaultValue="standard">
           <TabsList className="w-full mb-4">
             <TabsTrigger value="standard" className="flex-1">Standard Tests</TabsTrigger>
-            {selectedNode.category === 'Integration' && (
-              <TabsTrigger value="integration" className="flex-1">
-                Integration Tests
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="integration" className="flex-1">
+              Integration Tests
+            </TabsTrigger>
             <TabsTrigger value="custom" className="flex-1" disabled={!hasCustomTests}>
               Custom Tests
             </TabsTrigger>
@@ -201,52 +199,43 @@ const TestResultsPanel: React.FC<TestResultsPanelProps> = ({
           </TabsContent>
           
           <TabsContent value="integration">
-            {selectedNode.integrationTestResults && selectedNode.integrationTestResults.length > 0 ? (
-              <ScrollArea className="h-[400px] pr-4">
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Integration Tests</AlertTitle>
+              <AlertDescription>
+                <p>Integration tests check whether a node correctly implements the Integration interface.</p>
+                <p className="mt-2">Tests for this section include:</p>
+                <ul className="list-disc pl-5 mt-2">
+                  <li>Integration Capabilities - Whether the node defines its integration capabilities</li>
+                  <li>Integration Requirements - Whether the node specifies its requirements</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+            
+            {selectedNode.integrationTestResults && selectedNode.integrationTestResults.length > 0 && (
+              <ScrollArea className="h-[400px] pr-4 mt-4">
                 <div className="space-y-4">
-                  {selectedNode.integrationTestResults.map((testResult: TestResult, index: number) => {
-                    // Try using category-specific icon first, fallback to general test type icon
-                    const TestIcon = TEST_CATEGORY_ICONS[testResult.test] || 
-                                    TEST_ICONS[testResult.test as TestType] || 
-                                    AlertIcon;
-                    
-                    return (
-                      <div key={`int-test-${index}`} className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                        <div className="mt-0.5">
-                          {getTestStatusIcon(testResult.status)}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <TestIcon className="h-4 w-4 text-purple-500" />
-                              <h3 className="font-medium">{testResult.name}</h3>
-                            </div>
-                            {testResult.duration !== undefined && (
-                              <span className="text-xs text-slate-500 ml-2">{formatDuration(testResult.duration)}</span>
-                            )}
-                          </div>
-                          
-                          {testResult.message && (
-                            <p className="text-sm text-gray-600 mt-1">{testResult.message}</p>
+                  {selectedNode.integrationTestResults.map((testResult: TestResult, index: number) => (
+                    <div key={`int-test-${index}`} className="flex items-start space-x-3 pb-3 border-b border-gray-100">
+                      <div className="mt-0.5">
+                        {getTestStatusIcon(testResult.status)}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium">{testResult.name}</h3>
+                          {testResult.duration !== undefined && (
+                            <span className="text-xs text-slate-500 ml-2">{formatDuration(testResult.duration)}</span>
                           )}
                         </div>
+                        
+                        {testResult.message && (
+                          <p className="text-sm text-gray-600 mt-1">{testResult.message}</p>
+                        )}
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               </ScrollArea>
-            ) : (
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Integration Tests</AlertTitle>
-                <AlertDescription>
-                  <p>The following integration-specific tests will be run for this node:</p>
-                  <ul className="list-disc pl-5 mt-2">
-                    <li>Integration Capabilities - Tests that the node defines its integration capabilities</li>
-                    <li>Integration Requirements - Tests that the node specifies its requirements</li>
-                  </ul>
-                </AlertDescription>
-              </Alert>
             )}
           </TabsContent>
           
