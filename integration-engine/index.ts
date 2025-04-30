@@ -7,7 +7,7 @@
  * Port: 3001
  */
 
-import { startSimpleWebhookServer } from './simple-webhook-server';
+import { startDirectServer } from './direct-server';
 import { log } from '../server/vite';
 
 // Set port
@@ -16,10 +16,10 @@ const port = process.env.INTEGRATION_ENGINE_PORT || 3001;
 // Start server if this is the main module
 if (import.meta.url.endsWith(process.argv[1])) {
   try {
-    console.log('Starting Integration Engine with Simple Webhook Server...');
-    log('Starting Integration Engine with Simple Webhook Server...', 'integration-engine');
+    console.log('Starting Integration Engine with Direct Webhook Server...');
+    log('Starting Integration Engine with Direct Webhook Server...', 'integration-engine');
     
-    const server = startSimpleWebhookServer();
+    const server = startDirectServer();
     
     // Handle graceful shutdown
     process.on('SIGTERM', () => {
@@ -39,4 +39,4 @@ if (import.meta.url.endsWith(process.argv[1])) {
 }
 
 // Export the server starter function
-export { startSimpleWebhookServer };
+export { startDirectServer };

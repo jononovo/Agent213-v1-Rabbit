@@ -5,8 +5,8 @@ import session from 'express-session';
 import { sessionOptions } from './session';
 import { storage } from "./storage";
 import { importWebhookTestWorkflow } from "./importTestWorkflow";
-// Import the Integration Engine server
-import { startIntegrationServer } from './integration';
+// Import the Integration Engine server with new implementation
+import { startDirectServer } from '../integration-engine/direct-server';
 // Import the Workflow Execution server
 import { startWorkflowExecutionServer } from '../workflow-execution';
 
@@ -57,8 +57,8 @@ app.use((req, res, next) => {
     // Import test workflow for webhook callback testing
     await importWebhookTestWorkflow();
     
-    // Start the Integration Engine server
-    startIntegrationServer();
+    // Start the Integration Engine server with new direct webhook implementation
+    startDirectServer();
     log('Integration Engine server started');
     
     // Start the Workflow Execution server
