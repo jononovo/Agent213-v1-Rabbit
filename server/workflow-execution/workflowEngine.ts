@@ -30,8 +30,11 @@ async function validateWorkflow(flowData: any): Promise<{ valid: boolean, missin
     const nodeType = node.type;
     
     try {
+      // Get the node category using the whole node object, not just the type
+      const nodeCategory = getNodeCategory(node);
+      
       // Attempt to import the executor module to verify it exists
-      await import(`../../../client/src/nodes/${getNodeCategory(nodeType)}/${nodeType}/executor`);
+      await import(`../../../client/src/nodes/${nodeCategory}/${nodeType}/executor`);
     } catch (error) {
       missingExecutors.push(`${node.id} (${nodeType})`);
     }
@@ -266,8 +269,8 @@ async function executeNode(
     let result;
     
     try {
-      // Find registered executor for this node type
-      const { execute } = await import(`../../../client/src/nodes/${getNodeCategory(nodeType)}/${nodeType}/executor`);
+      // Find registered executor for this node type using the full node object
+      const { execute } = await import(`../../../client/src/nodes/${getNodeCategory(node)}/${nodeType}/executor`);
       
       if (typeof execute !== 'function') {
         throw new Error(`Invalid executor for node type: ${nodeType} - execute function not found`);
