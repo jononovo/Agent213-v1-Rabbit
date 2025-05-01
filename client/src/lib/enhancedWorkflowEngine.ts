@@ -11,10 +11,10 @@ import {
 
 // Import the unified node registry
 import { 
-  getNodeExecutor, 
+  getNodeExecutorPath, 
   initializeRegistry,
-  getAllNodeTypes 
-} from './unifiedNodeRegistry';
+  getAllNodes 
+} from '../nodes/core/registry/unifiedNodeRegistry';
 
 /**
  * Register all enhanced node executors
@@ -26,7 +26,7 @@ export async function registerAllEnhancedNodeExecutors(): Promise<void> {
     
     // Log available node types for debugging purposes
     console.log('All node executors registered successfully');
-    console.log(`Available node types: ${getAllNodeTypes().join(', ')}`);
+    console.log(`Available node types: ${getAllNodes().map(node => node.type).join(', ')}`);
   } catch (error) {
     console.error('Error registering node executors:', error);
     throw error;
@@ -198,8 +198,12 @@ export async function executeEnhancedWorkflow(
       const nodeType = node.type;
       const nodeData = node.data || {};
       
-      // Get executor for node type from the unified registry
-      const executor = getNodeExecutor(nodeType);
+      // Get executor path for node type from the unified registry
+      const executorPath = getNodeExecutorPath(nodeType);
+      
+      // Dynamically import the executor
+      const executorModule = await import(/* @vite-ignore */ executorPath);
+      const executor = executorModule.default;
       
       if (!executor) {
         // Cannot find executor for this node type

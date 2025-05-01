@@ -29,7 +29,7 @@ import {
 } from './utils/testRunner';
 import { standardNodeTests, integrationNodeTests } from './utils/standardTests';
 
-import { getAllNodes, initializeRegistry } from '@/lib/unifiedNodeRegistry';
+import { getAllNodes, initializeRegistry } from '@/nodes/core/registry/unifiedNodeRegistry';
 
 // Status type for folder tests
 type NodeTestStatus = 'queued' | 'running' | 'completed' | 'failed';
