@@ -6,10 +6,11 @@ This guide explains how to migrate legacy nodes to use the BaseNode component st
 
 The BaseNode architecture provides several benefits:
 - Consistent styling and UI across all nodes
-- Standardized hover menu functionality
-- Unified settings drawer integration
-- Consistent note system
-- Better responsive behavior
+- Standardized hover menu functionality with duplicate, delete, and settings actions
+- Unified settings drawer integration that works across the entire application
+- Consistent note system that allows users to add notes to any node
+- Better responsive behavior and sizing
+- More maintainable code with clearer separation of concerns
 
 ## Key Components
 
@@ -19,16 +20,21 @@ The BaseNode architecture consists of the following key components:
    - Main wrapper component that provides standardized UI container
    - Handles shared behavior like selection, hover state, and settings
    - Manages node header, content area, and handles
+   - Provides consistent styling for all node elements
    
 2. **NodeHoverMenu** (`client/src/nodes/components/base/NodeHoverMenu.tsx`)
    - Provides actions menu when hovering over nodes
    - Supports standard actions: duplicate, delete, settings
+   - Appears with a slight delay for better user experience
    - Can be extended with custom actions
+   - Uses event-based architecture to avoid direct dependencies
 
 3. **Node Settings** integration
    - Standardized approach to node settings
-   - Settings defined in node definition
+   - Settings defined in node definition with a schema
    - UI automatically generated from settings schema
+   - Global settings drawer that can be triggered from any node
+   - Consistent validation and error handling
 
 ## Migration Process
 
@@ -179,14 +185,105 @@ export default YourNodeComponent;
 
 ## Real-World Example: Embed Other Workflow Node
 
-The Embed Other Workflow node was recently migrated to use the BaseNode structure. The approach was to:
+The Embed Other Workflow node was recently migrated to use the BaseNode structure. This case study illustrates a successful migration approach.
 
-1. Clone the function_node (which already used BaseNode)
-2. Adapt it to provide workflow embedding functionality
-3. Update the UI to display workflow-specific settings
-4. Ensure consistent styling with the rest of the application
+### Problem Statement
 
-This migration improved the node's appearance and behavior while maintaining its original functionality.
+The original Embed Other Workflow node had these issues:
+- Custom implementation that didn't use the BaseNode component
+- Inconsistent styling compared to other nodes
+- No hover menu integration
+- Different settings drawer behavior than other nodes
+- Confusing UI for selecting the target workflow
+
+### Migration Approach
+
+Instead of modifying the existing implementation, we used these steps:
+
+1. **Start with a Working Template**:
+   - Cloned the `function_node` folder (which already used BaseNode correctly)
+   - Renamed it to `embed_other_workflow`
+   - Left the original node temporarily in place while developing the replacement
+
+2. **Adapt the UI Component**:
+   - Updated the node's appearance to match its purpose
+   - Created a dropdown to select target workflows
+   - Added fields for configuration options (timeout, input field)
+   - Ensured proper handle positions for connections
+
+3. **Preserve the Original Logic**:
+   - Kept the core workflow execution logic from the original node
+   - Made only minimal changes to adapt it to the new structure
+   - Ensured all existing workflows would continue to work
+
+4. **Update the Definition**:
+   - Changed node metadata (name, description, icon, category)
+   - Added specific validation for the workflow ID field
+   - Updated the settings schema for workflow selection
+
+5. **Replace the Original Implementation**:
+   - Once tested, copied all files to the original node directory
+   - Added proper exports in the index.ts file
+   - Removed the temporary development version
+
+### Results
+
+The migration produced several benefits:
+- Consistent UI styling and behavior with other nodes
+- Working hover menu with duplicate/delete functionality
+- Proper settings drawer integration
+- Clearer workflow selection interface
+- Maintained 100% compatibility with existing workflows
+
+### Code Changes
+
+Key points in the implementation:
+
+```tsx
+// Preparing settings for the workflow dropdown
+const settings = [
+  {
+    key: "workflowId",
+    label: "Target Workflow",
+    type: "select",
+    placeholder: "Select target workflow",
+    description: "The workflow that will be triggered by this node.",
+    options: availableWorkflows.map(w => ({ 
+      label: w.name, 
+      value: w.id.toString() 
+    }))
+  },
+  // Additional settings...
+];
+
+// Passing data to BaseNode
+return (
+  <BaseNode
+    id={id}
+    data={{
+      ...data,
+      icon: iconElement,
+      label: nodeData.label,
+      description: nodeData.description,
+      settings: settings,
+      settingsData: nodeData.settings || {},
+      childrenContent: (
+        <div className="p-3">
+          <div className="text-sm">
+            {selectedWorkflow ? (
+              <p>Triggers workflow: <span className="font-semibold">{selectedWorkflow.name}</span></p>
+            ) : (
+              <p className="text-amber-500">Select a workflow in settings</p>
+            )}
+          </div>
+        </div>
+      )
+    }}
+    selected={selected}
+    isConnectable={isConnectable}
+  />
+);
+```
 
 ## Best Practices
 
@@ -198,18 +295,268 @@ This migration improved the node's appearance and behavior while maintaining its
 
 ## Common Issues and Solutions
 
-1. **Settings Not Saving**
-   - Ensure settings are properly passed to BaseNode via settingsData property
-   - Verify settings schema matches the expected properties
+### 1. Settings Not Saving
 
-2. **Custom UI Elements Not Rendering**
-   - Make sure to provide customContent to BaseNode
-   - Check that you're using the right CSS classes
+**Problem**: User changes settings in the drawer but values don't persist or don't affect the node.
 
-3. **Connection Handles Misaligned**
-   - Use customHandles and hideDefaultHandles properties
-   - Position handles using className with appropriate top/left values
+**Solutions**:
+- Make sure settings are properly passed to BaseNode via the `settingsData` property
+- Verify the settings schema keys match the properties you're trying to read
+- Check that you're accessing settings from the right path (e.g., `nodeData.settings` vs `nodeData.settingsData`)
+- Add default values for all settings to prevent undefined errors
+- Ensure your node's validator function is returning `valid: true` when appropriate
 
-4. **Hover Menu Not Appearing**
-   - BaseNode automatically handles the hover menu
-   - Ensure node has a unique ID
+**Example fix**:
+```tsx
+// Before - Incorrect settings path
+const { workflowId } = data.settingsData || {}; 
+
+// After - Correct settings path
+const { workflowId } = data.settings || {};
+
+// Using a consistent approach with defaults
+const settings = nodeData.settings || {};
+const workflowId = settings.workflowId || null;
+```
+
+### 2. Custom UI Elements Not Rendering
+
+**Problem**: The node appears but custom content is missing or displays incorrectly.
+
+**Solutions**:
+- Ensure you're providing `childrenContent` to BaseNode (this is the main content area)
+- Check that you're using the right CSS classes from the design system
+- Verify React components are correctly importing their dependencies
+- Use the browser's developer tools to inspect the rendered output
+- Add distinctive background colors temporarily to debug layout issues
+
+**Example fix**:
+```tsx
+// Before - Missing or incorrect content prop
+return (
+  <BaseNode
+    id={id}
+    data={{
+      ...data,
+      label: nodeData.label,
+    }}
+    selected={selected}
+  />
+);
+
+// After - Providing proper childrenContent
+return (
+  <BaseNode
+    id={id}
+    data={{
+      ...data,
+      label: nodeData.label,
+      childrenContent: (
+        <div className="p-3">
+          <div className="text-sm">Your content here</div>
+        </div>
+      )
+    }}
+    selected={selected}
+  />
+);
+```
+
+### 3. Connection Handles Misaligned
+
+**Problem**: Input/output handles are in the wrong position or overlapping.
+
+**Solutions**:
+- Use `customHandles` and `hideDefaultHandles: true` properties
+- Position handles using className with appropriate top/left values
+- For multiple handles on the same side, use percentage-based positioning
+- Test with different node sizes to ensure proper alignment
+- Remember that handles need the `isConnectable` prop from the parent
+
+**Example fix**:
+```tsx
+// Multiple handles with proper positioning
+const customHandles = (
+  <>
+    <Handle
+      type="target"
+      position={Position.Left}
+      id="input1"
+      className="top-[25%]"
+      isConnectable={isConnectable}
+    />
+    <Handle
+      type="target"
+      position={Position.Left}
+      id="input2"
+      className="top-[75%]"
+      isConnectable={isConnectable}
+    />
+    <Handle
+      type="source"
+      position={Position.Right}
+      id="output"
+      isConnectable={isConnectable}
+    />
+  </>
+);
+```
+
+### 4. Hover Menu Not Appearing
+
+**Problem**: The hover menu doesn't show up when hovering over the node.
+
+**Solutions**:
+- BaseNode automatically handles the hover menu integration
+- Ensure the node has a unique ID (duplicate IDs can cause issues)
+- Verify you're not overriding the default hover behavior
+- Check if z-index issues are hiding the hover menu
+- Confirm the node is properly registered in the node registry
+
+### 5. Node Styling Inconsistencies
+
+**Problem**: The node doesn't match the styling of other nodes.
+
+**Solutions**:
+- Let BaseNode handle the outer container styling
+- Use consistent padding in childrenContent (typically `p-3`)
+- Follow the design system for text sizes, colors, and spacing
+- Check the theme settings for custom colors
+- Use the same icon size and background styling as other nodes
+
+### 6. Type Errors in Node Properties
+
+**Problem**: TypeScript errors when accessing node properties.
+
+**Solutions**:
+- Ensure you're using proper type definitions for the node props
+- Create interfaces for your node's specific data structure
+- Provide default values for all required properties
+- Use optional chaining (`?.`) and nullish coalescing (`??`) operators
+- Add appropriate type guards where needed
+
+**Example fix**:
+```tsx
+// Define proper types
+interface MyNodeData {
+  label: string;
+  settings?: {
+    option1?: string;
+    option2?: boolean;
+  }
+}
+
+// Use proper typing in the component
+function MyNode({ data, id, selected }: NodeProps<MyNodeData>) {
+  // Safely access properties with defaults
+  const option1 = data.settings?.option1 ?? 'default';
+  const option2 = data.settings?.option2 ?? false;
+  
+  // ...rest of component
+}
+```
+
+### 7. Integration with Node Registry
+
+**Problem**: Node doesn't appear in the node panel or can't be added to workflows.
+
+**Solutions**:
+- Verify the node is properly exported in its index.ts file
+- Check that the node type is unique across the application
+- Ensure the node's folder is in the correct directory for automatic discovery
+- Look for console errors related to node registration
+- Update the central node registry if manual registration is required
+
+## Advanced Customization
+
+### Custom Node Behaviors
+
+BaseNode can be extended with custom behaviors beyond the standard options:
+
+1. **Custom Actions in Hover Menu**:
+   - Add custom buttons to the hover menu for node-specific actions
+   - Implement additional keyboard shortcuts for these actions
+   - Use event-based communication for complex interactions
+
+2. **Interactive Elements Within Nodes**:
+   - Add form controls directly in the node's main content area
+   - Implement inline editing capabilities for quick adjustments
+   - Create collapsible sections for complex nodes
+
+3. **Dynamic Handle Management**:
+   - Add or remove handles based on node configuration
+   - Create labeled handles with dynamic positioning
+   - Implement handle validation based on connection types
+
+4. **Performance Optimizations**:
+   - Use React.memo to prevent unnecessary re-renders
+   - Implement useMemo for expensive calculations
+   - Defer loading of complex components until needed
+
+### Implementation Tips
+
+```tsx
+// Example of a node with custom hover menu actions
+const MyNodeComponent = memo(({ id, data, selected }: NodeProps) => {
+  // Add custom actions to the hover menu
+  const customActions = [
+    {
+      label: 'Preview',
+      icon: <Eye size={14} />,
+      onClick: () => {
+        // Show a preview of the node's output
+        window.dispatchEvent(new CustomEvent('show-node-preview', {
+          detail: { nodeId: id }
+        }));
+      }
+    },
+    {
+      label: 'Export',
+      icon: <Download size={14} />,
+      onClick: () => {
+        // Export node data
+        // ...
+      }
+    }
+  ];
+  
+  // Pass custom actions to BaseNode
+  return (
+    <BaseNode
+      id={id}
+      data={{
+        ...data,
+        customActions: customActions,  // Custom hover menu actions
+        // Other BaseNode properties...
+      }}
+      selected={selected}
+    />
+  );
+});
+```
+
+## Future Considerations
+
+As the BaseNode system continues to evolve, consider these emerging patterns:
+
+1. **Standardizing Node Testing**:
+   - Create dedicated test utilities for BaseNode components
+   - Implement snapshot testing for UI consistency
+   - Add automated tests for settings validation
+
+2. **Accessibility Improvements**:
+   - Ensure all node interactions are keyboard accessible
+   - Add proper ARIA attributes for screen readers
+   - Implement focus management for interactive elements
+
+3. **Performance at Scale**:
+   - Optimize rendering for workflows with many nodes
+   - Implement virtualization for large workflow canvases
+   - Consider lazy loading strategies for complex node content
+
+4. **Node Versioning**:
+   - Support multiple versions of the same node type
+   - Provide migration paths between node versions
+   - Implement backwards compatibility layers
+
+By focusing on these considerations during migration, you'll create nodes that are not only consistent with the current system but also adaptable to future improvements.

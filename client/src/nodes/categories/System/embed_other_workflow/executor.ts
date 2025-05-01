@@ -102,12 +102,13 @@ export async function execute(
       inputData: input.items.map(item => {
         if (inputField === 'json') {
           return item.json;
-        } else if (inputField === 'text') {
-          return item.text;
         } else if (inputField === 'content' && item.json?.content) {
           return item.json.content;
+        } else if (typeof item.json === 'string') {
+          // Handle case where text might be stored in json
+          return item.json;
         }
-        return item;
+        return item.json; // Default to json if no match
       })
     };
     
@@ -133,7 +134,10 @@ export async function execute(
     const processedItems: WorkflowItem[] = [
       {
         json: workflowResult,
-        text: JSON.stringify(workflowResult)
+        meta: {
+          source: 'embed_other_workflow',
+          timestamp: endTime
+        }
       }
     ];
     
@@ -154,7 +158,10 @@ export async function execute(
     return {
       items: input.items.map(item => ({
         json: { error: true, message: errorMessage },
-        text: `Error: ${errorMessage}`
+        meta: {
+          source: 'embed_other_workflow',
+          timestamp: new Date()
+        }
       })),
       meta: {
         ...meta,
