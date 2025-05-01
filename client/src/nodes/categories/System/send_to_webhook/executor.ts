@@ -96,33 +96,51 @@ async function processNode(
   // Special handling for URLs: try to extract from input data if not in nodeData
   let effectiveUrl = nodeData.url;
   
+  // Log the input data to aid debugging
+  console.log('Raw inputData:', JSON.stringify(inputData, null, 2));
+  console.log('Item:', JSON.stringify(inputs.data?.items[0], null, 2));
+  
+  const firstItem = inputs.data?.items?.[0]?.json;
+  
   // Look for URLs directly in the input data
-  if (!effectiveUrl && inputData) {
-    if (typeof inputData.url === 'string') {
+  if (!effectiveUrl) {
+    if (firstItem && typeof firstItem.url === 'string') {
+      effectiveUrl = firstItem.url;
+      console.log('Found URL in firstItem.url:', effectiveUrl);
+    } else if (firstItem && typeof firstItem.callbackUrl === 'string') {
+      effectiveUrl = firstItem.callbackUrl;
+      console.log('Found URL in firstItem.callbackUrl:', effectiveUrl);
+    } else if (firstItem && typeof firstItem.webhookUrl === 'string') {
+      effectiveUrl = firstItem.webhookUrl;
+      console.log('Found URL in firstItem.webhookUrl:', effectiveUrl);
+    } else if (inputData && typeof inputData.url === 'string') {
       effectiveUrl = inputData.url;
-    } else if (typeof inputData.webhookUrl === 'string') {
+      console.log('Found URL in inputData.url:', effectiveUrl);
+    } else if (inputData && typeof inputData.webhookUrl === 'string') {
       effectiveUrl = inputData.webhookUrl;
-    } else if (typeof inputData.callbackUrl === 'string') {
+      console.log('Found URL in inputData.webhookUrl:', effectiveUrl);
+    } else if (inputData && typeof inputData.callbackUrl === 'string') {
       effectiveUrl = inputData.callbackUrl;
-    } else if (inputData.json && typeof inputData.json.callbackUrl === 'string') {
-      // Look inside 'json' property if it exists
-      effectiveUrl = inputData.json.callbackUrl;
+      console.log('Found URL in inputData.callbackUrl:', effectiveUrl);
     }
   }
   
   // Debug information
   console.log('URL detection results:', { 
     nodeDataUrl: nodeData.url,
+    firstItemUrl: firstItem?.url,
+    firstItemWebhookUrl: firstItem?.webhookUrl,
+    firstItemCallbackUrl: firstItem?.callbackUrl,
     inputDataUrl: inputData?.url,
     inputDataWebhookUrl: inputData?.webhookUrl,
     inputDataCallbackUrl: inputData?.callbackUrl,
-    inputDataJsonCallbackUrl: inputData?.json?.callbackUrl,
     effectiveUrl: effectiveUrl
   });
   
   // Use the discovered URL for the request
   if (!respondToOriginal && !effectiveUrl) {
     console.error('URL detection failed. Input data:', JSON.stringify(inputData, null, 2));
+    console.error('First item:', JSON.stringify(firstItem, null, 2));
     throw new Error('Webhook URL is required');
   }
   

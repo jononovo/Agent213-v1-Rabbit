@@ -55,6 +55,9 @@ async function processNode(
         console.log(`Executing custom function with input:`, inputData);
         result = processFunction(inputData);
         console.log(`Function execution result:`, result);
+        
+        // We actually don't need to do anything special here.
+        // Just ensure the data is passed through properly
       } catch (functionError: any) {
         console.error("Error executing custom function:", functionError);
         return {
