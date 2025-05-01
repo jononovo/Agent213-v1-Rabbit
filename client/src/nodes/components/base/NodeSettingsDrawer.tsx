@@ -32,6 +32,7 @@ import { Agent } from '@shared/schema';
 import { NodeReadmeModal } from '@/nodes/components/base';
 // Import from the unified registry
 import { getNodeSettings, hasNode, getNodeDefinitionPath, getNode } from '@/nodes/core/registry/unifiedNodeRegistry';
+import { SettingField } from '@/nodes/core/types/nodeSettingsTypes';
 
 // We need to get the NodeData type - import it from the proper location
 // This might need an adjustment based on your specific structure
@@ -53,20 +54,8 @@ interface NodeSettingsDrawerProps {
 
 type TabType = 'properties' | 'variables' | 'settings';
 
-interface SettingsField {
-  id: string;
-  label: string;
-  type: 'text' | 'password' | 'select' | 'textarea' | 'radio' | 'multiselect' | 'json' | 'number';
-  placeholder?: string;
-  required?: boolean;
-  description?: string;
-  options?: { value: string; label: string }[];
-  defaultValue?: string | string[] | number | boolean;
-  min?: number; // For number fields
-  max?: number; // For number fields
-  step?: number; // For number fields
-  showWhen?: (settings: Record<string, any>) => boolean;
-}
+// Alias SettingField from our types to SettingsField for backward compatibility
+type SettingsField = SettingField;
 
 const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   isOpen,
@@ -127,7 +116,9 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     }
   }, [node]);
   
-  // Fetch available agents for agent_trigger node
+  // Fetch available data sources for nodes that require them
+  
+  // Fetch available agents for nodes that require agents data
   const { data: agents } = useQuery<Agent[]>({
     queryKey: ['/api/agents'],
     queryFn: async () => {
@@ -135,11 +126,11 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       if (!res.ok) throw new Error('Failed to fetch agents');
       return res.json() as Promise<Agent[]>;
     },
-    // Only fetch when node is agent_trigger and drawer is open
-    enabled: isOpen && node?.type === 'agent_trigger'
+    // Enable query based on field requirements in node settings
+    enabled: isOpen && Boolean(fieldOptions.some(f => f.requiresAgents))
   });
   
-  // Fetch available workflows for embed_other_workflow node
+  // Fetch available workflows for nodes that require workflows data
   const { data: workflows } = useQuery({
     queryKey: ['/api/workflows'],
     queryFn: async () => {
@@ -147,65 +138,66 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       if (!res.ok) throw new Error('Failed to fetch workflows');
       return res.json();
     },
-    // Only fetch when node is embed_other_workflow and drawer is open
-    enabled: isOpen && node?.type === 'embed_other_workflow'
+    // Enable query based on field requirements in node settings
+    enabled: isOpen && Boolean(fieldOptions.some(f => f.requiresWorkflows))
   });
   
-  // Dynamically update the agent dropdown options when agents are loaded
+  // Dynamically update field options based on fetched data
   useEffect(() => {
-    if (node?.type === 'agent_trigger' && agents && agents.length > 0) {
+    if (!node || !fieldOptions.length) return;
+    
+    // Check if we need to update options for any fields
+    let needsUpdate = false;
+    const updatedFields = [...fieldOptions];
+    
+    // Update agent options
+    if (agents && agents.length > 0) {
       const agentOptions = agents.map((agent: Agent) => ({
         value: agent.id.toString(),
         label: agent.name
       }));
       
-      // Get a fresh copy of the fields based on the node type
-      const updatedFields = getFieldsForNodeType(node.type);
-      
-      // Find the agentId field and update its options
-      const agentIdField = updatedFields.find(f => f.id === 'agentId');
-      if (agentIdField) {
-        agentIdField.options = agentOptions;
-        // Update the fieldOptions state to trigger a re-render with the new options
-        setFieldOptions([...updatedFields]);
-      }
+      // Find any fields that require agents and update their options
+      updatedFields.forEach(field => {
+        if (field.requiresAgents && field.id === 'agentId') {
+          field.options = agentOptions;
+          needsUpdate = true;
+        }
+      });
     }
-  }, [agents, node]);
-  
-  // Dynamically update the workflow dropdown options when workflows are loaded
-  useEffect(() => {
+    
+    // Update workflow options
     if (workflows && workflows.length > 0) {
       const workflowOptions = workflows.map((workflow: any) => ({
         value: workflow.id.toString(),
         label: `${workflow.name} (ID: ${workflow.id})`
       }));
       
-      // Handle embed_other_workflow nodes and any node with workflowId in its data
-      if (node) {
-        // Always get a fresh copy of the fields based on the node type
-        const updatedFields = getFieldsForNodeType(node.type);
-        
-        // Find the workflowId field and update its options
-        const workflowIdField = updatedFields.find(f => f.id === 'workflowId');
-        if (workflowIdField) {
-          workflowIdField.options = workflowOptions;
-          // Update the fieldOptions state to trigger a re-render with the new options
-          setFieldOptions([...updatedFields]);
+      // Find any fields that require workflows and update their options
+      updatedFields.forEach(field => {
+        if (field.requiresWorkflows && field.id === 'workflowId') {
+          field.options = workflowOptions;
+          needsUpdate = true;
         }
-        
-        // Set the current workflowId value in settings from node.data if it exists
-        // This handles both direct workflowId property and nested settings.workflowId
-        const nodeWorkflowId = node.data?.workflowId || node.data?.settings?.workflowId;
-        if (nodeWorkflowId && !settings.workflowId) {
-          console.log(`Setting workflowId in settings: ${nodeWorkflowId}`);
-          setSettings(prev => ({
-            ...prev,
-            workflowId: nodeWorkflowId.toString()
-          }));
-        }
+      });
+      
+      // Handle special case for workflowId that exists directly on node data
+      if (node.data?.workflowId && !settings.workflowId) {
+        setSettings(prev => ({
+          ...prev,
+          workflowId: node.data.workflowId.toString()
+        }));
       }
     }
-  }, [workflows, node]);
+    
+    // Update field options if needed
+    if (needsUpdate) {
+      setFieldOptions([...updatedFields]);
+    }
+  }, [agents, workflows, node, fieldOptions, settings]);
+  
+  // We replaced this effect with the more general effect above
+  // that handles both agent and workflow options updating
     
   // Helper function to map field types from node settings to drawer settings format
   const mapFieldType = (type: string): SettingsField['type'] => {
