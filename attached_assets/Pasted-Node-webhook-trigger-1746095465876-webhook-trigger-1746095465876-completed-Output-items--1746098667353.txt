@@ -1,0 +1,99 @@
+Node webhook_trigger-1746095465876(webhook_trigger-1746095465876)
+completed
+Output:
+{
+  "items": [
+    {
+      "json": {
+        "success": true,
+        "message": "Webhook trigger executed successfully",
+        "timestamp": "2025-05-01T11:23:28.322Z",
+        "webhookUrl": "https://b6a08856-bec8-4b81-94b9-606d33b78fd2-00-1h6bieaom2jnj.worf.replit.dev:3001/webhooks/workflow/17/node/webhook_trigger-1746098608323",
+        "registered": true,
+        "webhookData": {
+          "workflowId": "17",
+          "nodeId": "webhook_trigger-1746098608551",
+          "method": "POST",
+          "payload": {
+            "inputText": "Test webhook payload"
+          }
+        }
+      },
+      "text": "{\"success\":true,\"message\":\"Webhook trigger executed successfully\",\"timestamp\":\"2025-05-01T11:23:28.322Z\",\"webhookUrl\":\"https://b6a08856-bec8-4b81-94b9-606d33b78fd2-00-1h6bieaom2jnj.worf.replit.dev:3001/webhooks/workflow/17/node/webhook_trigger-1746098608323\",\"registered\":true,\"webhookData\":{\"workflowId\":\"17\",\"nodeId\":\"webhook_trigger-1746098608551\",\"method\":\"POST\",\"payload\":{\"inputText\":\"Test webhook payload\"}}}"
+    }
+  ],
+  "meta": {
+    "startTime": "2025-05-01T11:23:28.322Z",
+    "endTime": "2025-05-01T11:23:28.551Z",
+    "source": "webhook_trigger",
+    "webhookData": {
+      "nodeId": "webhook_trigger-1746098608551",
+      "workflowId": "17"
+    }
+  }
+}
+Started: 2025-05-01T11:23:28.285Z • Ended: 2025-05-01T11:23:28.551Z • Duration: 0.27s
+Node function_node-1746095459246(function_node-1746095459246)
+completed
+Output:
+{
+  "items": [
+    {
+      "json": {
+        "success": true,
+        "message": "Function executed successfully",
+        "timestamp": "2025-05-01T11:23:28.564Z",
+        "data": {}
+      },
+      "text": "{\"success\":true,\"message\":\"Function executed successfully\",\"timestamp\":\"2025-05-01T11:23:28.564Z\",\"data\":{}}"
+    }
+  ],
+  "meta": {
+    "startTime": "2025-05-01T11:23:28.564Z",
+    "endTime": "2025-05-01T11:23:28.564Z",
+    "source": "function_node"
+  }
+}
+Started: 2025-05-01T11:23:28.557Z • Ended: 2025-05-01T11:23:28.564Z • Duration: 0.01s
+Node send_to_webhook-1746095462128(send_to_webhook-1746095462128)
+completed
+Output:
+{
+  "items": [
+    {
+      "json": {
+        "success": true,
+        "message": "This node is configured to respond to the original webhook"
+      },
+      "text": "{\"success\":true,\"message\":\"This node is configured to respond to the original webhook\"}",
+      "_key": "response"
+    },
+    {
+      "json": 200,
+      "text": "200",
+      "_key": "status"
+    },
+    {
+      "json": {},
+      "text": "{}",
+      "_key": "headers"
+    },
+    {
+      "json": {
+        "success": true,
+        "isWebhookResponse": true,
+        "status": 200,
+        "message": "Configured to respond to original webhook"
+      },
+      "text": "{\"success\":true,\"isWebhookResponse\":true,\"status\":200,\"message\":\"Configured to respond to original webhook\"}",
+      "_key": "meta"
+    }
+  ],
+  "meta": {
+    "startTime": "2025-05-01T11:23:28.572Z",
+    "endTime": "2025-05-01T11:23:28.572Z",
+    "executionTime": 0,
+    "source": "send_to_webhook"
+  }
+}
+Started: 2025-05-01T11:23:28.569Z • Ended: 2025-05-01T11:23:28.572Z • Duration: 0.00s
