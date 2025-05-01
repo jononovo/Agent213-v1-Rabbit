@@ -158,9 +158,46 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     loadOptions();
   }, [node, isOpen, fieldOptions.length]);
   
-  // We replaced this effect with the more general effect above
-  // that handles both agent and workflow options updating
-    
+  // Special-case code for workflow dropdown in embed_other_workflow
+  // Fetch workflows for the embed_other_workflow node - this is hard-coded rather than
+  // a generic handler to avoid React Query hooks being called conditionally
+  const { data: workflows } = useQuery({
+    queryKey: ['/api/workflows'],
+    queryFn: async () => {
+      const res = await fetch('/api/workflows');
+      if (!res.ok) throw new Error('Failed to fetch workflows');
+      return res.json();
+    },
+    // Only fetch when node is embed_other_workflow and drawer is open
+    enabled: isOpen && node?.type === 'embed_other_workflow'
+  });
+
+  // Update workflow dropdown options when workflows data is loaded
+  useEffect(() => {
+    if (node?.type === 'embed_other_workflow' && workflows && workflows.length > 0) {
+      console.log('Updating workflow options in drawer:', workflows);
+      
+      // Map workflows to dropdown options format
+      const workflowOptions = workflows.map((workflow: any) => ({
+        value: workflow.id.toString(),
+        label: workflow.name
+      }));
+      
+      // Get a fresh copy of the fields based on the node type
+      const updatedFields = getFieldsForNodeType(node.type);
+      
+      // Find the workflowId field and update its options
+      const workflowIdField = updatedFields.find(f => f.id === 'workflowId');
+      if (workflowIdField) {
+        workflowIdField.options = workflowOptions;
+        console.log('Updated workflowId field with options:', workflowOptions);
+        
+        // Update the fieldOptions state to trigger a re-render with the new options
+        setFieldOptions([...updatedFields]);
+      }
+    }
+  }, [workflows, node]);
+  
   // Helper function to map field types from node settings to drawer settings format
   const mapFieldType = (type: string): SettingsField['type'] => {
     const typeMap: Record<string, SettingsField['type']> = {
