@@ -5,8 +5,9 @@
  * It handles the API call to Claude and processes the response.
  */
 
-// Import node types
-import { NodeExecutionData, WorkflowItem } from '../../../core/types/nodeExecutionTypes';
+// Import node types and utilities
+import { NodeExecutionData } from '../../../core/types/nodeExecutionTypes';
+import { createNodeOutput, createErrorOutput } from '../../../core/utils/nodeOutputUtils';
 
 /**
  * Calls the Claude API with configured parameters
@@ -141,22 +142,7 @@ export const execute = async (
     // Validate input
     if (!prompt) {
       return {
-        output: {
-          items: [{
-            json: {
-              error: 'No input text provided',
-              _hasError: true,
-              _errorMessage: 'No input text provided'
-            }
-          }],
-          meta: {
-            startTime,
-            endTime: new Date(),
-            error: true,
-            errorMessage: 'No input text provided',
-            source: 'claude'
-          }
-        }
+        output: createErrorOutput('No input text provided', 'claude')
       };
     }
     
@@ -166,22 +152,7 @@ export const execute = async (
     // Validate API key
     if (!apiKey) {
       return {
-        output: {
-          items: [{
-            json: {
-              error: 'Claude API key is not configured',
-              _hasError: true,
-              _errorMessage: 'Claude API key is not configured'
-            }
-          }],
-          meta: {
-            startTime,
-            endTime: new Date(),
-            error: true,
-            errorMessage: 'Claude API key is not configured',
-            source: 'claude'
-          }
-        }
+        output: createErrorOutput('Claude API key is not configured', 'claude')
       };
     }
     
@@ -201,44 +172,23 @@ export const execute = async (
       maxTokens
     );
     
-    // Return successful result
+    // Return successful result using the utility function
+    const result = {
+      text: generatedText,
+      model: model
+    };
+    
     return {
-      output: {
-        items: [{
-          json: {
-            text: generatedText,
-            model: model
-          },
-          meta: {
-            source: 'claude'
-          }
-        }],
-        meta: {
-          startTime,
-          endTime: new Date(),
-          source: 'claude'
-        }
-      }
+      output: createNodeOutput(result, { 
+        startTime,
+        additionalMeta: { source: 'claude' }
+      })
     };
   } catch (error: any) {
-    // Return error result
+    // Return error result using the utility function
+    const errorMessage = error.message || 'Error processing Claude API request';
     return {
-      output: {
-        items: [{
-          json: {
-            error: error.message || 'Error processing Claude API request',
-            _hasError: true,
-            _errorMessage: error.message || 'Error processing Claude API request'
-          }
-        }],
-        meta: {
-          startTime,
-          endTime: new Date(),
-          error: true,
-          errorMessage: error.message || 'Error processing Claude API request',
-          source: 'claude'
-        }
-      }
+      output: createErrorOutput(errorMessage, 'claude')
     };
   }
 };

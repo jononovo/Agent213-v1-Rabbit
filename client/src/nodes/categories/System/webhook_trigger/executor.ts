@@ -8,7 +8,7 @@
  * ENHANCED VERSION: Now using the Integration Engine for more autonomous operation.
  */
 
-import { createNodeOutput, createErrorOutput } from '@/nodes/nodeOutputUtils';
+import { createNodeOutput, createErrorOutput } from '../../../core/utils/nodeOutputUtils';
 import * as integrationClient from '@/utils/integrationClient';
 
 // Define the webhook trigger node data interface
