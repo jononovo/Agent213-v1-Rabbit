@@ -5,7 +5,7 @@
  * including type validation and data transformation.
  */
 
-import { PortDefinition } from '../../../shared/nodeTypes';
+import { PortDefinition } from '../types/nodeDefinitions';
 
 /**
  * Determines if two ports are compatible for connection

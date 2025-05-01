@@ -230,7 +230,7 @@ export async function executeEnhancedWorkflow(
         
         // Import the transformation utility
         // @ts-ignore - This is dynamically loaded
-        const { transformNodeData } = await import('./nodeDataUtils');
+        const { transformNodeData } = await import('../nodes/core/execution/nodeDataUtils');
         
         // For each input target, get the output from the source node
         for (const [inputKey, { nodeId: sourceNodeId, outputKey }] of Object.entries(nodeInputMapping)) {
