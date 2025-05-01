@@ -41,13 +41,14 @@ async function processNode(
   nodeData: SendToWebhookNodeData,
   inputs: Record<string, NodeExecutionData> = {}
 ): Promise<Record<string, any>> {
-  // Get input data with deep inspection
+  // Get input data with deep inspection for multiple input paths
   let inputData = {};
   
   // Log the raw input for debugging
   console.log("*** WEBHOOK EXECUTOR RAW INPUT ***", JSON.stringify(inputs, null, 2));
   
   // Try multiple paths to find the actual data
+  // Start with standard paths
   if (inputs.data?.items?.[0]?.json) {
     inputData = inputs.data.items[0].json;
     console.log("Found input data at inputs.data.items[0].json");
@@ -59,10 +60,47 @@ async function processNode(
     console.log("Found input data at inputs.data");
   }
   
+  // Try additional alternate paths that might be available
+  if (Object.keys(inputData).length === 0) {
+    // Check in the default key - this is a common location for data
+    if (inputs.default?.items?.[0]?.json) {
+      inputData = inputs.default.items[0].json;
+      console.log("Found input data at inputs.default.items[0].json");
+    } else if (inputs.default?.items?.[0]) {
+      inputData = inputs.default.items[0];
+      console.log("Found input data at inputs.default.items[0]");
+    } else if (inputs.default) {
+      inputData = inputs.default;
+      console.log("Found input data at inputs.default");
+    }
+  }
+  
+  // Try function node output format
+  if (Object.keys(inputData).length === 0) {
+    // Also try the direct function node JSON output format
+    const firstKey = Object.keys(inputs)[0]; // Often "default" or "data"
+    if (firstKey && inputs[firstKey]?.items?.[0]?.json) {
+      inputData = inputs[firstKey].items[0].json;
+      console.log(`Found input data at inputs.${firstKey}.items[0].json`);
+    }
+  }
+  
+  // Special handling for webhook triggers
+  if (Object.keys(inputData).length === 0 || !inputData.searchId) {
+    // For webhook triggered data, we need to find the original request
+    const firstKey = Object.keys(inputs)[0]; 
+    if (firstKey && inputs[firstKey]?.items?.[0]?.json?.body) {
+      // The searchId and other important fields are in the body
+      inputData = inputs[firstKey].items[0].json.body;
+      console.log(`Found webhook body data at inputs.${firstKey}.items[0].json.body`);
+    }
+  }
+  
   console.log("*** PROCESSED INPUT DATA ***", JSON.stringify(inputData, null, 2));
   
   // If we have no data at all, this is a serious issue - abort
   if (!inputData || Object.keys(inputData).length === 0) {
+    console.error("Critical error: No input data found for webhook. Raw inputs:", JSON.stringify(inputs));
     throw new Error("No input data found for webhook - unable to process request");
   }
   

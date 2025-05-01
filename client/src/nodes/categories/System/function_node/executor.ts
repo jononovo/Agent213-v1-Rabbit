@@ -31,6 +31,8 @@ async function processNode(
     
     // Try to find the actual data across multiple possible locations
     const firstInputKey = Object.keys(inputs)[0];
+    
+    // First try the standard path for function node inputs
     if (firstInputKey && inputs[firstInputKey]?.items?.[0]?.json) {
       inputData = inputs[firstInputKey].items[0].json;
       console.log("Found input at first level");
@@ -39,6 +41,21 @@ async function processNode(
     else if (firstInputKey && inputs[firstInputKey]?.items?.[0]?.json?.body) {
       inputData = inputs[firstInputKey].items[0].json.body;
       console.log("Found input in body property");
+    }
+    
+    // Essential for the 5 Ducks integration: we must preserve the searchId
+    // Log all available data to ensure we can find the searchId
+    console.log("Found input data with keys:", Object.keys(inputData || {}));
+    
+    // Specifically check for searchId in various places in case it's nested
+    if (inputData && !inputData.searchId) {
+      console.log("SearchId not found in primary location, checking alternate paths");
+      
+      // Try to extract from body if available
+      if (inputs[firstInputKey]?.items?.[0]?.json?.body?.searchId) {
+        inputData.searchId = inputs[firstInputKey].items[0].json.body.searchId;
+        console.log("Found searchId in body property:", inputData.searchId);
+      }
     }
     
     console.log(`Function node starting execution with input:`, inputData);
