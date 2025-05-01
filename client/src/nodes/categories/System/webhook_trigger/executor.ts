@@ -1,140 +1,109 @@
 /**
- * Webhook Trigger Node Executor
+ * DEBUG VERSION - Webhook Trigger Node Executor
  * 
- * This file handles the execution logic for the webhook_trigger node.
- * In reality, this node doesn't directly execute - it's triggered by incoming HTTP requests.
- * This executor primarily handles webhook registration and provides a placeholder execution.
- * 
- * Uses the standardized BaseExecutor pattern - the single unified
- * approach for all node executors in the workflow system.
+ * This is a heavily simplified version focusing on debugging
+ * the executor loading and execution path.
  */
 
 import { NodeExecutionData } from '../../../core/types/nodeExecutionTypes';
-import { createNodeExecutor } from '../../../core/base/NodeExecutorBase';
 import * as integrationClient from '@/utils/integrationClient';
 
-/**
- * Type definition for webhook trigger node configuration
- */
-interface WebhookTriggerNodeData {
-  path?: string;
-  secret?: string;
-  authType: 'none' | 'apiKey' | 'bearer';
-  methods: string[];
-  workflowId?: number;
-  nodeId?: string;
-}
-
-/**
- * Process the webhook trigger node logic
- * In practice, this node is not directly executed during workflow execution,
- * but is called by the server when a webhook request is received.
- * This function is primarily used for testing and validation.
- */
-async function processNode(
-  nodeData: WebhookTriggerNodeData,
+// Direct execute function - skipping the factory pattern for maximum simplicity
+export async function execute(
+  nodeData: Record<string, any>,
   inputs: Record<string, NodeExecutionData> = {}
-): Promise<Record<string, any>> {
-  const { path, methods, workflowId, nodeId } = nodeData;
+): Promise<NodeExecutionData> {
+  console.log('===========================================');
+  console.log('DEBUG: Webhook Trigger Node Executor Was Called!');
+  console.log('DEBUG: Node Data:', JSON.stringify(nodeData, null, 2));
+  console.log('DEBUG: Inputs:', JSON.stringify(inputs, null, 2));
+  console.log('===========================================');
   
-  // Only register if not in preview mode and IDs are available
-  const isPreview = inputs._isPreview?.items?.[0]?.json === true;
-  if (workflowId && nodeId && !isPreview) {
-    await registerWithIntegrationEngine(nodeData);
-  }
+  const startTime = new Date();
   
-  // For testing purposes, simulate a webhook payload
-  // In a real scenario, this data would come from an HTTP request
-  const providedPayload = inputs.payload?.items?.[0]?.json;
-  const simulatedPayload = providedPayload || {
-    message: "This is a simulated webhook trigger. In production, this node waits for external HTTP requests."
-  };
-  
-  // Generate the webhook URL that would be used in production
-  const webhookUrl = generateWebhookUrl(nodeData);
-  
-  // Return the webhook data - BaseExecutor will handle formatting
-  return {
-    payload: simulatedPayload,
-    headers: { 'content-type': 'application/json' },
-    method: 'POST',
-    webhookUrl,
-    meta: {
-      webhookUrl,
-      allowedMethods: methods,
-      isSimulated: true,
-      integrationRegistered: true
-    }
-  };
-}
-
-/**
- * Register the webhook with the Integration Engine
- */
-async function registerWithIntegrationEngine(nodeData: WebhookTriggerNodeData): Promise<any> {
   try {
-    const { path, methods, workflowId, nodeId, authType } = nodeData;
+    // Extract basic info
+    const { path, workflowId, nodeId } = nodeData;
     
-    if (!workflowId || !nodeId) {
-      console.warn('Cannot register webhook: Missing workflowId or nodeId');
-      return null;
-    }
-    
-    // Create a webhook path pattern
-    // If custom path is provided, use it; otherwise use workflowId/nodeId
+    // Generate a webhook URL for display
     const webhookPath = path 
       ? `webhooks/${path}` 
       : `webhooks/workflow/${workflowId}/node/${nodeId}`;
     
-    // Register the integration with the engine
-    const registration = await integrationClient.registerIntegration({
-      nodeType: 'webhook_trigger',
-      capabilities: {
-        provides: {
-          endpoint: true,
-          webhook: true
-        },
-        endpoint: {
-          pathTemplate: webhookPath,
-          methods: methods || ['POST'],
-          authTypes: [authType || 'none']
-        }
-      },
-      workflowId: Number(workflowId),
-      nodeId: nodeId,
-      description: `Webhook trigger for workflow ${workflowId}`
-    });
+    // Try to register the webhook if we have enough info
+    let registrationResult = null;
+    if (workflowId && nodeId) {
+      try {
+        console.log('DEBUG: Attempting to register webhook:', webhookPath);
+        registrationResult = await integrationClient.registerIntegration({
+          nodeType: 'webhook_trigger',
+          capabilities: {
+            provides: { endpoint: true, webhook: true },
+            endpoint: {
+              pathTemplate: webhookPath,
+              methods: ['POST', 'GET'],
+              authTypes: ['none']
+            }
+          },
+          workflowId: Number(workflowId),
+          nodeId: nodeId,
+          description: `Debug webhook for workflow ${workflowId}`
+        });
+        console.log('DEBUG: Webhook registration result:', registrationResult);
+      } catch (regError) {
+        console.error('DEBUG: Webhook registration error:', regError);
+      }
+    }
     
-    console.log(`Webhook registered with integration engine: ${webhookPath}`);
-    return registration;
-  } catch (error) {
-    console.error('Error registering webhook with integration engine:', error);
-    // Continue execution even if registration fails
-    // The webhook can still work through the traditional webhookService
-    return null;
+    // Create a simple response for debugging
+    const result = {
+      success: true,
+      message: "Debug webhook trigger executed successfully",
+      timestamp: startTime.toISOString(),
+      webhookUrl: integrationClient.getIntegrationUrl(webhookPath),
+      registered: !!registrationResult,
+      inputDetails: {
+        hasInputs: Object.keys(inputs).length > 0,
+        inputKeys: Object.keys(inputs)
+      }
+    };
+    
+    console.log('DEBUG: Webhook trigger result:', result);
+    
+    // Return in the expected format
+    return {
+      items: [
+        { 
+          json: result,
+          text: JSON.stringify(result)
+        }
+      ],
+      meta: {
+        startTime,
+        endTime: new Date(),
+        source: 'webhook_trigger_debug_version'
+      }
+    };
+  } catch (error: any) {
+    console.error('DEBUG: Webhook trigger error:', error);
+    
+    return {
+      items: [
+        {
+          json: { 
+            error: true, 
+            message: error.message || 'Unknown error in debug webhook trigger',
+            stack: error.stack 
+          },
+          text: `Error: ${error.message || 'Unknown error'}`
+        }
+      ],
+      meta: {
+        startTime,
+        endTime: new Date(),
+        error: true,
+        source: 'webhook_trigger_debug_version'
+      }
+    };
   }
 }
-
-/**
- * Helper function to generate the webhook URL based on node data
- */
-function generateWebhookUrl(nodeData: WebhookTriggerNodeData): string {
-  const { path, workflowId, nodeId } = nodeData;
-  
-  // Generate the integration endpoint path
-  // Use webhooks/ prefix for consistent path structure
-  const endpointPath = path 
-    ? `webhooks/${path}` 
-    : `webhooks/workflow/${workflowId}/node/${nodeId}`;
-  
-  // Use the integration client to generate the URL
-  return integrationClient.getIntegrationUrl(endpointPath);
-}
-
-/**
- * Export the standardized execute function
- * 
- * This line is identical across all node executors, ensuring
- * a single unified approach throughout the entire system.
- */
-export const execute = createNodeExecutor<WebhookTriggerNodeData>('webhook_trigger', processNode);
