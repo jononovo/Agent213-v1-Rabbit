@@ -116,85 +116,8 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     }
   }, [node]);
   
-  // Fetch available agents - for agent_trigger nodes
-  const { data: agents } = useQuery<Agent[]>({
-    queryKey: ['/api/agents'],
-    queryFn: async () => {
-      const res = await fetch('/api/agents');
-      if (!res.ok) throw new Error('Failed to fetch agents');
-      return res.json() as Promise<Agent[]>;
-    },
-    // Only fetch when node is agent_trigger and drawer is open
-    enabled: isOpen && node?.type === 'agent_trigger'
-  });
-  
-  // Fetch available workflows - for embed_other_workflow nodes
-  const { data: workflows } = useQuery({
-    queryKey: ['/api/workflows'],
-    queryFn: async () => {
-      const res = await fetch('/api/workflows');
-      if (!res.ok) throw new Error('Failed to fetch workflows');
-      return res.json();
-    },
-    // Only fetch when node is embed_other_workflow and drawer is open
-    enabled: isOpen && node?.type === 'embed_other_workflow'
-  });
-  
-  // Update the agent dropdown options when agents are loaded
-  useEffect(() => {
-    if (node?.type === 'agent_trigger' && agents && agents.length > 0) {
-      const agentOptions = agents.map((agent: Agent) => ({
-        value: agent.id.toString(),
-        label: agent.name
-      }));
-      
-      // Get a fresh copy of the fields based on the node type
-      const updatedFields = getFieldsForNodeType(node.type);
-      
-      // Find the agentId field and update its options
-      const agentIdField = updatedFields.find(f => f.id === 'agentId');
-      if (agentIdField) {
-        agentIdField.options = agentOptions;
-        // Update field options to trigger a re-render
-        setFieldOptions([...updatedFields]);
-      }
-    }
-  }, [agents, node]);
-  
-  // Update the workflow dropdown options when workflows are loaded
-  useEffect(() => {
-    if (workflows && workflows.length > 0) {
-      // Only process if we have a node
-      if (node) {
-        // Create workflow options
-        const workflowOptions = workflows.map((workflow: any) => ({
-          value: workflow.id.toString(),
-          label: `${workflow.name} (ID: ${workflow.id})`
-        }));
-        
-        // Only update for embed_other_workflow nodes
-        if (node.type === 'embed_other_workflow') {
-          // Get a fresh copy of the fields 
-          const updatedFields = getFieldsForNodeType(node.type);
-          
-          // Find workflowId field and update its options
-          const workflowIdField = updatedFields.find(f => f.id === 'workflowId');
-          if (workflowIdField) {
-            workflowIdField.options = workflowOptions;
-            setFieldOptions([...updatedFields]);
-          }
-          
-          // Set the current workflowId if it exists in the node data
-          if (node.data?.workflowId && !settings.workflowId) {
-            setSettings(prev => ({
-              ...prev,
-              workflowId: String(node.data.workflowId)
-            }));
-          }
-        }
-      }
-    }
-  }, [workflows, node, settings]);
+  // No specific agent or workflow queries here
+  // Each node definition's handlers are responsible for their own data loading requirements
   
   // We replaced this effect with the more general effect above
   // that handles both agent and workflow options updating
