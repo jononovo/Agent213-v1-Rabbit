@@ -31,7 +31,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Agent } from '@shared/schema';
 import { NodeReadmeModal } from '@/nodes/components/base';
 // Import from the unified registry
-import { getNodeSettings, hasNode, getNodeDefinitionPath } from '@/nodes/core/registry/unifiedNodeRegistry';
+import { getNodeSettings, hasNode, getNodeDefinitionPath, getNode } from '@/nodes/core/registry/unifiedNodeRegistry';
 
 // We need to get the NodeData type - import it from the proper location
 // This might need an adjustment based on your specific structure
@@ -88,29 +88,30 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
         ...(node.data.settings || {}),
       };
       
-      // Try to get the node's definition to check for custom initialization handlers
-      try {
-        const nodeType = node.type;
-        // Dynamically import the node's definition
-        import(`@/nodes/categories/System/${nodeType}/definition`).then((module) => {
-          // Check if the module has custom initialization handlers
-          if (module.nodeMetadata?.handlers?.initializeSettings) {
-            // Use the custom handler to initialize settings
-            const customSettings = module.nodeMetadata.handlers.initializeSettings(node.data);
-            if (customSettings) {
-              initialSettings = customSettings;
-              setSettings(customSettings);
-              console.log(`Used custom handler to initialize settings for ${nodeType}`);
-            }
+      // Get the node definition from registry to check for custom initialization handlers
+      const nodeType = node.type;
+      const nodeDefinition = getNode(nodeType);
+      
+      // Check if the node has custom initialization handlers
+      if (nodeDefinition?.metadata?.handlers?.initializeSettings) {
+        try {
+          // Use the custom handler to initialize settings
+          const customSettings = nodeDefinition.metadata.handlers.initializeSettings(node.data);
+          if (customSettings) {
+            initialSettings = customSettings;
+            console.log(`Used custom handler to initialize settings for ${nodeType}`);
           }
-        }).catch(err => {
-          // No custom handler found, continue with default settings
-          console.log(`No custom initialization handler for ${nodeType}`);
-        });
-      } catch (error) {
-        // Silently continue with default initialization if dynamic import fails
+        } catch (error) {
+          console.error(`Error using custom handler for ${nodeType}:`, error);
+        }
+      } else {
+        // Fall back to default handling for specific node types
+        if (nodeType === 'embed_other_workflow' && node.data.workflowId) {
+          initialSettings.workflowId = node.data.workflowId.toString();
+        }
       }
       
+      // Set the initial settings
       setSettings(initialSettings);
       setNodeName(node.data.label || '');
       setNodeDescription(node.data.description || '');

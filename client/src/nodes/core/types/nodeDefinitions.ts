@@ -22,6 +22,34 @@ export interface PortDefinition {
 }
 
 /**
+ * Node Settings Handlers - For custom handling of node settings
+ */
+export interface NodeSettingsHandlers {
+  // Initialize settings from node data
+  initializeSettings?: (nodeData: Record<string, any>) => Record<string, any>;
+  
+  // Prepare data for saving
+  prepareSaveData?: (settings: Record<string, any>, nodeProperties?: Record<string, any>) => Record<string, any>;
+}
+
+/**
+ * Node Metadata - Additional information about a node
+ */
+export interface NodeMetadata {
+  // Tags for categorization
+  tags?: string[];
+  
+  // UI color
+  color?: string;
+  
+  // Custom settings handlers
+  handlers?: NodeSettingsHandlers;
+  
+  // Any additional metadata
+  [key: string]: any;
+}
+
+/**
  * Node Definition - Defines a node's interface and behavior
  */
 export interface NodeDefinition {
@@ -41,6 +69,15 @@ export interface NodeDefinition {
   
   // Icon representation
   icon?: string;
+  
+  // Settings for the node configuration drawer
+  settings?: any[];
+  
+  // Validation schema
+  validation?: any;
+  
+  // Node metadata
+  metadata?: NodeMetadata;
   
   // Additional properties
   [key: string]: any;
@@ -75,6 +112,10 @@ export interface NodeSettingsField {
   
   // Whether this field is required
   required?: boolean;
+  
+  // Special flags for field behavior
+  requiresWorkflows?: boolean;
+  saveToNodeData?: boolean;
 }
 
 /**
