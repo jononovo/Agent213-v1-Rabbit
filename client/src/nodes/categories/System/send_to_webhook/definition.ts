@@ -20,7 +20,9 @@ const defaultData = {
   retryCount: 3,
   retryDelay: 1000,
   timeout: 5000,
-  respondToOriginal: 'false' // Using string 'false' to match select dropdown values
+  respondToOriginal: 'false', // Using string 'false' to match select dropdown values
+  contentType: 'application/json',
+  errorHandling: 'fail'  // Options: 'fail', 'warn', 'ignore'
 };
 
 const definition: NodeDefinition = {
@@ -64,7 +66,7 @@ const definition: NodeDefinition = {
       key: 'url',
       type: 'string',
       label: 'Webhook URL',
-      description: 'URL of the external webhook endpoint',
+      description: 'URL of the external webhook endpoint (can also be provided in input data)',
       placeholder: 'https://example.com/webhook',
       required: false
     },
@@ -81,12 +83,36 @@ const definition: NodeDefinition = {
       default: 'POST'
     },
     {
+      key: 'contentType',
+      type: 'select',
+      label: 'Content Type',
+      description: 'Content type to use for the request body',
+      options: [
+        { label: 'application/json', value: 'application/json' },
+        { label: 'application/x-www-form-urlencoded', value: 'application/x-www-form-urlencoded' },
+        { label: 'text/plain', value: 'text/plain' }
+      ],
+      default: 'application/json'
+    },
+    {
       key: 'headers',
       type: 'textarea',
       label: 'Custom Headers',
       description: 'Custom HTTP headers to include in the request (JSON format)',
       placeholder: '{"Content-Type": "application/json", "Authorization": "Bearer your-token"}',
       required: false
+    },
+    {
+      key: 'errorHandling',
+      type: 'select',
+      label: 'Error Handling',
+      description: 'How to handle errors encountered during webhook execution',
+      options: [
+        { label: 'Fail workflow on error', value: 'fail' },
+        { label: 'Log warning and continue', value: 'warn' },
+        { label: 'Ignore errors', value: 'ignore' }
+      ],
+      default: 'fail'
     },
     {
       key: 'retryCount',
@@ -126,6 +152,11 @@ const definition: NodeDefinition = {
       .url({ message: "Please enter a valid URL" })
       .optional(),
     method: z.enum(['POST', 'PUT', 'PATCH']).default('POST'),
+    contentType: z.enum([
+      'application/json', 
+      'application/x-www-form-urlencoded', 
+      'text/plain'
+    ]).default('application/json'),
     headers: z.string().optional().transform(value => {
       try {
         return value ? JSON.parse(value) : {};
@@ -133,6 +164,7 @@ const definition: NodeDefinition = {
         return {};
       }
     }),
+    errorHandling: z.enum(['fail', 'warn', 'ignore']).default('fail'),
     retryCount: z.number().min(0).max(10).default(3),
     retryDelay: z.number().min(100).max(10000).default(1000),
     timeout: z.number().min(100).max(30000).default(5000)

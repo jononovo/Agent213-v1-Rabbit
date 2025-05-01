@@ -21,10 +21,14 @@ interface SendToWebhookNodeData {
   retryCount: number;
   retryDelay: number;
   timeout: number;
+  contentType?: 'application/json' | 'application/x-www-form-urlencoded' | 'text/plain';
+  errorHandling?: 'fail' | 'warn' | 'ignore';
   respondToOriginal?: boolean | string; // New field name
   isWebhookResponse?: boolean | string; // Legacy field name (for backward compatibility)
   settings?: {
     respondToOriginal?: boolean | string;
+    contentType?: string;
+    errorHandling?: string;
     [key: string]: any;
   };
 }
@@ -113,17 +117,40 @@ async function processNode(
     headers = {},
     retryCount = 3,
     retryDelay = 1000,
-    timeout = 5000
+    timeout = 5000,
+    contentType = 'application/json',
+    errorHandling = 'fail'
   } = nodeData;
+  
+  // Set up the appropriate content type and body formatting based on contentType
+  let formattedBody;
+  if (contentType === 'application/json') {
+    formattedBody = JSON.stringify(inputData);
+  } else if (contentType === 'application/x-www-form-urlencoded') {
+    // Convert object to URL encoded format
+    const params = new URLSearchParams();
+    for (const key in inputData) {
+      if (typeof inputData[key] !== 'object') {
+        params.append(key, inputData[key]);
+      } else {
+        params.append(key, JSON.stringify(inputData[key]));
+      }
+    }
+    formattedBody = params.toString();
+  } else {
+    // Default to string representation for text/plain
+    formattedBody = typeof inputData === 'string' ? 
+      inputData : JSON.stringify(inputData);
+  }
   
   // Set up request options
   const requestOptions = {
     method,
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': contentType,
       ...headers
     },
-    body: JSON.stringify(inputData),
+    body: formattedBody,
     timeout
   };
   
@@ -144,26 +171,74 @@ async function processNode(
   }
   
   // Make the request with retry logic for external webhook
-  const result = await makeRequestWithRetry(
-    effectiveUrl || url, // Use the extracted URL if available
-    requestOptions, 
-    timeout, 
-    retryCount, 
-    retryDelay
-  );
-  
-  // Return the result - BaseExecutor will format this into standardized output
-  return {
-    response: result.data,
-    status: result.status,
-    headers: result.headers,
-    meta: {
-      url,
-      method,
-      success: true,
-      status: result.status
+  try {
+    const result = await makeRequestWithRetry(
+      effectiveUrl || url, // Use the extracted URL if available
+      requestOptions, 
+      timeout, 
+      retryCount, 
+      retryDelay
+    );
+    
+    // Return the result - BaseExecutor will format this into standardized output
+    return {
+      response: result.data,
+      status: result.status,
+      headers: result.headers,
+      meta: {
+        url: effectiveUrl || url, // Use the same URL that was used for the request
+        method,
+        contentType,
+        success: true,
+        status: result.status
+      }
+    };
+  } catch (error: any) { // Use type 'any' for error to access message property
+    // Handle errors based on errorHandling setting
+    console.error('Webhook request error:', error);
+    
+    // Get error message with fallback
+    const errorMessage = error?.message || 'Webhook request failed';
+    
+    if (errorHandling === 'fail') {
+      throw error; // Re-throw to fail the workflow
+    } else if (errorHandling === 'warn') {
+      console.warn('Webhook request failed but continuing due to error handling setting:', error);
+      // Return a warning response
+      return {
+        response: { 
+          error: errorMessage, 
+          warning: 'Request failed but workflow continued due to error handling setting'
+        },
+        status: 0,
+        headers: {},
+        meta: {
+          url: effectiveUrl || url,
+          method,
+          contentType,
+          success: false,
+          errorHandled: true,
+          status: 0,
+          error: errorMessage
+        }
+      };
+    } else { // 'ignore'
+      // Return an empty success response
+      return {
+        response: { note: 'Error ignored per node settings' },
+        status: 200,
+        headers: {},
+        meta: {
+          url: effectiveUrl || url,
+          method,
+          contentType,
+          success: true,
+          errorIgnored: true,
+          status: 200
+        }
+      };
     }
-  };
+  }
 }
 
 /**
