@@ -24,11 +24,30 @@ export async function validateWorkflow(flowData: any): Promise<WorkflowValidatio
       // Get the node category using the whole node object, not just the type
       const nodeCategory = getNodeCategory(node);
       
-      // Attempt to import the executor module to verify it exists
-      await import(`../../../client/src/nodes/${nodeCategory}/${nodeType}/executor`);
+      console.log(`[Workflow Engine Debug] Validating node ${node.id} (${nodeType}) in category ${nodeCategory}`);
+      
+      // Use a full workspace path instead of a relative path
+      const executorPath = `${process.cwd()}/client/src/nodes/categories/${nodeCategory}/${nodeType}/executor`;
+      console.log(`[Workflow Engine Debug] Attempting to import from path: ${executorPath}`);
+      
+      // Try to directly load with require to get better error info
+      try {
+        // Attempt to import the executor module to verify it exists
+        await import(executorPath);
+        console.log(`[Workflow Engine Debug] Successfully imported executor for ${nodeType}`);
+      } catch (importError) {
+        console.error(`[Workflow Engine Debug] Import error for ${nodeType}:`, importError);
+        throw importError; // Re-throw to be caught by outer catch
+      }
     } catch (error) {
+      console.error(`[Workflow Engine Debug] Validation failed for node ${nodeType}:`, error);
       missingExecutors.push(`${node.id} (${nodeType})`);
     }
+  }
+  
+  console.log(`[Workflow Engine Debug] Validation result: ${missingExecutors.length === 0 ? 'Valid' : 'Invalid'}`);
+  if (missingExecutors.length > 0) {
+    console.log(`[Workflow Engine Debug] Missing executors: ${missingExecutors.join(', ')}`);
   }
   
   return {
@@ -261,7 +280,8 @@ async function executeNode(
     
     try {
       // Find registered executor for this node type
-      const { execute } = await import(`../../../client/src/nodes/${getNodeCategory(node)}/${nodeType}/executor`);
+      // Add 'categories' to the path to match the actual file structure
+      const { execute } = await import(`../../../client/src/nodes/categories/${getNodeCategory(node)}/${nodeType}/executor`);
       
       if (typeof execute !== 'function') {
         throw new Error(`Invalid executor for node type: ${nodeType} - execute function not found`);
@@ -342,9 +362,7 @@ export function getNodeCategory(node: any): string {
   // This allows backward compatibility
   const nodeType = node.type;
   
-  if (nodeType.includes('webhook') || nodeType.includes('api')) {
-    return 'Integration';
-  }
-  
+  // Updated: All nodes are in System category for now
+  // Previously webhooks were assumed to be in Integration but that's not correct
   return 'System';
 }
