@@ -682,8 +682,21 @@ export function getNodeExecutorPath(nodeType: string): string {
   const node = nodeRegistry.get(nodeType);
   if (!node) return '';
   
-  // Use absolute path with process.cwd() to ensure correct resolution
-  return `${process.cwd()}/client/src/nodes/categories/${node.folderPath}/${nodeType}/executor.ts`;
+  // Handle both browser and server environments
+  // For browser (client-side workflow test), use a relative path
+  // For server (workflow execution engine), use an absolute path
+  try {
+    if (typeof process !== 'undefined' && process.cwd) {
+      // Server environment - use absolute path with process.cwd()
+      return `${process.cwd()}/client/src/nodes/categories/${node.folderPath}/${nodeType}/executor.ts`;
+    } else {
+      // Browser environment - use relative path
+      return `../../categories/${node.folderPath}/${nodeType}/executor`;
+    }
+  } catch (err) {
+    // Fallback to relative path if there's any error accessing process
+    return `../../categories/${node.folderPath}/${nodeType}/executor`;
+  }
 }
 
 /**
@@ -693,8 +706,19 @@ export function getNodeDefinitionPath(nodeType: string): string {
   const node = nodeRegistry.get(nodeType);
   if (!node) return '';
   
-  // Use absolute path with process.cwd() to ensure correct resolution
-  return `${process.cwd()}/client/src/nodes/categories/${node.folderPath}/${nodeType}/definition.ts`;
+  // Handle both browser and server environments
+  try {
+    if (typeof process !== 'undefined' && process.cwd) {
+      // Server environment - use absolute path
+      return `${process.cwd()}/client/src/nodes/categories/${node.folderPath}/${nodeType}/definition.ts`;
+    } else {
+      // Browser environment - use relative path
+      return `../../categories/${node.folderPath}/${nodeType}/definition`;
+    }
+  } catch (err) {
+    // Fallback to relative path
+    return `../../categories/${node.folderPath}/${nodeType}/definition`;
+  }
 }
 
 /**
@@ -704,6 +728,17 @@ export function getNodeUIPath(nodeType: string): string {
   const node = nodeRegistry.get(nodeType);
   if (!node) return '';
   
-  // Use absolute path with process.cwd() to ensure correct resolution
-  return `${process.cwd()}/client/src/nodes/categories/${node.folderPath}/${nodeType}/ui.tsx`;
+  // Handle both browser and server environments
+  try {
+    if (typeof process !== 'undefined' && process.cwd) {
+      // Server environment - use absolute path
+      return `${process.cwd()}/client/src/nodes/categories/${node.folderPath}/${nodeType}/ui.tsx`;
+    } else {
+      // Browser environment - use relative path
+      return `../../categories/${node.folderPath}/${nodeType}/ui`;
+    }
+  } catch (err) {
+    // Fallback to relative path
+    return `../../categories/${node.folderPath}/${nodeType}/ui`;
+  }
 }
