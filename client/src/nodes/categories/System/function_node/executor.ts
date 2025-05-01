@@ -26,9 +26,20 @@ async function processNode(
   const startTime = new Date();
   
   try {
-    // Get the first input data for convenience
+    // Get the input data with better deep inspection
+    let inputData = null;
+    
+    // Try to find the actual data across multiple possible locations
     const firstInputKey = Object.keys(inputs)[0];
-    const inputData = firstInputKey ? inputs[firstInputKey]?.items?.[0]?.json : null;
+    if (firstInputKey && inputs[firstInputKey]?.items?.[0]?.json) {
+      inputData = inputs[firstInputKey].items[0].json;
+      console.log("Found input at first level");
+    } 
+    // For webhook data, often the actual request body is in the body property
+    else if (firstInputKey && inputs[firstInputKey]?.items?.[0]?.json?.body) {
+      inputData = inputs[firstInputKey].items[0].json.body;
+      console.log("Found input in body property");
+    }
     
     console.log(`Function node starting execution with input:`, inputData);
     
@@ -60,21 +71,27 @@ async function processNode(
         console.log("Function body match:", !!functionBodyMatch);
         const functionBody = functionBodyMatch ? functionBodyMatch[1] : functionCode;
         
-        // Create a function that takes the input and executes the code
-        // eslint-disable-next-line no-new-func
-        const processFunction = new Function('input', `
+        // Create a safe way to execute the function code
+        let processFunction: (input: any) => any;
+        
+        if (functionCode.trim().startsWith("function process")) {
+          // If the code defines a function, create a wrapper to call it
           try {
-            // Execute function body directly if it starts with "function process"
-            if (${JSON.stringify(functionCode)}.trim().startsWith("function process")) {
-              return eval(${JSON.stringify(functionCode)})(input);
-            }
-            // Otherwise execute the extracted body
-            ${functionBody}
-          } catch (error) {
-            console.error("Error in function execution:", error);
-            return { error: error.message, success: false };
+            // eslint-disable-next-line no-new-func
+            const funcWrapper = new Function('input', `
+              ${functionCode}
+              return process(input);
+            `);
+            processFunction = funcWrapper;
+          } catch (err) {
+            console.error("Error creating function:", err);
+            throw new Error("Error creating function: " + err.message);
           }
-        `);
+        } else {
+          // Otherwise, execute the code directly
+          // eslint-disable-next-line no-new-func
+          processFunction = new Function('input', functionBody);
+        }
         
         // Execute the function with the input data
         console.log(`Executing custom function with input:`, inputData);

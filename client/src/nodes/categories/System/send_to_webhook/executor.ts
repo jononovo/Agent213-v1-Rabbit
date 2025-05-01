@@ -134,7 +134,19 @@ async function processNode(
   } = nodeData;
   
   // Extract the json property if it exists and use it as the data to send
-  const dataToSend = inputData.json || inputData;
+  // Look for data in several possible locations
+  let dataToSend;
+  
+  if (inputData.json) {
+    dataToSend = inputData.json;
+    console.log("Using data from inputData.json");
+  } else if (inputs.data?.items?.[0]?.json?.json) {
+    dataToSend = inputs.data?.items?.[0]?.json?.json;
+    console.log("Using data from inputs.data.items[0].json.json");
+  } else {
+    dataToSend = inputData;
+    console.log("Using default inputData");
+  }
   
   console.log('Preparing to send data:', dataToSend);
   
