@@ -5,13 +5,17 @@
  * In reality, this node doesn't directly execute - it's triggered by incoming HTTP requests.
  * This executor primarily handles webhook registration and provides a placeholder execution.
  * 
- * ENHANCED VERSION: Now using the Integration Engine for more autonomous operation.
+ * Uses the standardized BaseExecutor pattern - the single unified
+ * approach for all node executors in the workflow system.
  */
 
-import { createNodeOutput, createErrorOutput } from '../../../core/utils/nodeOutputUtils';
+import { NodeExecutionData } from '../../../core/types/nodeExecutionTypes';
+import { createNodeExecutor } from '../../../core/base/NodeExecutorBase';
 import * as integrationClient from '@/utils/integrationClient';
 
-// Define the webhook trigger node data interface
+/**
+ * Type definition for webhook trigger node configuration
+ */
 interface WebhookTriggerNodeData {
   path?: string;
   secret?: string;
@@ -22,60 +26,47 @@ interface WebhookTriggerNodeData {
 }
 
 /**
- * Execute function for the webhook trigger node
+ * Process the webhook trigger node logic
  * In practice, this node is not directly executed during workflow execution,
  * but is called by the server when a webhook request is received.
  * This function is primarily used for testing and validation.
- * 
- * It also registers the webhook with the Integration Engine to make it immediately available.
  */
-export const execute = async (
+async function processNode(
   nodeData: WebhookTriggerNodeData,
-  inputs?: any
-): Promise<any> => {
-  try {
-    const startTime = new Date();
-    const { path, methods, workflowId, nodeId } = nodeData;
-    
-    // Only register if not in preview mode and IDs are available
-    if (workflowId && nodeId && !inputs?._isPreview) {
-      await registerWithIntegrationEngine(nodeData);
-    }
-    
-    // For testing purposes, simulate a webhook payload
-    // In a real scenario, this data would come from an HTTP request
-    const simulatedPayload = inputs?.payload || {
-      message: "This is a simulated webhook trigger. In production, this node waits for external HTTP requests."
-    };
-    
-    // Generate the webhook URL that would be used in production
-    const webhookUrl = generateWebhookUrl(nodeData);
-    
-    return createNodeOutput(
-      {
-        payload: simulatedPayload,
-        headers: { 'content-type': 'application/json' },
-        method: 'POST',
-        webhookUrl
-      },
-      {
-        startTime,
-        additionalMeta: {
-          webhookUrl,
-          allowedMethods: methods,
-          isSimulated: true,
-          integrationRegistered: true
-        }
-      }
-    );
-  } catch (error: any) {
-    console.error('Error in webhook_trigger executor:', error);
-    return createErrorOutput(
-      error.message || 'Error processing webhook trigger',
-      'webhook_trigger'
-    );
+  inputs: Record<string, NodeExecutionData> = {}
+): Promise<Record<string, any>> {
+  const { path, methods, workflowId, nodeId } = nodeData;
+  
+  // Only register if not in preview mode and IDs are available
+  const isPreview = inputs._isPreview?.items?.[0]?.json === true;
+  if (workflowId && nodeId && !isPreview) {
+    await registerWithIntegrationEngine(nodeData);
   }
-};
+  
+  // For testing purposes, simulate a webhook payload
+  // In a real scenario, this data would come from an HTTP request
+  const providedPayload = inputs.payload?.items?.[0]?.json;
+  const simulatedPayload = providedPayload || {
+    message: "This is a simulated webhook trigger. In production, this node waits for external HTTP requests."
+  };
+  
+  // Generate the webhook URL that would be used in production
+  const webhookUrl = generateWebhookUrl(nodeData);
+  
+  // Return the webhook data - BaseExecutor will handle formatting
+  return {
+    payload: simulatedPayload,
+    headers: { 'content-type': 'application/json' },
+    method: 'POST',
+    webhookUrl,
+    meta: {
+      webhookUrl,
+      allowedMethods: methods,
+      isSimulated: true,
+      integrationRegistered: true
+    }
+  };
+}
 
 /**
  * Register the webhook with the Integration Engine
@@ -139,3 +130,11 @@ function generateWebhookUrl(nodeData: WebhookTriggerNodeData): string {
   // Use the integration client to generate the URL
   return integrationClient.getIntegrationUrl(endpointPath);
 }
+
+/**
+ * Export the standardized execute function
+ * 
+ * This line is identical across all node executors, ensuring
+ * a single unified approach throughout the entire system.
+ */
+export const execute = createNodeExecutor<WebhookTriggerNodeData>('webhook_trigger', processNode);

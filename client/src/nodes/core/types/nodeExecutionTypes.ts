@@ -13,6 +13,12 @@ export interface WorkflowItem {
   // The actual data
   json: any;
   
+  // Text representation of the data - especially useful for display
+  text?: string;
+  
+  // Unique key/identifier for the item within a collection
+  _key?: string;
+  
   // Metadata about this data item
   meta?: {
     // The source of this data
