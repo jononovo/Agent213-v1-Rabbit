@@ -1,0 +1,102 @@
+Node Execution Details
+Status and outputs for each node
+
+Node webhook_trigger-1746100017094(webhook_trigger-1746100017094)
+completed
+Output:
+{
+  "items": [
+    {
+      "json": {
+        "success": true,
+        "message": "Webhook trigger executed successfully",
+        "timestamp": "2025-05-01T11:48:56.368Z",
+        "webhookUrl": "https://b6a08856-bec8-4b81-94b9-606d33b78fd2-00-1h6bieaom2jnj.worf.replit.dev:3001/webhooks/workflow/18/node/webhook_trigger-1746100136368",
+        "registered": true,
+        "webhookData": {
+          "workflowId": "18",
+          "nodeId": "webhook_trigger-1746100136504",
+          "method": "POST",
+          "payload": {
+            "inputText": "Write a poem about a pig"
+          }
+        }
+      },
+      "text": "{\"success\":true,\"message\":\"Webhook trigger executed successfully\",\"timestamp\":\"2025-05-01T11:48:56.368Z\",\"webhookUrl\":\"https://b6a08856-bec8-4b81-94b9-606d33b78fd2-00-1h6bieaom2jnj.worf.replit.dev:3001/webhooks/workflow/18/node/webhook_trigger-1746100136368\",\"registered\":true,\"webhookData\":{\"workflowId\":\"18\",\"nodeId\":\"webhook_trigger-1746100136504\",\"method\":\"POST\",\"payload\":{\"inputText\":\"Write a poem about a pig\"}}}"
+    }
+  ],
+  "meta": {
+    "startTime": "2025-05-01T11:48:56.368Z",
+    "endTime": "2025-05-01T11:48:56.504Z",
+    "source": "webhook_trigger",
+    "webhookData": {
+      "nodeId": "webhook_trigger-1746100136504",
+      "workflowId": "18"
+    }
+  }
+}
+Started: 2025-05-01T11:48:56.364Z • Ended: 2025-05-01T11:48:56.504Z • Duration: 0.14s
+Node function_node-1746100049225(function_node-1746100049225)
+completed
+Output:
+{
+  "items": [
+    {
+      "json": {
+        "success": true,
+        "message": "Function executed successfully",
+        "timestamp": "2025-05-01T11:48:56.515Z",
+        "data": {}
+      },
+      "text": "{\"success\":true,\"message\":\"Function executed successfully\",\"timestamp\":\"2025-05-01T11:48:56.515Z\",\"data\":{}}"
+    }
+  ],
+  "meta": {
+    "startTime": "2025-05-01T11:48:56.515Z",
+    "endTime": "2025-05-01T11:48:56.515Z",
+    "source": "function_node"
+  }
+}
+Started: 2025-05-01T11:48:56.508Z • Ended: 2025-05-01T11:48:56.515Z • Duration: 0.01s
+Node send_to_webhook-1746100085419(send_to_webhook-1746100085419)
+completed
+Output:
+{
+  "items": [
+    {
+      "json": {
+        "success": true,
+        "message": "This node is configured to respond to the original webhook"
+      },
+      "text": "{\"success\":true,\"message\":\"This node is configured to respond to the original webhook\"}",
+      "_key": "response"
+    },
+    {
+      "json": 200,
+      "text": "200",
+      "_key": "status"
+    },
+    {
+      "json": {},
+      "text": "{}",
+      "_key": "headers"
+    },
+    {
+      "json": {
+        "success": true,
+        "isWebhookResponse": true,
+        "status": 200,
+        "message": "Configured to respond to original webhook"
+      },
+      "text": "{\"success\":true,\"isWebhookResponse\":true,\"status\":200,\"message\":\"Configured to respond to original webhook\"}",
+      "_key": "meta"
+    }
+  ],
+  "meta": {
+    "startTime": "2025-05-01T11:48:56.522Z",
+    "endTime": "2025-05-01T11:48:56.522Z",
+    "executionTime": 0,
+    "source": "send_to_webhook"
+  }
+}
+Started: 2025-05-01T11:48:56.520Z • Ended: 2025-05-01T11:48:56.522Z • Duration: 0.00s
