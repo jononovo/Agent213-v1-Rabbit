@@ -5,9 +5,16 @@
  * the application's unique requirements.
  */
 
+// Import the node definitions
+import textFormatterDefinition from './text_formatter/definition';
+
 // Export the node types from this category
 export const CUSTOM_NODE_TYPES: string[] = [
-  // Custom nodes will be added as they are migrated
+  'text_formatter'
 ];
 
-// No exports yet as nodes haven't been migrated
+// Export the node definitions
+export { default as text_formatter } from './text_formatter/definition';
+
+// Export the node executors
+export { execute as execute_text_formatter } from './text_formatter/executor';
