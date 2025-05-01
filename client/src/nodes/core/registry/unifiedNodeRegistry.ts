@@ -132,11 +132,21 @@ export async function loadNodeComponent(nodeType: string): Promise<any> {
     // Load UI component directly from ui.tsx using the folder from registry
     const uiModule = await import(/* @vite-ignore */ `../../categories/${node.folderPath}/${nodeType}/ui`);
     
-    // More flexible component detection logic
+    // More flexible component detection logic for UI components
+    
     // First check if there's a default export
     if (uiModule.default) {
-      console.log(`Successfully loaded component for ${nodeType}`);
+      console.log(`Successfully loaded component for ${nodeType} (default export)`);
       return uiModule.default;
+    }
+    
+    // Check if there's a named export matching the node type
+    const nodeName = nodeType.charAt(0).toUpperCase() + nodeType.slice(1);
+    const matchingNamedExport = uiModule[nodeName] || uiModule[nodeType] || uiModule['NodeUI'] || uiModule['UI'];
+    
+    if (matchingNamedExport) {
+      console.log(`Successfully loaded component for ${nodeType} (named export: ${Object.keys(uiModule).find(key => uiModule[key] === matchingNamedExport)})`);
+      return matchingNamedExport;
     }
     
     // Then check if there's a named 'component' export
