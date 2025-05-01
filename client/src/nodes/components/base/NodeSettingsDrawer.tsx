@@ -32,7 +32,7 @@ import { Agent } from '@shared/schema';
 import { NodeReadmeModal } from '@/nodes/components/base';
 // Import from the unified registry
 import { getNodeSettings, hasNode, getNodeDefinitionPath, getNode } from '@/nodes/core/registry/unifiedNodeRegistry';
-import { SettingField, SettingType } from '@/nodes/core/types/nodeSettingsTypes';
+import { SettingField, SettingType, NodeSettingsHandlers } from '@/nodes/core/types/nodeSettingsTypes';
 
 // We need to get the NodeData type - import it from the proper location
 // This might need an adjustment based on your specific structure
@@ -131,14 +131,15 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       // Get the node definition to access its handlers
       const nodeDefinition = getNode(nodeType);
       
-      // Check if the node has a loadFieldOptions handler
-      if (nodeDefinition?.metadata?.handlers?.loadFieldOptions) {
+      // Check if the node has a loadFieldOptions handler 
+      const handlers = nodeDefinition?.metadata?.handlers as any;
+      if (handlers && typeof handlers.loadFieldOptions === 'function') {
         try {
           setLoadingOptions(true);
           console.log(`Loading field options for ${nodeType} using handler...`);
           
           // Call the handler to load options
-          const updatedFields = await nodeDefinition.metadata.handlers.loadFieldOptions(fieldOptions);
+          const updatedFields = await handlers.loadFieldOptions(fieldOptions);
           
           // Update field options with the result
           if (updatedFields && Array.isArray(updatedFields)) {

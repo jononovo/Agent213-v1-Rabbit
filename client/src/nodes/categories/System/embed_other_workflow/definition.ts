@@ -103,6 +103,9 @@ export const nodeMetadata = {
   
   // Add handlers for initialization and saving
   handlers: {
+    // Type definition to satisfy TypeScript
+    // This is inferred automatically but we'll add it to help TypeScript understand
+    // the structure
     // Initialize settings from node data, moving properties to settings if needed
     initializeSettings: (nodeData: Record<string, any>) => {
       const settings = { ...(nodeData.settings || {}) };
@@ -149,7 +152,9 @@ export const nodeMetadata = {
         
         // Find and update the workflowId field with the new options
         const updatedFields = [...fields];
-        const workflowIdField = updatedFields.find(f => f.id === 'workflowId');
+        // We need to use the same field identifier that's used in the settings drawer
+        // This could be 'workflowId' or the field's key property from settings definition
+        const workflowIdField = updatedFields.find(f => f.id === 'workflowId' || f.id === 'key');
         
         if (workflowIdField) {
           workflowIdField.options = workflowOptions;
