@@ -1,0 +1,65 @@
+Dear Rabbit Workflow Team,
+
+We're implementing an integration with your service for company and contact discovery in our 5 Ducks sales intelligence platform. Here's the format in which we'll be sending requests to your webhook trigger URL:
+
+Request Format We'll Send
+{
+  "company": "{{search query}}",
+  "webhookUrl": "https://our-domain.com/api/webhooks/search-results",
+  "searchId": "search_1682547896123",
+  "options": {
+    "contactCount": 3,
+    "prioritizeLeadership": true,
+    "validateEmails": true
+  }
+}
+Key Fields in Our Request:
+company: The search query text (e.g., "law firms in Chicago")
+webhookUrl: The URL where you should send back results
+searchId: A unique identifier that must be included in your response
+options: Configuration settings for your search process
+Response Format We Expect
+Please send your search results back to our webhook URL with the following format:
+
+{
+  "searchId": "search_1682547896123",
+  "status": "completed",
+  "results": {
+    "companies": [
+      {
+        "name": "Example Law Firm",
+        "website": "https://examplelaw.com",
+        "industry": "Legal Services",
+        "location": "Chicago, IL",
+        "size": "50-100 employees",
+        "foundedYear": 2005
+      }
+    ],
+    "contacts": [
+      {
+        "name": "Jane Smith",
+        "title": "Partner",
+        "email": "jane@examplelaw.com",
+        "phone": "+1-555-123-4567",
+        "linkedin": "https://linkedin.com/in/janesmith",
+        "company": "Example Law Firm"
+      }
+    ]
+  }
+}
+Required Fields in Your Response:
+searchId: Must match the ID we sent in the request
+status: "completed", "running", or "failed"
+results: Object containing "companies" and "contacts" arrays
+If an error occurs, please include:
+
+{
+  "searchId": "search_1682547896123",
+  "status": "failed",
+  "error": "Error message describing what went wrong"
+}
+Is there anything we should modify about the format of our request to better work with your system? Are there additional options or parameters you need to optimize the search results?
+
+Thank you,
+5 Ducks Team
+
