@@ -139,36 +139,55 @@ export const nodeMetadata = {
     
     // Load field options for the workflow selection dropdown
     loadFieldOptions: async (fields: SettingField[]): Promise<SettingField[]> => {
+      console.log('NODE DEBUG: loadFieldOptions called on embed_other_workflow node');
+      console.log('NODE DEBUG: Initial fields:', JSON.stringify(fields));
+      
       try {
-        console.log('Called loadFieldOptions handler for embed_other_workflow');
-        
-        // Import the data service to fetch workflows
-        // Using direct import here to maintain node independence
-        const { useWorkflows, formatWorkflowOptions } = await import('@/nodes/categories/Internal/internalDataAccessServiceForNodes');
-        
-        // Fetch workflows using the data service
-        // Since we're in an async function and not a React component, we need to fetch manually
+        // Fetch workflows directly - keep it simple for debugging
         const res = await fetch('/api/workflows');
-        if (!res.ok) throw new Error('Failed to fetch workflows');
-        const workflows = await res.json();
+        if (!res.ok) {
+          console.error('NODE DEBUG: Error fetching workflows, status:', res.status);
+          throw new Error('Failed to fetch workflows');
+        }
         
-        // Format workflows as dropdown options using the helper
-        const workflowOptions = formatWorkflowOptions(workflows);
+        const workflows = await res.json();
+        console.log('NODE DEBUG: Successfully fetched workflows:', workflows);
+        
+        if (!Array.isArray(workflows)) {
+          console.error('NODE DEBUG: Workflows data is not an array:', workflows);
+          return fields;
+        }
+        
+        // Format workflows directly as dropdown options
+        const workflowOptions = workflows.map((workflow: any) => ({
+          value: workflow.id.toString(),
+          label: workflow.name
+        }));
+        
+        console.log('NODE DEBUG: Formatted workflow options:', workflowOptions);
         
         // Make a copy of the fields array to avoid mutating the original
         const updatedFields = [...fields];
+        let optionsAdded = false;
         
         // Update any field that needs workflow options
-        for (const field of updatedFields) {
+        updatedFields.forEach(field => {
           if ((field.key === 'workflowId') || (field.id === 'workflowId')) {
-            console.log('Updating workflowId field with', workflowOptions.length, 'options');
+            console.log(`NODE DEBUG: Updating ${field.id || field.key} with ${workflowOptions.length} options`);
+            // Set options directly
             field.options = workflowOptions;
+            optionsAdded = true;
           }
+        });
+        
+        if (!optionsAdded) {
+          console.log('NODE DEBUG: No workflowId field found in:', updatedFields);
         }
         
+        console.log('NODE DEBUG: Returning updated fields:', JSON.stringify(updatedFields));
         return updatedFields;
       } catch (error) {
-        console.error('Error loading workflow options:', error);
+        console.error('NODE DEBUG: Error in loadFieldOptions:', error);
         // Return the original fields if there was an error
         return fields;
       }

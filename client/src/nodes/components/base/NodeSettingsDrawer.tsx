@@ -121,35 +121,55 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   // Generic effect to load field options using the node's loadFieldOptions handler
   useEffect(() => {
     // Only run if we have a node, the drawer is open, and we have initial fields to work with
-    if (!node || !isOpen || !fieldOptions.length) return;
+    if (!node || !isOpen || !fieldOptions.length) {
+      console.log('Not loading field options because conditions not met:', {
+        hasNode: !!node,
+        isOpen,
+        fieldOptionsLength: fieldOptions.length
+      });
+      return;
+    }
 
+    console.log('DRAWER DEBUG: Starting to load field options');
+    
     const loadOptions = async () => {
       const nodeType = node.type || '';
-      if (!nodeType) return;
+      if (!nodeType) {
+        console.log('DRAWER DEBUG: No node type defined');
+        return;
+      }
 
       // Get the node definition to access its handlers
       const nodeDefinition = getNode(nodeType);
+      console.log('DRAWER DEBUG: Node definition:', nodeDefinition);
       
       // Check if the node has a loadFieldOptions handler 
-      const handlers = nodeDefinition?.metadata?.handlers as any;
+      const handlers = nodeDefinition?.metadata?.handlers;
+      console.log('DRAWER DEBUG: Handlers available:', handlers);
+      
       if (handlers && typeof handlers.loadFieldOptions === 'function') {
         try {
           setLoadingOptions(true);
-          console.log(`Loading field options for ${nodeType} using handler...`);
+          console.log(`DRAWER DEBUG: Calling loadFieldOptions handler for ${nodeType}...`);
+          console.log('DRAWER DEBUG: Initial fields being passed:', fieldOptions);
           
           // Call the handler to load options
           const updatedFields = await handlers.loadFieldOptions(fieldOptions);
           
           // Update field options with the result
           if (updatedFields && Array.isArray(updatedFields)) {
-            console.log(`Field options loaded for ${nodeType}:`, updatedFields);
+            console.log(`DRAWER DEBUG: Field options loaded for ${nodeType}:`, updatedFields);
             setFieldOptions(updatedFields);
+          } else {
+            console.log('DRAWER DEBUG: No valid updated fields returned from handler');
           }
         } catch (error) {
-          console.error(`Error loading field options for ${nodeType}:`, error);
+          console.error(`DRAWER DEBUG: Error in loadFieldOptions for ${nodeType}:`, error);
         } finally {
           setLoadingOptions(false);
         }
+      } else {
+        console.log(`DRAWER DEBUG: No loadFieldOptions handler for ${nodeType}`);
       }
     };
     
