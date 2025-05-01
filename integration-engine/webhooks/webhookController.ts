@@ -9,6 +9,7 @@ import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { WebhookRequest, WebhookResponse } from '../../shared/types/webhook';
 import * as webhookHandler from './webhookHandler';
+import logger from '../logging';
 
 /**
  * Process a webhook request
@@ -19,14 +20,21 @@ import * as webhookHandler from './webhookHandler';
  */
 export async function handleWebhookRequest(req: Request, res: Response): Promise<void> {
   try {
-    console.log(`Processing webhook request for path: ${req.path}`);
+    logger.info(`Processing webhook request for path: ${req.path}`);
     
     // Extract workflow and node IDs from request parameters
     const workflowId = req.params.workflowId;
     const nodeId = req.params.nodeId;
     
+    // Log the detailed request for debugging and tracking
+    const requestInfo = logger.webhook.request(req, {
+      workflowId,
+      nodeId,
+      requestId: `webhook_${Date.now()}`
+    });
+    
     if (!workflowId || !nodeId) {
-      console.error('Missing required parameters workflowId or nodeId');
+      logger.error('Missing required parameters workflowId or nodeId');
       res.status(400).json({
         success: false,
         message: 'Missing required parameters workflowId or nodeId'
@@ -34,7 +42,7 @@ export async function handleWebhookRequest(req: Request, res: Response): Promise
       return;
     }
     
-    console.log(`Webhook request for workflow ${workflowId}, node ${nodeId}`);
+    logger.info(`Webhook request for workflow ${workflowId}, node ${nodeId}`);
     
     // Create a sanitized copy of headers (remove content-length, etc. if present)
     const sanitizedHeaders: Record<string, string> = {};
@@ -72,7 +80,7 @@ export async function handleWebhookRequest(req: Request, res: Response): Promise
     );
     
     // Log basic info about the webhook request
-    console.log(`Created webhook request ${webhookData.id} for workflow ${workflowId}, node ${nodeId}`);
+    logger.info(`Created webhook request ${webhookData.id} for workflow ${workflowId}, node ${nodeId}`);
     
     // Forward to workflow execution service
     await webhookHandler.forwardWebhookToWorkflowExecution(webhookData);
@@ -83,7 +91,14 @@ export async function handleWebhookRequest(req: Request, res: Response): Promise
       
       if (response) {
         // Send response to client
-        console.log(`Sending immediate webhook response for ${webhookData.id}, status: ${response.statusCode}`);
+        logger.info(`Sending immediate webhook response for ${webhookData.id}, status: ${response.statusCode}`);
+        
+        // Log the response details
+        logger.webhook.response(webhookData.id, {
+          statusCode: response.statusCode,
+          headers: response.headers,
+          body: response.body
+        });
         
         // Set status code and headers
         res.status(response.statusCode);
@@ -98,7 +113,7 @@ export async function handleWebhookRequest(req: Request, res: Response): Promise
         webhookHandler.cleanupWebhookResponse(webhookData.id);
       } else {
         // This should not happen but handle it anyway
-        console.error(`Response marked as ready but not found for webhook ${webhookData.id}`);
+        logger.error(`Response marked as ready but not found for webhook ${webhookData.id}`);
         res.status(500).json({
           success: false,
           message: 'Webhook response not found',
@@ -107,7 +122,7 @@ export async function handleWebhookRequest(req: Request, res: Response): Promise
       }
     } else {
       // No immediate response, send pending status
-      console.log(`No immediate response available for webhook ${webhookData.id}`);
+      logger.info(`No immediate response available for webhook ${webhookData.id}`);
       
       // Webhook is pending response from the workflow
       res.status(202).json({
@@ -118,7 +133,7 @@ export async function handleWebhookRequest(req: Request, res: Response): Promise
       });
     }
   } catch (error) {
-    console.error('Error processing webhook request:', error);
+    logger.error('Error processing webhook request:', error);
     
     if (!res.headersSent) {
       res.status(500).json({
@@ -146,7 +161,14 @@ export async function handleWebhookResponse(req: Request, res: Response): Promis
       return;
     }
     
-    console.log(`Received webhook response for ${webhookId}, status: ${statusCode || 200}`);
+    logger.info(`Received webhook response for ${webhookId}, status: ${statusCode || 200}`);
+    
+    // Log the response details
+    logger.webhook.response(webhookId, {
+      statusCode: statusCode || 200,
+      headers: headers || { 'Content-Type': 'application/json' },
+      body: body || { success: true }
+    });
     
     // Create and store response
     await webhookHandler.createWebhookResponse(
@@ -164,7 +186,7 @@ export async function handleWebhookResponse(req: Request, res: Response): Promis
       webhookId
     });
   } catch (error) {
-    console.error('Error processing webhook response:', error);
+    logger.error('Error processing webhook response:', error);
     
     res.status(500).json({
       success: false,
