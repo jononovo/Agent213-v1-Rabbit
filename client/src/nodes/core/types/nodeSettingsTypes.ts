@@ -74,4 +74,14 @@ export interface NodeSettingsHandlers {
    * @returns Final data to save
    */
   prepareSaveData?: (settings: Record<string, any>, nodeProperties?: Record<string, any>) => Record<string, any>;
+  
+  /**
+   * Load field options
+   * Called after field initialization to populate dropdown options or other dynamic data
+   * This allows nodes to fetch their own required data (workflows, agents, etc)
+   * 
+   * @param fields The current field definitions
+   * @returns Updated field definitions with loaded options
+   */
+  loadFieldOptions?: (fields: SettingField[]) => Promise<SettingField[]>;
 }

@@ -6,6 +6,7 @@
  */
 
 import { NodeDefinition } from '../../../core/types/nodeDefinitions';
+import { SettingField, NodeSettingsHandlers } from '../../../core/types/nodeSettingsTypes';
 import { z } from 'zod';
 
 const definition: NodeDefinition = {
@@ -130,6 +131,37 @@ export const nodeMetadata = {
       }
       
       return saveData;
+    },
+    
+    // Load field options for the workflow selection dropdown
+    loadFieldOptions: async (fields: SettingField[]): Promise<SettingField[]> => {
+      try {
+        // Fetch workflows from API
+        const res = await fetch('/api/workflows');
+        if (!res.ok) throw new Error('Failed to fetch workflows');
+        const workflows = await res.json();
+        
+        // Create workflow options
+        const workflowOptions = workflows.map((workflow: any) => ({
+          value: workflow.id.toString(),
+          label: `${workflow.name} (ID: ${workflow.id})`
+        }));
+        
+        // Find and update the workflowId field with the new options
+        const updatedFields = [...fields];
+        const workflowIdField = updatedFields.find(f => f.id === 'workflowId');
+        
+        if (workflowIdField) {
+          workflowIdField.options = workflowOptions;
+          console.log('Updated workflowId field options:', workflowOptions);
+        }
+        
+        return updatedFields;
+      } catch (error) {
+        console.error('Error loading workflow options:', error);
+        // Return the original fields if there was an error
+        return fields;
+      }
     }
   }
 };

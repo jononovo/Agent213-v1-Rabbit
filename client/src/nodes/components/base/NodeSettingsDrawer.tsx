@@ -116,8 +116,46 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     }
   }, [node]);
   
-  // No specific agent or workflow queries here
-  // Each node definition's handlers are responsible for their own data loading requirements
+  // Generic loading state for field options
+  const [loadingOptions, setLoadingOptions] = useState(false);
+
+  // Generic effect to load field options using the node's loadFieldOptions handler
+  useEffect(() => {
+    // Only run if we have a node, the drawer is open, and we have initial fields to work with
+    if (!node || !isOpen || !fieldOptions.length) return;
+
+    const loadOptions = async () => {
+      const nodeType = node.type || '';
+      if (!nodeType) return;
+
+      // Get the node definition to access its handlers
+      const nodeDefinition = getNode(nodeType);
+      
+      // Check if the node has a loadFieldOptions handler
+      if (nodeDefinition?.metadata?.handlers?.loadFieldOptions) {
+        try {
+          setLoadingOptions(true);
+          console.log(`Loading field options for ${nodeType} using handler...`);
+          
+          // Call the handler to load options
+          const updatedFields = await nodeDefinition.metadata.handlers.loadFieldOptions(fieldOptions);
+          
+          // Update field options with the result
+          if (updatedFields && Array.isArray(updatedFields)) {
+            console.log(`Field options loaded for ${nodeType}:`, updatedFields);
+            setFieldOptions(updatedFields);
+          }
+        } catch (error) {
+          console.error(`Error loading field options for ${nodeType}:`, error);
+        } finally {
+          setLoadingOptions(false);
+        }
+      }
+    };
+    
+    // Execute the async function
+    loadOptions();
+  }, [node, isOpen, fieldOptions.length]);
   
   // We replaced this effect with the more general effect above
   // that handles both agent and workflow options updating
@@ -490,6 +528,13 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           
           {activeTab === 'settings' && (
             <div className="pb-6">
+              {/* Show loading indicator when options are being loaded */}
+              {loadingOptions && (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                  <span className="ml-2 text-sm text-muted-foreground">Loading options...</span>
+                </div>
+              )}
               
               {fieldOptions.length > 0 ? (
                 <div className="space-y-4 pb-6">
