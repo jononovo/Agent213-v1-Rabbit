@@ -682,21 +682,17 @@ export function getNodeExecutorPath(nodeType: string): string {
   const node = nodeRegistry.get(nodeType);
   if (!node) return '';
   
-  // Handle both browser and server environments
-  // For browser (client-side workflow test), use a relative path
-  // For server (workflow execution engine), use an absolute path
-  try {
-    if (typeof process !== 'undefined' && process.cwd) {
-      // Server environment - use absolute path with process.cwd()
-      return `${process.cwd()}/client/src/nodes/categories/${node.folderPath}/${nodeType}/executor.ts`;
-    } else {
-      // Browser environment - use relative path
-      return `../../categories/${node.folderPath}/${nodeType}/executor`;
-    }
-  } catch (err) {
-    // Fallback to relative path if there's any error accessing process
-    return `../../categories/${node.folderPath}/${nodeType}/executor`;
+  // Split nodeType to get the base type without the unique ID suffix
+  const baseNodeType = nodeType.split('-')[0];
+  
+  // For server-side NodeJS environment
+  if (typeof process !== 'undefined' && process.cwd) {
+    // Use absolute path with process.cwd()
+    return `${process.cwd()}/client/src/nodes/categories/${node.folderPath}/${baseNodeType}/executor.ts`;
   }
+  
+  // For browser environment (client-side workflow test)
+  return `../categories/${node.folderPath}/${baseNodeType}/executor`;
 }
 
 /**
@@ -706,19 +702,17 @@ export function getNodeDefinitionPath(nodeType: string): string {
   const node = nodeRegistry.get(nodeType);
   if (!node) return '';
   
-  // Handle both browser and server environments
-  try {
-    if (typeof process !== 'undefined' && process.cwd) {
-      // Server environment - use absolute path
-      return `${process.cwd()}/client/src/nodes/categories/${node.folderPath}/${nodeType}/definition.ts`;
-    } else {
-      // Browser environment - use relative path
-      return `../../categories/${node.folderPath}/${nodeType}/definition`;
-    }
-  } catch (err) {
-    // Fallback to relative path
-    return `../../categories/${node.folderPath}/${nodeType}/definition`;
+  // Split nodeType to get the base type without the unique ID suffix
+  const baseNodeType = nodeType.split('-')[0];
+  
+  // For server-side NodeJS environment
+  if (typeof process !== 'undefined' && process.cwd) {
+    // Use absolute path with process.cwd()
+    return `${process.cwd()}/client/src/nodes/categories/${node.folderPath}/${baseNodeType}/definition.ts`;
   }
+  
+  // For browser environment (client-side workflow test)
+  return `../categories/${node.folderPath}/${baseNodeType}/definition`;
 }
 
 /**
@@ -728,17 +722,15 @@ export function getNodeUIPath(nodeType: string): string {
   const node = nodeRegistry.get(nodeType);
   if (!node) return '';
   
-  // Handle both browser and server environments
-  try {
-    if (typeof process !== 'undefined' && process.cwd) {
-      // Server environment - use absolute path
-      return `${process.cwd()}/client/src/nodes/categories/${node.folderPath}/${nodeType}/ui.tsx`;
-    } else {
-      // Browser environment - use relative path
-      return `../../categories/${node.folderPath}/${nodeType}/ui`;
-    }
-  } catch (err) {
-    // Fallback to relative path
-    return `../../categories/${node.folderPath}/${nodeType}/ui`;
+  // Split nodeType to get the base type without the unique ID suffix
+  const baseNodeType = nodeType.split('-')[0];
+  
+  // For server-side NodeJS environment
+  if (typeof process !== 'undefined' && process.cwd) {
+    // Use absolute path with process.cwd()
+    return `${process.cwd()}/client/src/nodes/categories/${node.folderPath}/${baseNodeType}/ui.tsx`;
   }
+  
+  // For browser environment (client-side workflow test)
+  return `../categories/${node.folderPath}/${baseNodeType}/ui`;
 }

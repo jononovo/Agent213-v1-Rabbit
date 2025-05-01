@@ -206,13 +206,26 @@ export async function executeEnhancedWorkflow(
         // Get executor path for node type from the unified registry
         const executorPath = getNodeExecutorPath(nodeType);
         
-        // Dynamically import the executor
-        const executorModule = await import(/* @vite-ignore */ executorPath);
-        const importedExecutor = executorModule.default;
-        
-        if (!importedExecutor || typeof importedExecutor.execute !== 'function') {
-          // Create a simple fallback executor
-          console.log(`Using emergency fallback executor for ${nodeType} (no executor found)`);
+        try {
+          // Dynamically import the executor
+          const executorModule = await import(/* @vite-ignore */ executorPath);
+          const importedExecutor = executorModule.default;
+          
+          if (importedExecutor && typeof importedExecutor.execute === 'function') {
+            executor = importedExecutor;
+          } else {
+            console.log(`Using fallback executor for ${nodeType} (no execute method found)`);
+            executor = {
+              execute: async (): Promise<NodeExecutionData> => {
+                return { 
+                  items: [{ json: { success: true, message: "Node executed with fallback executor" } }],
+                  meta: { startTime: new Date(), endTime: new Date() }
+                };
+              }
+            };
+          }
+        } catch (err) {
+          console.log(`Using fallback executor for ${nodeType} (failed to load executor)`);
           executor = {
             execute: async (): Promise<NodeExecutionData> => {
               return { 
@@ -221,8 +234,6 @@ export async function executeEnhancedWorkflow(
               };
             }
           };
-        } else {
-          executor = importedExecutor;
         }
       } catch (err) {
         // Create a simple fallback executor if import fails

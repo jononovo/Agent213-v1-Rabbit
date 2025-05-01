@@ -1,0 +1,70 @@
+Execution Logs
+Detailed logs of the workflow execution
+
+[2025-05-01T10:34:14.759Z] Executing workflow 17 with input: {
+  "inputText": "Write a poem about a pig"
+}
+[2025-05-01T10:34:15.011Z] Node webhook_trigger-1746095465876 [running]: 
+[2025-05-01T10:34:15.044Z] Node webhook_trigger-1746095465876 [completed]: 
+[2025-05-01T10:34:15.086Z] Node function_node-1746095459246 [running]: 
+[2025-05-01T10:34:15.090Z] Node function_node-1746095459246 [completed]: 
+[2025-05-01T10:34:15.129Z] Node send_to_webhook-1746095462128 [running]: 
+[2025-05-01T10:34:15.133Z] Node send_to_webhook-1746095462128 [completed]: 
+[2025-05-01T10:34:15.173Z] Workflow execution completed with status: completed
+Node Execution Details
+Status and outputs for each node
+
+Node webhook_trigger-1746095465876(webhook_trigger-1746095465876)
+completed
+Output:
+{
+  "items": [
+    {
+      "json": {
+        "success": true,
+        "message": "Node executed with emergency fallback executor"
+      }
+    }
+  ],
+  "meta": {
+    "startTime": "2025-05-01T10:34:15.043Z",
+    "endTime": "2025-05-01T10:34:15.043Z"
+  }
+}
+Started: 2025-05-01T10:34:15.011Z • Ended: 2025-05-01T10:34:15.044Z • Duration: 0.03s
+Node function_node-1746095459246(function_node-1746095459246)
+completed
+Output:
+{
+  "items": [
+    {
+      "json": {
+        "success": true,
+        "message": "Node executed with emergency fallback executor"
+      }
+    }
+  ],
+  "meta": {
+    "startTime": "2025-05-01T10:34:15.090Z",
+    "endTime": "2025-05-01T10:34:15.090Z"
+  }
+}
+Started: 2025-05-01T10:34:15.086Z • Ended: 2025-05-01T10:34:15.090Z • Duration: 0.00s
+Node send_to_webhook-1746095462128(send_to_webhook-1746095462128)
+completed
+Output:
+{
+  "items": [
+    {
+      "json": {
+        "success": true,
+        "message": "Node executed with emergency fallback executor"
+      }
+    }
+  ],
+  "meta": {
+    "startTime": "2025-05-01T10:34:15.133Z",
+    "endTime": "2025-05-01T10:34:15.133Z"
+  }
+}
+Started: 2025-05-01T10:34:15.129Z • Ended: 2025-05-01T10:34:15.133Z • Duration: 0.00s
