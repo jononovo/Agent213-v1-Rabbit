@@ -681,7 +681,9 @@ export function getSchedulerProviders(): RegisteredNode[] {
 export function getNodeExecutorPath(nodeType: string): string {
   const node = nodeRegistry.get(nodeType);
   if (!node) return '';
-  return `/src/nodes/categories/${node.folderPath}/${nodeType}/executor.ts`;
+  
+  // Use absolute path with process.cwd() to ensure correct resolution
+  return `${process.cwd()}/client/src/nodes/categories/${node.folderPath}/${nodeType}/executor.ts`;
 }
 
 /**
@@ -690,7 +692,9 @@ export function getNodeExecutorPath(nodeType: string): string {
 export function getNodeDefinitionPath(nodeType: string): string {
   const node = nodeRegistry.get(nodeType);
   if (!node) return '';
-  return `/src/nodes/categories/${node.folderPath}/${nodeType}/definition.ts`;
+  
+  // Use absolute path with process.cwd() to ensure correct resolution
+  return `${process.cwd()}/client/src/nodes/categories/${node.folderPath}/${nodeType}/definition.ts`;
 }
 
 /**
@@ -699,5 +703,7 @@ export function getNodeDefinitionPath(nodeType: string): string {
 export function getNodeUIPath(nodeType: string): string {
   const node = nodeRegistry.get(nodeType);
   if (!node) return '';
-  return `/src/nodes/categories/${node.folderPath}/${nodeType}/ui.tsx`;
+  
+  // Use absolute path with process.cwd() to ensure correct resolution
+  return `${process.cwd()}/client/src/nodes/categories/${node.folderPath}/${nodeType}/ui.tsx`;
 }
