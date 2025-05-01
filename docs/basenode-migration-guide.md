@@ -35,6 +35,8 @@ The BaseNode architecture consists of the following key components:
    - UI automatically generated from settings schema
    - Global settings drawer that can be triggered from any node
    - Consistent validation and error handling
+   - Custom handlers for settings initialization, saving, and dynamic field options
+   - Node-based dynamic data loading for dropdown options and other field types
 
 ## Migration Process
 
@@ -139,18 +141,113 @@ Make sure your node's definition and executor files are compatible with the Base
 
 ```ts
 // definition.ts
-export const defaultData = {
-  label: 'Your Node',
+import { NodeDefinition } from '../../../core/types/nodeDefinitions';
+import { SettingField } from '../../../core/types/nodeSettingsTypes';
+
+// Define the node definition with handlers embedded in metadata
+const definition: NodeDefinition = {
+  type: 'your_node_type',
+  name: 'Your Node',
   description: 'Your node description',
-  icon: 'icon-name',
   category: 'category',
-  // Default settings
-  settings: {
-    setting1: 'default',
-    setting2: false
+  version: '1.0.0',
+  
+  // Node settings schema
+  settings: [
+    {
+      key: 'setting1',
+      type: 'text',
+      label: 'Setting 1', 
+      description: 'Primary setting for the node',
+      required: true
+    },
+    {
+      key: 'setting2',
+      type: 'checkbox',
+      label: 'Enable Feature',
+      default: false
+    },
+    {
+      key: 'dropdown',
+      type: 'select',
+      label: 'Options',
+      description: 'Select from available options',
+      options: [] // Will be populated dynamically
+    }
+  ],
+  
+  // Include metadata with handlers for settings behavior
+  metadata: {
+    tags: ['example', 'node'],
+    color: '#4B5563',
+    
+    // Node settings handlers
+    handlers: {
+      // Initialize settings from node data
+      initializeSettings: (nodeData: Record<string, any>) => {
+        const settings = { ...(nodeData.settings || {}) };
+        
+        // Move properties from node data to settings if needed
+        if (nodeData.setting1 !== undefined) {
+          settings.setting1 = nodeData.setting1;
+        }
+        
+        return settings;
+      },
+      
+      // Prepare settings for saving
+      prepareSaveData: (settings: Record<string, any>, nodeProperties?: Record<string, any>) => {
+        const saveData = { ...settings };
+        
+        if (nodeProperties) {
+          saveData.nodeProperties = nodeProperties;
+        }
+        
+        return saveData;
+      },
+      
+      // Handle setting changes
+      handleSettingChange: (fieldId: string, value: any, currentSettings: Record<string, any>) => {
+        return { ...currentSettings, [fieldId]: value };
+      },
+      
+      // Load dynamic field options (for dropdowns, etc.)
+      loadFieldOptions: async (fields: SettingField[]): Promise<SettingField[]> => {
+        try {
+          // Fetch required data
+          const response = await fetch('/api/your-endpoint');
+          const items = await response.json();
+          
+          // Update field options
+          const updatedFields = [...fields];
+          updatedFields.forEach(field => {
+            if (field.key === 'dropdown') {
+              field.options = items.map(item => ({
+                value: item.id.toString(),
+                label: item.name
+              }));
+            }
+          });
+          
+          return updatedFields;
+        } catch (error) {
+          console.error('Error loading field options:', error);
+          return fields; // Return original fields on error
+        }
+      }
+    }
   },
-  // Flag to use BaseNode (if your system needs it)
-  useBaseNodeWrapper: true
+  
+  // Default data
+  defaultData: {
+    label: 'Your Node',
+    description: 'Your node description',
+    // Default settings
+    settings: {
+      setting1: 'default',
+      setting2: false
+    }
+  }
 };
 
 // Validator function to ensure node configuration is valid

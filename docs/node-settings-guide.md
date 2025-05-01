@@ -178,6 +178,33 @@ prepareSaveData: (settings: Record<string, any>, nodeProperties?: Record<string,
 }
 ```
 
+### loadFieldOptions
+
+Called when the settings drawer is opened to dynamically fetch and populate dropdown options or other field data.
+
+```typescript
+loadFieldOptions: async (fields: SettingField[]): Promise<SettingField[]> => {
+  // Fetch data from API or other source
+  const data = await fetchDataFromApi();
+  
+  // Create a copy of the fields array to avoid mutating the original
+  const updatedFields = [...fields];
+  
+  // Update fields that need dynamic options
+  updatedFields.forEach(field => {
+    if (field.key === 'targetField') {
+      field.options = data.map(item => ({
+        value: item.id.toString(),
+        label: item.name
+      }));
+    }
+  });
+  
+  // Return updated fields
+  return updatedFields;
+}
+```
+
 ## Best Practices
 
 1. **Use Helper Functions** - For consistent field formatting
@@ -187,6 +214,64 @@ prepareSaveData: (settings: Record<string, any>, nodeProperties?: Record<string,
 5. **Handle Interactions** - Use `handleSettingChange` for interdependent fields
 
 ## Examples
+
+### Example: Dynamic Workflow Selection with loadFieldOptions
+
+```typescript
+// In your node definition
+const definition: NodeDefinition = {
+  // Node basics...
+  
+  // Define settings fields with empty options that will be loaded dynamically
+  settings: [
+    {
+      key: 'workflowId',
+      type: 'select',
+      label: 'Target Workflow',
+      description: 'The workflow that will be triggered by this node.',
+      placeholder: 'Select target workflow',
+      options: [] // Will be populated by loadFieldOptions
+    },
+    // Other settings...
+  ],
+  
+  metadata: {
+    tags: ['workflow', 'embed'],
+    color: '#4B5563',
+    handlers: {
+      // Dynamic loading of workflow options
+      loadFieldOptions: async (fields) => {
+        try {
+          // Fetch workflows
+          const res = await fetch('/api/workflows');
+          if (!res.ok) throw new Error('Failed to fetch workflows');
+          const workflows = await res.json();
+          
+          // Map workflows to dropdown options format
+          const workflowOptions = workflows.map((workflow) => ({
+            value: workflow.id.toString(),
+            label: workflow.name
+          }));
+          
+          // Update any field that needs workflow options
+          const updatedFields = [...fields];
+          updatedFields.forEach(field => {
+            if (field.key === 'workflowId' || field.id === 'workflowId') {
+              field.options = workflowOptions;
+            }
+          });
+          
+          return updatedFields;
+        } catch (error) {
+          console.error('Error fetching workflows:', error);
+          return fields; // Return original fields on error
+        }
+      }
+    }
+  }
+  // Other properties...
+};
+```
 
 ### Example: API Node with Authentication
 

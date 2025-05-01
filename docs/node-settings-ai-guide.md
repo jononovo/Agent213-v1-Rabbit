@@ -57,6 +57,9 @@ interface NodeSettingsHandlers {
   
   // Prepare data for saving
   prepareSaveData?: (settings: Record<string, any>, nodeProperties?: Record<string, any>) => Record<string, any>;
+  
+  // Load field options (e.g., for dropdowns)
+  loadFieldOptions?: (fields: SettingField[]) => Promise<SettingField[]>;
 }
 ```
 
@@ -271,7 +274,7 @@ const definition = {
 };
 ```
 
-### 2. Workflow Reference Node (like embed_workflow)
+### 2. Workflow Reference Node with Dynamic Options
 
 ```typescript
 import { SettingType } from '../../../core/types/nodeSettingsTypes';
@@ -282,14 +285,16 @@ const fields = [
   {
     id: 'workflowId',
     label: 'Workflow',
-    type: SettingType.WORKFLOW,
+    type: SettingType.SELECT, // Use SELECT instead of WORKFLOW
     description: 'Select a workflow to embed',
-    required: true
+    required: true,
+    options: [] // Will be populated dynamically
   }
 ];
 
-// Custom handler for workflow nodes
+// Custom handlers for workflow nodes
 const specialHandlers = {
+  // Initialize settings
   initializeSettings: (nodeData) => {
     const settings = { ...(nodeData.settings || {}) };
     
@@ -300,6 +305,35 @@ const specialHandlers = {
     }
     
     return settings;
+  },
+  
+  // Dynamically load workflow options
+  loadFieldOptions: async (fields) => {
+    try {
+      // Fetch workflows from API
+      const res = await fetch('/api/workflows');
+      if (!res.ok) throw new Error('Failed to fetch workflows');
+      const workflows = await res.json();
+      
+      // Format workflows as options
+      const workflowOptions = workflows.map((workflow) => ({
+        value: workflow.id.toString(),
+        label: workflow.name
+      }));
+      
+      // Update fields
+      const updatedFields = [...fields];
+      updatedFields.forEach(field => {
+        if (field.id === 'workflowId' || field.key === 'workflowId') {
+          field.options = workflowOptions;
+        }
+      });
+      
+      return updatedFields;
+    } catch (error) {
+      console.error('Error loading workflow options:', error);
+      return fields; // Return original fields on error
+    }
   }
 };
 
@@ -314,8 +348,17 @@ export const nodeMetadata = {
 
 const definition = {
   // Node definition
-  settings: settingsFields
-  // Other properties
+  type: 'embed_other_workflow',
+  name: 'Embed Other Workflow',
+  description: 'Embed and run another workflow from within your current workflow',
+  category: 'actions',
+  version: '1.0.0',
+  settings: settingsFields,
+  // Node definition needs to include metadata with handlers
+  metadata: {
+    tags: ['workflow', 'embed'],
+    handlers // Include handlers here to make them available
+  }
 };
 ```
 
