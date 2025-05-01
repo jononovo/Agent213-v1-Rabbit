@@ -3,62 +3,70 @@
  * 
  * This executor handles external API requests through the Integration Engine.
  * It supports various HTTP methods, authentication, and error handling.
+ * 
+ * Uses the standardized BaseExecutor pattern - the single unified
+ * approach for all node executors in the workflow system.
  */
 
-// We're using a simplified interface here for the template
-// In a real implementation, import from the correct path
-interface NodeExecutor<T> {
-  (node: { id: string; data: T }, inputs: Record<string, any[]>, context?: any): Promise<Record<string, any[]>>;
-}
-
+import { NodeExecutionData } from '@/nodes/core/types/nodeExecutionTypes';
+import { createNodeExecutor } from '@/nodes/core/base/NodeExecutorBase';
 import { ApiIntegrationData, defaultData } from './definition';
 
 // Re-export the default data for use in UI
 export { defaultData };
 export type { ApiIntegrationData };
 
-// Node executor function
-export const executor: NodeExecutor<ApiIntegrationData> = async (node, inputs, context) => {
+/**
+ * Process the API integration node
+ * Implements the core logic for making API requests
+ */
+async function processNode(
+  nodeData: ApiIntegrationData,
+  inputs: Record<string, NodeExecutionData> = {}
+): Promise<Record<string, any>> {
+  // Extract inputs with validation
+  const inputData = inputs.data?.items[0]?.json || {};
+  
+  // Get URL from input or node configuration
+  const url = inputData.url || nodeData.url;
+  if (!url) {
+    throw new Error('URL is required but was not provided');
+  }
+  
+  // Get headers from input or node configuration
+  const configHeaders = nodeData.headers || {};
+  const inputHeaders = inputData.headers || {};
+  const headers = { ...configHeaders, ...inputHeaders };
+  
+  // Get body from input or node configuration
+  const body = inputData.body || nodeData.body;
+  
+  // Get URL parameters from input
+  const params = inputData.params || {};
+  
+  // Build query string from params
+  const queryParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    queryParams.append(key, String(value));
+  });
+  
+  // Build the complete URL with query parameters
+  const fullUrl = `${url}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+  
+  // Prepare the request
+  const request = {
+    url: fullUrl,
+    method: nodeData.method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+    timeout: nodeData.timeout || 30000,
+    retries: nodeData.retries || 3,
+  };
+  
+  // Log the request details
+  console.log(`API Integration: Making ${nodeData.method} request to ${fullUrl}`);
+  
   try {
-    // Get node data and merge with any input overrides
-    const nodeData = node.data;
-    
-    // Get URL from input or node configuration
-    const url = inputs.url?.[0]?.json || nodeData.url;
-    
-    // Get headers from input or node configuration
-    const configHeaders = nodeData.headers || {};
-    const inputHeaders = inputs.headers?.[0]?.json || {};
-    const headers = { ...configHeaders, ...inputHeaders };
-    
-    // Get body from input or node configuration
-    const body = inputs.body?.[0]?.json || nodeData.body;
-    
-    // Get URL parameters from input
-    const params = inputs.params?.[0]?.json || {};
-    
-    // Build query string from params
-    const queryParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      queryParams.append(key, String(value));
-    });
-    
-    // Build the complete URL with query parameters
-    const fullUrl = `${url}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-    
-    // Prepare the request
-    const request = {
-      url: fullUrl,
-      method: nodeData.method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-      timeout: nodeData.timeout,
-      retries: nodeData.retries,
-    };
-    
-    // Log the request details
-    console.log(`API Integration: Making ${nodeData.method} request to ${fullUrl}`);
-    
     // In a real implementation, this would use the Integration Engine proxy
     // For the template, we'll simulate a successful response
     const simulatedResponse = {
@@ -67,29 +75,27 @@ export const executor: NodeExecutor<ApiIntegrationData> = async (node, inputs, c
       headers: { 'content-type': 'application/json' }
     };
     
-    // Return the response data to output ports
+    // Return the result - BaseExecutor will format this into standardized output
     return {
-      response: [{ json: simulatedResponse.data }],
-      status: [{ json: simulatedResponse.status }],
-      headers: [{ json: simulatedResponse.headers }],
-      error: []
+      response: simulatedResponse.data,
+      status: simulatedResponse.status,
+      headers: simulatedResponse.headers,
+      meta: {
+        url: fullUrl,
+        method: nodeData.method,
+        success: true
+      }
     };
   } catch (error) {
-    // Handle errors
-    console.error('API integration execution error:', error);
-    
-    // Provide error details to the error output port
-    const errorDetails = {
-      message: error instanceof Error ? error.message : String(error),
-      code: 'API_REQUEST_FAILED',
-      timestamp: new Date().toISOString()
-    };
-    
-    return {
-      response: [],
-      status: [{ json: 500 }],
-      headers: [],
-      error: [{ json: errorDetails }]
-    };
+    // BaseExecutor will handle error formatting and propagation
+    throw new Error(`API Request Failed: ${error instanceof Error ? error.message : String(error)}`);
   }
-};
+}
+
+/**
+ * Export the standardized execute function
+ * 
+ * This line is identical across all node executors, ensuring
+ * a single unified approach throughout the entire system.
+ */
+export const execute = createNodeExecutor<ApiIntegrationData>('api_integration', processNode);
