@@ -1,9 +1,17 @@
-import { NodeDefinition } from '../../types';
+/**
+ * Embed Other Workflow Node Definition
+ * 
+ * Enhanced definition file with advanced configuration options for embedding
+ * and running other workflows within the current workflow.
+ */
+
+import { NodeDefinition } from '../../../core/types/nodeDefinitions';
+import { z } from 'zod';
 
 const definition: NodeDefinition = {
   type: 'embed_other_workflow',
   name: 'Embed Other Workflow',
-  description: 'This node triggers another workflow from within your current workflow. Select the workflow to call, specify which input field to use as the input data, and set a timeout if needed.',
+  description: 'Embed and run another workflow from within your current workflow',
   category: 'actions',
   version: '1.0.0',
   inputs: {
@@ -15,33 +23,78 @@ const definition: NodeDefinition = {
   outputs: {
     output: {
       type: 'any',
-      description: 'Output data from the embedded workflow'
+      description: 'Result from the embedded workflow'
+    },
+    error: {
+      type: 'string',
+      description: 'Error message if workflow execution failed'
     }
   },
+  
+  // Define settings for NodeSettingsDrawer
   settings: [
     {
       key: 'workflowId',
-      label: 'Target Workflow',
-      type: 'select',
-      placeholder: 'Select target workflow',
-      description: 'The workflow that will be triggered by this node.',
-      options: [] // Will be populated dynamically with available workflows
+      type: 'select', 
+      label: 'Workflow',
+      description: 'Select the workflow to trigger',
+      // The options will be dynamically populated in the UI
+      options: []
     },
     {
       key: 'inputField',
+      type: 'select',
       label: 'Input Field',
-      type: 'text',
-      placeholder: 'Enter input field name',
-      description: 'The field from input data to use as the input for the workflow.'
+      description: 'Select which field to pass as input',
+      options: [
+        { value: 'json', label: 'JSON (entire object)' },
+        { value: 'text', label: 'Text content' },
+        { value: 'content', label: 'Content field' }
+      ],
+      default: 'json'
     },
     {
       key: 'timeout',
+      type: 'number',
       label: 'Timeout (ms)',
-      type: 'text',
-      placeholder: '30000',
-      description: 'Maximum time in milliseconds to wait for workflow response. Default: 30000 (30 seconds)'
+      description: 'Maximum time to wait for workflow execution (in milliseconds)',
+      min: 0,
+      max: 120000,
+      step: 1000,
+      default: 30000
+    },
+    {
+      key: 'waitForCompletion',
+      type: 'checkbox',
+      label: 'Wait for Completion',
+      description: 'Wait for the workflow to complete before continuing',
+      default: true
     }
-  ]
+  ],
+  
+  // Validation schema using Zod
+  validation: z.object({
+    workflowId: z.union([z.string(), z.number()]).optional(),
+    inputField: z.enum(['json', 'text', 'content']).default('json'),
+    timeout: z.number().min(0).max(120000).default(30000),
+    waitForCompletion: z.boolean().default(true)
+  }),
+  
+  defaultData: {
+    label: 'Embed Other Workflow',
+    description: 'Run another workflow from within this workflow',
+    workflowId: null,
+    inputField: 'json',
+    timeout: 30000,
+    waitForCompletion: true
+  },
+  icon: 'git-branch'
+};
+
+// Additional metadata for UI/rendering
+export const nodeMetadata = {
+  tags: ['workflow', 'embed', 'run', 'trigger', 'integration'],
+  color: '#4B5563',
 };
 
 export default definition;

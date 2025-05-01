@@ -5,8 +5,19 @@
  * managing API calls to trigger other workflows and process their results.
  */
 
-import type { NodeExecutionData, WorkflowItem } from '@shared/nodeTypes';
-import { EmbedOtherWorkflowNodeData, defaultData } from './ui';  // Import from UI to maintain a single source of truth
+// Import types from core
+import { 
+  NodeExecutionData,
+  WorkflowItem 
+} from '../../../core/types/nodeExecutionTypes';
+
+interface EmbedWorkflowNodeData {
+  workflowId?: number | string | null;
+  inputField?: string;
+  timeout?: number;
+  waitForCompletion?: boolean;
+  [key: string]: any;
+}
 
 /**
  * Helper function to make API requests
@@ -46,38 +57,54 @@ async function apiRequest(endpoint: string, method: string = 'GET', data?: any):
 }
 
 /**
- * The main executor function for the embed_other_workflow node
+ * Execute an Embed Other Workflow node with the provided input
  */
-export const execute = async (
-  data: EmbedOtherWorkflowNodeData, 
-  inputs: NodeExecutionData
-): Promise<NodeExecutionData> => {
-  console.log('Executing embed_other_workflow node with data:', data);
+export async function execute(
+  nodeData: EmbedWorkflowNodeData,
+  input?: NodeExecutionData
+): Promise<NodeExecutionData> {
+  const startTime = new Date();
+  const meta = {
+    startTime,
+    endTime: new Date(),
+    source: 'embed_other_workflow',
+    error: false,
+    errorMessage: ''
+  };
   
-  // Validate required workflow ID
-  if (!data.workflowId) {
-    throw new Error('No workflow selected. Please configure the node with a valid workflow.');
-  }
-  
-  // Get input data
-  const inputItems = inputs?.items || [];
-  if (!inputItems.length) {
-    throw new Error('No input data received');
+  // Validate input - ensure we have valid items to process
+  if (!input || !input.items || !Array.isArray(input.items)) {
+    // Create a default input with a single empty item if none is provided
+    input = {
+      items: [{ json: {} }],
+      meta: {
+        startTime,
+        endTime: new Date()
+      }
+    };
   }
   
   try {
-    const startTime = new Date();
-    console.log(`Triggering workflow ID ${data.workflowId} with ${inputItems.length} items`);
+    // Validate required workflow ID
+    if (!nodeData.workflowId) {
+      throw new Error('No workflow selected. Please configure the node with a valid workflow.');
+    }
+
+    console.log(`Triggering workflow ID ${nodeData.workflowId} with ${input.items.length} items`);
     
     // Format the input data based on the selected inputField
+    const inputField = nodeData.inputField || 'json';
+    const timeout = nodeData.timeout || 30000;
+    const waitForCompletion = nodeData.waitForCompletion !== false;
+    
     const triggerPayload = {
-      workflowId: data.workflowId,
-      inputData: inputItems.map(item => {
-        if (data.inputField === 'json') {
+      workflowId: nodeData.workflowId,
+      inputData: input.items.map(item => {
+        if (inputField === 'json') {
           return item.json;
-        } else if (data.inputField === 'text') {
+        } else if (inputField === 'text') {
           return item.text;
-        } else if (data.inputField === 'content' && item.json?.content) {
+        } else if (inputField === 'content' && item.json?.content) {
           return item.json.content;
         }
         return item;
@@ -86,17 +113,17 @@ export const execute = async (
     
     // Call the API to trigger the workflow
     let workflowResult;
-    if (data.waitForCompletion) {
+    if (waitForCompletion) {
       // Execute and wait for results
       workflowResult = await apiRequest('/api/workflows/execute', 'POST', {
-        workflowId: data.workflowId,
+        workflowId: nodeData.workflowId,
         input: triggerPayload.inputData,
-        timeout: data.timeout
+        timeout: timeout
       });
     } else {
       // Trigger execution without waiting
       workflowResult = await apiRequest('/api/workflows/trigger', 'POST', {
-        workflowId: data.workflowId,
+        workflowId: nodeData.workflowId,
         input: triggerPayload.inputData
       });
     }
@@ -123,6 +150,18 @@ export const execute = async (
   } catch (error: any) {
     console.error('Error executing embed_other_workflow node:', error);
     const errorMessage = error.message || 'Unknown error occurred';
-    throw new Error(`Embed Other Workflow error: ${errorMessage}`);
+    
+    return {
+      items: input.items.map(item => ({
+        json: { error: true, message: errorMessage },
+        text: `Error: ${errorMessage}`
+      })),
+      meta: {
+        ...meta,
+        endTime: new Date(),
+        error: true,
+        errorMessage: `Embed Other Workflow error: ${errorMessage}`
+      }
+    };
   }
-};
+}
