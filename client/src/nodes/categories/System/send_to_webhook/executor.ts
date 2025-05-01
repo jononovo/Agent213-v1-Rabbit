@@ -23,6 +23,10 @@ interface SendToWebhookNodeData {
   timeout: number;
   respondToOriginal?: boolean | string; // New field name
   isWebhookResponse?: boolean | string; // Legacy field name (for backward compatibility)
+  settings?: {
+    respondToOriginal?: boolean | string;
+    [key: string]: any;
+  };
 }
 
 /**
@@ -43,7 +47,10 @@ async function processNode(
     nodeData.respondToOriginal === true || 
     nodeData.respondToOriginal === 'true' || 
     nodeData.isWebhookResponse === true || 
-    nodeData.isWebhookResponse === 'true';
+    nodeData.isWebhookResponse === 'true' ||
+    (nodeData.settings && 
+      (nodeData.settings.respondToOriginal === true || 
+       nodeData.settings.respondToOriginal === 'true'));
   
   // Handle webhook response if applicable and if we have a requestId
   if (respondToOriginal && inputData.requestId && inputData.isWebhookRequest) {

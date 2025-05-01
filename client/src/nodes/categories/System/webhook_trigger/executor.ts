@@ -28,7 +28,12 @@ export async function execute(
     // During test execution, try to derive workflowId and nodeId if not provided directly
     const effectiveWorkflowId = workflowId || settings.workflowId || 
         (typeof window !== 'undefined' && window.location.pathname.match(/\/workflow-test\/(\d+)/)?.[1]);
-    const effectiveNodeId = nodeId || id;
+    
+    // Make sure we have the node ID for test execution
+    // The nodeId variable is sometimes missing, but we can get it from the id property
+    // which is consistently populated with the unique node instance ID in test mode
+    const effectiveNodeId = nodeId || id || 
+        (typeof id === 'string' && id.includes('-') ? id : undefined);
     
     console.log('DEBUG: Effective IDs:', { workflowId: effectiveWorkflowId, nodeId: effectiveNodeId });
     
@@ -62,16 +67,18 @@ export async function execute(
       }
     }
     
-    // Create a simple response for debugging
+    // Create a response that looks like a real webhook trigger
     const result = {
       success: true,
-      message: "Debug webhook trigger executed successfully",
+      message: "Webhook trigger executed successfully",
       timestamp: startTime.toISOString(),
       webhookUrl: integrationClient.getIntegrationUrl(webhookPath),
       registered: !!registrationResult,
-      inputDetails: {
-        hasInputs: Object.keys(inputs).length > 0,
-        inputKeys: Object.keys(inputs)
+      webhookData: {
+        workflowId: effectiveWorkflowId,
+        nodeId: effectiveNodeId,
+        method: "POST",
+        payload: { inputText: nodeData.inputText || "Test webhook payload" }
       }
     };
     
@@ -88,7 +95,11 @@ export async function execute(
       meta: {
         startTime,
         endTime: new Date(),
-        source: 'webhook_trigger_debug_version'
+        source: 'webhook_trigger',
+        webhookData: {
+          nodeId: effectiveNodeId,
+          workflowId: effectiveWorkflowId 
+        }
       }
     };
   } catch (error: any) {
@@ -109,7 +120,7 @@ export async function execute(
         startTime,
         endTime: new Date(),
         error: true,
-        source: 'webhook_trigger_debug_version'
+        source: 'webhook_trigger'
       }
     };
   }

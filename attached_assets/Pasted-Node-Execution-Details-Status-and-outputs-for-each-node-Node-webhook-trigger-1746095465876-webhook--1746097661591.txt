@@ -1,0 +1,83 @@
+Node Execution Details
+Status and outputs for each node
+
+Node webhook_trigger-1746095465876(webhook_trigger-1746095465876)
+completed
+Output:
+{
+  "items": [
+    {
+      "json": {
+        "success": true,
+        "message": "Debug webhook trigger executed successfully",
+        "timestamp": "2025-05-01T11:06:35.555Z",
+        "webhookUrl": "https://b6a08856-bec8-4b81-94b9-606d33b78fd2-00-1h6bieaom2jnj.worf.replit.dev:3001/webhooks/workflow/17/node/undefined",
+        "registered": false,
+        "inputDetails": {
+          "hasInputs": true,
+          "inputKeys": [
+            "icon",
+            "category",
+            "configuration",
+            "defaultData"
+          ]
+        }
+      },
+      "text": "{\"success\":true,\"message\":\"Debug webhook trigger executed successfully\",\"timestamp\":\"2025-05-01T11:06:35.555Z\",\"webhookUrl\":\"https://b6a08856-bec8-4b81-94b9-606d33b78fd2-00-1h6bieaom2jnj.worf.replit.dev:3001/webhooks/workflow/17/node/undefined\",\"registered\":false,\"inputDetails\":{\"hasInputs\":true,\"inputKeys\":[\"icon\",\"category\",\"configuration\",\"defaultData\"]}}"
+    }
+  ],
+  "meta": {
+    "startTime": "2025-05-01T11:06:35.555Z",
+    "endTime": "2025-05-01T11:06:35.555Z",
+    "source": "webhook_trigger_debug_version"
+  }
+}
+Started: 2025-05-01T11:06:35.551Z • Ended: 2025-05-01T11:06:35.555Z • Duration: 0.00s
+Node function_node-1746095459246(function_node-1746095459246)
+completed
+Output:
+{
+  "items": [
+    {
+      "json": {
+        "success": true,
+        "message": "Debug function node executed successfully",
+        "timestamp": "2025-05-01T11:06:35.566Z",
+        "inputDetails": {
+          "hasInputs": true,
+          "inputKeys": [
+            "input",
+            "icon",
+            "category",
+            "configuration",
+            "defaultData",
+            "inputText",
+            "metadata"
+          ],
+          "firstInputItems": 0
+        }
+      },
+      "text": "{\"success\":true,\"message\":\"Debug function node executed successfully\",\"timestamp\":\"2025-05-01T11:06:35.566Z\",\"inputDetails\":{\"hasInputs\":true,\"inputKeys\":[\"input\",\"icon\",\"category\",\"configuration\",\"defaultData\",\"inputText\",\"metadata\"],\"firstInputItems\":0}}"
+    }
+  ],
+  "meta": {
+    "startTime": "2025-05-01T11:06:35.566Z",
+    "endTime": "2025-05-01T11:06:35.566Z",
+    "source": "function_node_debug_version"
+  }
+}
+Started: 2025-05-01T11:06:35.560Z • Ended: 2025-05-01T11:06:35.566Z • Duration: 0.01s
+Node send_to_webhook-1746095462128(send_to_webhook-1746095462128)
+completed
+Output:
+{
+  "items": [],
+  "meta": {
+    "startTime": "2025-05-01T11:06:35.577Z",
+    "endTime": "2025-05-01T11:06:35.577Z",
+    "error": true,
+    "errorMessage": "Webhook URL is required",
+    "source": "send_to_webhook"
+  }
+}
+Started: 2025-05-01T11:06:35.572Z • Ended: 2025-05-01T11:06:35.577Z • Duration: 0.01s
