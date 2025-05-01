@@ -52,14 +52,21 @@ export async function execute(
     
     console.log('DEBUG: Effective IDs:', { workflowId: effectiveWorkflowId, nodeId: effectiveNodeId });
     
-    // Generate a webhook URL for display
+    // In test mode, if we don't have a node ID, use the current node instance ID from the execution context
+    // This ensures we always have a valid node ID for webhook URLs
+    if (!effectiveNodeId && typeof id === 'string') {
+      effectiveNodeId = id;
+      console.log('DEBUG: Using node instance ID as fallback:', effectiveNodeId);
+    }
+    
+    // Generate a webhook URL for display - always include the node ID for proper routing
     const webhookPath = path 
       ? `webhooks/${path}` 
-      : `webhooks/workflow/${effectiveWorkflowId}/node/${effectiveNodeId}`;
+      : `webhooks/workflow/${effectiveWorkflowId}/node/${effectiveNodeId || 'webhook_trigger-' + Date.now()}`;
     
     // Try to register the webhook if we have enough info
     let registrationResult = null;
-    if (effectiveWorkflowId && effectiveNodeId) {
+    if (effectiveWorkflowId) {
       try {
         console.log('DEBUG: Attempting to register webhook:', webhookPath);
         registrationResult = await integrationClient.registerIntegration({
@@ -73,8 +80,8 @@ export async function execute(
             }
           },
           workflowId: Number(effectiveWorkflowId),
-          nodeId: effectiveNodeId,
-          description: `Debug webhook for workflow ${effectiveWorkflowId}`
+          nodeId: effectiveNodeId || id || 'webhook_trigger-' + Date.now(),
+          description: `Webhook for workflow ${effectiveWorkflowId}`
         });
         console.log('DEBUG: Webhook registration result:', registrationResult);
       } catch (regError) {
@@ -91,7 +98,7 @@ export async function execute(
       registered: !!registrationResult,
       webhookData: {
         workflowId: effectiveWorkflowId,
-        nodeId: effectiveNodeId,
+        nodeId: effectiveNodeId || id || 'webhook_trigger-' + Date.now(),
         method: "POST",
         payload: { inputText: nodeData.inputText || "Test webhook payload" }
       }
@@ -112,7 +119,7 @@ export async function execute(
         endTime: new Date(),
         source: 'webhook_trigger',
         webhookData: {
-          nodeId: effectiveNodeId,
+          nodeId: effectiveNodeId || id || 'webhook_trigger-' + Date.now(),
           workflowId: effectiveWorkflowId 
         }
       }
