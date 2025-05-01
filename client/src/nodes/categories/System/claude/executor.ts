@@ -4,8 +4,8 @@
  * This file contains the logic for executing the Claude API node.
  * It handles the API call to Claude and processes the response.
  * 
- * Uses the standardized NodeExecutorBase pattern for consistent
- * output formatting across all nodes.
+ * Uses the standardized BaseExecutor pattern - the single unified
+ * approach for all node executors in the workflow system.
  */
 
 // Import node types and utilities
@@ -13,12 +13,24 @@ import { NodeExecutionData } from '../../../core/types/nodeExecutionTypes';
 import { createNodeExecutor } from '../../../core/base/NodeExecutorBase';
 
 /**
+ * Type definition for Claude node parameters
+ */
+interface ClaudeNodeData {
+  apiKey?: string;
+  model?: string;
+  systemPrompt?: string;
+  temperature?: number;
+  maxTokens?: number;
+  inputText?: string;
+}
+
+/**
  * Calls the Claude API with configured parameters
  */
 async function callClaudeAPI(
   prompt: string, 
   apiKey: string, 
-  model: string = 'claude-3-7-sonnet-20250219', // Updated to use latest model
+  model: string = 'claude-3-7-sonnet-20250219',
   systemPrompt?: string,
   temperature: number = 0.7,
   maxTokens: number = 2000
@@ -125,10 +137,13 @@ function extractInputText(inputs: Record<string, any> = {}): string {
 
 /**
  * Main node processing function
+ * 
+ * This function contains only the Claude-specific business logic.
+ * The BaseExecutor handles all standardized formatting and error handling.
  */
 async function processNode(
-  nodeData: any,
-  inputs: Record<string, any> = {}
+  nodeData: ClaudeNodeData,
+  inputs: Record<string, NodeExecutionData> = {}
 ): Promise<Record<string, any>> {
   // Extract input text from node data or connected nodes
   let prompt = '';
@@ -151,7 +166,7 @@ async function processNode(
     throw new Error('Claude API key is not configured');
   }
   
-  // Get node settings
+  // Get node settings with defaults
   const model = nodeData.model || 'claude-3-7-sonnet-20250219';
   const systemPrompt = nodeData.systemPrompt;
   const temperature = Number(nodeData.temperature || 0.7);
@@ -167,7 +182,7 @@ async function processNode(
     maxTokens
   );
   
-  // Return result
+  // Return result object - BaseExecutor will format this into standardized output
   return {
     output: {
       text: generatedText,
@@ -178,5 +193,8 @@ async function processNode(
 
 /**
  * Export the standardized execute function
+ * 
+ * This line is identical across all node executors, ensuring
+ * a single unified approach throughout the entire system.
  */
-export const execute = createNodeExecutor('claude', processNode);
+export const execute = createNodeExecutor<ClaudeNodeData>('claude', processNode);
