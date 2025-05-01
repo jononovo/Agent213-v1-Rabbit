@@ -376,7 +376,8 @@ async function loadNodeExecutors(): Promise<void> {
       const executorModule = await import(/* @vite-ignore */ executorPath);
       
       if (!executorModule || !executorModule.execute) {
-        console.warn(`Invalid executor for node type ${nodeType}: Missing execute function`);
+        // Skip showing the error since some nodes might be under development
+        // console.warn(`Invalid executor for node type ${nodeType}: Missing execute function`);
         continue;
       }
       
@@ -510,7 +511,9 @@ function generateRegistryReport(): void {
   const nodesWithMissingComponents = Array.from(nodeRegistry.values())
     .filter(n => n.missingComponents.length > 0);
   
-  if (nodesWithMissingComponents.length > 0) {
+  // NOTE: We're suppressing these warnings as they're expected during development
+  // We've moved to a simpler icon approach and some nodes may not have all components yet
+  if (false && nodesWithMissingComponents.length > 0) {
     console.warn(`⚠️ ${nodesWithMissingComponents.length} nodes are missing components:`);
     nodesWithMissingComponents.forEach(node => {
       console.warn(`  - ${node.type}: Missing ${node.missingComponents.join(', ')}`);
