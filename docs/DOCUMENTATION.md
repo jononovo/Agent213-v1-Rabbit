@@ -314,11 +314,44 @@ The Default node implementation serves as both a template and extension point fo
 
 ### Node Output Format
 
-All node executors must follow the standardized output format to ensure compatibility across the workflow system:
+All node executors must follow the standardized BaseExecutor pattern to ensure compatibility across the workflow system:
+
+```typescript
+// 1. Define node data interface
+interface YourNodeData {
+  parameter1?: string;
+  parameter2?: number;
+  // Add node-specific parameters
+}
+
+// 2. Implement node-specific logic
+async function processNode(
+  nodeData: YourNodeData,
+  inputs?: Record<string, NodeExecutionData>
+): Promise<Record<string, any>> {
+  // Your node-specific implementation here...
+  
+  return {
+    output1: result1,
+    output2: result2
+  };
+}
+
+// 3. Export using the standardized wrapper
+export const execute = createNodeExecutor<YourNodeData>('your_node_type', processNode);
+```
+
+The BaseExecutor pattern automatically handles:
+- Consistent output formatting
+- Error handling and standardization
+- Execution timing and metadata
+- Proper WorkflowItem creation
+
+The standardized output format remains the same, but is now managed by the BaseExecutor:
 
 ```typescript
 interface NodeExecutionData {
-  items: WorkflowItem[];  // Output data items
+  items: WorkflowItem[];  // Output data items with { json, text, _key } format
   meta: {
     startTime: Date;           // When execution started
     endTime: Date;             // When execution completed
@@ -331,7 +364,7 @@ interface NodeExecutionData {
 }
 ```
 
-Use the `createNodeOutput` and `createErrorOutput` utility functions from `client/src/nodes/nodeOutputUtils.ts` to ensure consistent output formatting.
+> **⚠️ Important:** The older utility functions `createNodeOutput` and `createErrorOutput` from `client/src/nodes/core/execution/nodeOutputUtils.ts` are now deprecated. All nodes should use the BaseExecutor pattern instead. See the [BaseExecutor documentation](../client/src/nodes/core/base/README.md) for more details.
 
 ## Node Testing Framework
 
