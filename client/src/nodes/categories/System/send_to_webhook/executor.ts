@@ -80,7 +80,8 @@ async function processNode(
   
   // Regular webhook sending logic for non-response cases
   // Validate required fields for external webhook calls
-  if (!nodeData.url) {
+  // Only require URL if we're not responding to an original webhook
+  if (!respondToOriginal && !nodeData.url) {
     throw new Error('Webhook URL is required');
   }
   
@@ -105,7 +106,23 @@ async function processNode(
     timeout
   };
   
-  // Make the request with retry logic
+  // Skip the HTTP request if we're responding to an original webhook
+  // This handles the case where URL is not provided but respondToOriginal is true
+  if (respondToOriginal) {
+    return {
+      response: { success: true, message: "This node is configured to respond to the original webhook" },
+      status: 200,
+      headers: {},
+      meta: {
+        success: true,
+        isWebhookResponse: true,
+        status: 200,
+        message: "Configured to respond to original webhook"
+      }
+    };
+  }
+  
+  // Make the request with retry logic for external webhook
   const result = await makeRequestWithRetry(
     url, 
     requestOptions, 

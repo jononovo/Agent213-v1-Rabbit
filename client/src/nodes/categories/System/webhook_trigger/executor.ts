@@ -22,17 +22,24 @@ export async function execute(
   const startTime = new Date();
   
   try {
-    // Extract basic info
-    const { path, workflowId, nodeId } = nodeData;
+    // Extract node data and settings (workflowId might come from configuration)
+    const { path, workflowId, nodeId, id, settings = {} } = nodeData;
+    
+    // During test execution, try to derive workflowId and nodeId if not provided directly
+    const effectiveWorkflowId = workflowId || settings.workflowId || 
+        (typeof window !== 'undefined' && window.location.pathname.match(/\/workflow-test\/(\d+)/)?.[1]);
+    const effectiveNodeId = nodeId || id;
+    
+    console.log('DEBUG: Effective IDs:', { workflowId: effectiveWorkflowId, nodeId: effectiveNodeId });
     
     // Generate a webhook URL for display
     const webhookPath = path 
       ? `webhooks/${path}` 
-      : `webhooks/workflow/${workflowId}/node/${nodeId}`;
+      : `webhooks/workflow/${effectiveWorkflowId}/node/${effectiveNodeId}`;
     
     // Try to register the webhook if we have enough info
     let registrationResult = null;
-    if (workflowId && nodeId) {
+    if (effectiveWorkflowId && effectiveNodeId) {
       try {
         console.log('DEBUG: Attempting to register webhook:', webhookPath);
         registrationResult = await integrationClient.registerIntegration({
@@ -45,9 +52,9 @@ export async function execute(
               authTypes: ['none']
             }
           },
-          workflowId: Number(workflowId),
-          nodeId: nodeId,
-          description: `Debug webhook for workflow ${workflowId}`
+          workflowId: Number(effectiveWorkflowId),
+          nodeId: effectiveNodeId,
+          description: `Debug webhook for workflow ${effectiveWorkflowId}`
         });
         console.log('DEBUG: Webhook registration result:', registrationResult);
       } catch (regError) {

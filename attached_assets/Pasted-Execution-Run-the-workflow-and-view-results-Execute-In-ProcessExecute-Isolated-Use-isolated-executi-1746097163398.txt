@@ -1,0 +1,120 @@
+Execution
+Run the workflow and view results
+
+Execute In-ProcessExecute Isolated
+Use isolated execution for enhanced stability and crash resistance
+
+Result:
+Copy
+Download
+Status: completed
+
+Node Status:
+completed: 3
+Output:
+{
+  "items": [],
+  "meta": {
+    "startTime": "2025-05-01T10:58:58.227Z",
+    "endTime": "2025-05-01T10:58:58.227Z",
+    "error": true,
+    "errorMessage": "Webhook URL is required",
+    "source": "send_to_webhook"
+  }
+}
+Execution Logs
+Detailed logs of the workflow execution
+
+[2025-05-01T10:58:58.127Z] Executing workflow 17 with input: {
+  "inputText": "Write a poem about a pig"
+}
+[2025-05-01T10:58:58.204Z] Node webhook_trigger-1746095465876 [running]: 
+[2025-05-01T10:58:58.207Z] Node webhook_trigger-1746095465876 [completed]: 
+[2025-05-01T10:58:58.210Z] Node function_node-1746095459246 [running]: 
+[2025-05-01T10:58:58.215Z] Node function_node-1746095459246 [completed]: 
+[2025-05-01T10:58:58.222Z] Node send_to_webhook-1746095462128 [running]: 
+[2025-05-01T10:58:58.227Z] Node send_to_webhook-1746095462128 [completed]: 
+[2025-05-01T10:58:58.256Z] Workflow execution completed with status: completed
+Node Execution Details
+Status and outputs for each node
+
+Node webhook_trigger-1746095465876(webhook_trigger-1746095465876)
+completed
+Output:
+{
+  "items": [
+    {
+      "json": {
+        "success": true,
+        "message": "Debug webhook trigger executed successfully",
+        "timestamp": "2025-05-01T10:58:58.207Z",
+        "webhookUrl": "https://b6a08856-bec8-4b81-94b9-606d33b78fd2-00-1h6bieaom2jnj.worf.replit.dev:3001/webhooks/workflow/undefined/node/undefined",
+        "registered": false,
+        "inputDetails": {
+          "hasInputs": true,
+          "inputKeys": [
+            "icon",
+            "category",
+            "configuration",
+            "defaultData"
+          ]
+        }
+      },
+      "text": "{\"success\":true,\"message\":\"Debug webhook trigger executed successfully\",\"timestamp\":\"2025-05-01T10:58:58.207Z\",\"webhookUrl\":\"https://b6a08856-bec8-4b81-94b9-606d33b78fd2-00-1h6bieaom2jnj.worf.replit.dev:3001/webhooks/workflow/undefined/node/undefined\",\"registered\":false,\"inputDetails\":{\"hasInputs\":true,\"inputKeys\":[\"icon\",\"category\",\"configuration\",\"defaultData\"]}}"
+    }
+  ],
+  "meta": {
+    "startTime": "2025-05-01T10:58:58.207Z",
+    "endTime": "2025-05-01T10:58:58.207Z",
+    "source": "webhook_trigger_debug_version"
+  }
+}
+Started: 2025-05-01T10:58:58.204Z • Ended: 2025-05-01T10:58:58.207Z • Duration: 0.00s
+Node function_node-1746095459246(function_node-1746095459246)
+completed
+Output:
+{
+  "items": [
+    {
+      "json": {
+        "success": true,
+        "message": "Debug function node executed successfully",
+        "timestamp": "2025-05-01T10:58:58.215Z",
+        "inputDetails": {
+          "hasInputs": true,
+          "inputKeys": [
+            "input",
+            "icon",
+            "category",
+            "configuration",
+            "defaultData",
+            "inputText",
+            "metadata"
+          ],
+          "firstInputItems": 0
+        }
+      },
+      "text": "{\"success\":true,\"message\":\"Debug function node executed successfully\",\"timestamp\":\"2025-05-01T10:58:58.215Z\",\"inputDetails\":{\"hasInputs\":true,\"inputKeys\":[\"input\",\"icon\",\"category\",\"configuration\",\"defaultData\",\"inputText\",\"metadata\"],\"firstInputItems\":0}}"
+    }
+  ],
+  "meta": {
+    "startTime": "2025-05-01T10:58:58.215Z",
+    "endTime": "2025-05-01T10:58:58.215Z",
+    "source": "function_node_debug_version"
+  }
+}
+Started: 2025-05-01T10:58:58.210Z • Ended: 2025-05-01T10:58:58.215Z • Duration: 0.01s
+Node send_to_webhook-1746095462128(send_to_webhook-1746095462128)
+completed
+Output:
+{
+  "items": [],
+  "meta": {
+    "startTime": "2025-05-01T10:58:58.227Z",
+    "endTime": "2025-05-01T10:58:58.227Z",
+    "error": true,
+    "errorMessage": "Webhook URL is required",
+    "source": "send_to_webhook"
+  }
+}
+Started: 2025-05-01T10:58:58.222Z • Ended: 2025-05-01T10:58:58.227Z • Duration: 0.01s
