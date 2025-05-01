@@ -209,27 +209,37 @@ export async function executeEnhancedWorkflow(
         try {
           // Dynamically import the executor
           const executorModule = await import(/* @vite-ignore */ executorPath);
-          const importedExecutor = executorModule.default;
           
-          if (importedExecutor && typeof importedExecutor.execute === 'function') {
-            executor = importedExecutor;
-          } else {
-            console.log(`Using fallback executor for ${nodeType} (no execute method found)`);
+          // Check if the module has a default export with an execute method (NodeExecutor object)
+          if (executorModule.default && typeof executorModule.default.execute === 'function') {
+            executor = executorModule.default;
+            console.log(`Loaded NodeExecutor object for ${nodeType}`);
+          } 
+          // Check if the module directly exports an execute function
+          else if (typeof executorModule.execute === 'function') {
+            // Create a wrapper executor that calls the execute function
+            executor = {
+              execute: executorModule.execute
+            };
+            console.log(`Loaded execute function for ${nodeType}`);
+          } 
+          else {
+            console.log(`Using fallback executor for ${nodeType} (no execute method or function found)`);
             executor = {
               execute: async (): Promise<NodeExecutionData> => {
                 return { 
-                  items: [{ json: { success: true, message: "Node executed with fallback executor" } }],
+                  items: [{ json: { success: true, message: "Node executed with fallback executor (no execute method found)" } }],
                   meta: { startTime: new Date(), endTime: new Date() }
                 };
               }
             };
           }
         } catch (err) {
-          console.log(`Using fallback executor for ${nodeType} (failed to load executor)`);
+          console.error(`Error loading executor for ${nodeType}:`, err);
           executor = {
             execute: async (): Promise<NodeExecutionData> => {
               return { 
-                items: [{ json: { success: true, message: "Node executed with fallback executor" } }],
+                items: [{ json: { success: true, message: "Node executed with fallback executor (error loading)" } }],
                 meta: { startTime: new Date(), endTime: new Date() }
               };
             }

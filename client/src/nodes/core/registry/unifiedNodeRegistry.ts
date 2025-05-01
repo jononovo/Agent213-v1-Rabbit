@@ -692,7 +692,8 @@ export function getNodeExecutorPath(nodeType: string): string {
   }
   
   // For browser environment (client-side workflow test)
-  return `../categories/${node.folderPath}/${baseNodeType}/executor`;
+  // Use a path that will work with dynamic imports in the browser
+  return `/src/nodes/categories/${node.folderPath}/${baseNodeType}/executor`;
 }
 
 /**
@@ -712,7 +713,8 @@ export function getNodeDefinitionPath(nodeType: string): string {
   }
   
   // For browser environment (client-side workflow test)
-  return `../categories/${node.folderPath}/${baseNodeType}/definition`;
+  // Use a path that will work with dynamic imports in the browser
+  return `/src/nodes/categories/${node.folderPath}/${baseNodeType}/definition`;
 }
 
 /**
@@ -732,5 +734,6 @@ export function getNodeUIPath(nodeType: string): string {
   }
   
   // For browser environment (client-side workflow test)
-  return `../categories/${node.folderPath}/${baseNodeType}/ui`;
+  // Use a path that will work with dynamic imports in the browser
+  return `/src/nodes/categories/${node.folderPath}/${baseNodeType}/ui`;
 }
