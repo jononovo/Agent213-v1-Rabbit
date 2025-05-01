@@ -28,6 +28,7 @@ export type SettingFieldType = typeof SettingType[keyof typeof SettingType];
  */
 export interface SettingField {
   id: string;         // Unique identifier for the field
+  key?: string;       // Original key from node definition (for backward compatibility)
   label: string;      // Display label shown in the UI
   type: SettingFieldType; // Field type from SettingType
   description?: string; // Help text shown below the field

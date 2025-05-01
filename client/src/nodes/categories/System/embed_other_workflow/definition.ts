@@ -152,9 +152,17 @@ export const nodeMetadata = {
         
         // Find and update the workflowId field with the new options
         const updatedFields = [...fields];
-        // We need to use the same field identifier that's used in the settings drawer
-        // This could be 'workflowId' or the field's key property from settings definition
-        const workflowIdField = updatedFields.find(f => f.id === 'workflowId' || f.id === 'key');
+        
+        // Debug log to see the field structure
+        console.log('Field structure in loadFieldOptions:', updatedFields);
+        
+        // Find the workflow selection field using a flexible approach
+        // This handles both old formats with field.key and new formats with field.id
+        const workflowIdField = updatedFields.find(field => {
+          // Accept any field that has an ID or key of 'workflowId'
+          // This ensures compatibility with different field formats
+          return field.id === 'workflowId' || field.key === 'workflowId';
+        });
         
         if (workflowIdField) {
           workflowIdField.options = workflowOptions;

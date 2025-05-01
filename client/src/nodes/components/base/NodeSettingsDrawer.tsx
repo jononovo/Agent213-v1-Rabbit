@@ -213,6 +213,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       // Transform settings to match SettingsField format
       const transformedSettings = nodeSettings.map((setting: any) => ({
         id: setting.key, // Use key from node definition
+        key: setting.key, // Also preserve original key for reference
         label: setting.label,
         type: mapFieldType(setting.type),
         description: setting.description,
