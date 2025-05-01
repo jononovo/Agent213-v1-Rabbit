@@ -15,7 +15,11 @@ The node system is built on these foundational principles:
    - `executor.ts`: Handles what the node does (processing logic)
    - `ui.tsx`: Controls how the node looks (visual representation)
 
-4. **Node Registration**: Nodes are automatically discovered and registered by the unified node registry system.
+4. **Node Registration**: Nodes are automatically discovered and registered by the node registry system, which is now split into multiple specialized modules:
+   - `nodeRegistry.ts`: Central registry that manages node definitions
+   - `nodeDiscovery.ts`: Handles scanning and discovery of nodes
+   - `nodeValidation.ts`: Validates node definitions
+   - `nodeDataUtils.ts`: Utilities for handling data between nodes
 
 ## Important File Locations
 
@@ -25,7 +29,7 @@ When working with nodes, these are the key file locations to be aware of:
 - **Node Templates**: `client/src/nodes/_node_templates/`
 - **Core UI Components**: `client/src/nodes/components/base/`
 - **Custom UI Components**: `client/src/nodes/components/custom_node_ui/`
-- **Node Registry**: `client/src/lib/unifiedNodeRegistry.ts`
+- **Node Registry**: `client/src/nodes/core/registry/nodeRegistry.ts`
 - **Node Documentation**: `docs/ultra-simple-node-creation.md`
 - **Node Categories**: `client/src/nodes/categories/`
 - **Core Node Types**: `client/src/nodes/core/types/`
