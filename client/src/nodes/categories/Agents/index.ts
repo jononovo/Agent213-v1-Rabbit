@@ -5,9 +5,13 @@
  * and LLMs for workflow automation.
  */
 
+// Export agent_trigger node
+export { default as agent_trigger } from './agent_trigger/definition';
+
 // Export the node types from this category
 export const AGENTS_NODE_TYPES: string[] = [
-  // Agent nodes will be added as they are migrated
+  'agent_trigger'
 ];
 
-// No exports yet as nodes haven't been migrated
+// Export executor for agent_trigger
+export { executor as agent_trigger_executor } from './agent_trigger/executor';
