@@ -36,7 +36,7 @@ import {
   initializeRegistry,
   loadNodeComponent as loadComponentFromRegistry 
 } from '@/nodes/core/registry/unifiedNodeRegistry';
-import NodeSettingsDrawer from './NodeSettingsDrawer';
+import { NodeSettingsDrawer } from '@/nodes/components/base';
 
 // Import loading placeholder node
 import LoadingNode from '../flow/nodes/LoadingNode';

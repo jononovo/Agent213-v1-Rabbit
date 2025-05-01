@@ -12,6 +12,7 @@ export { NodeContent } from './NodeContent';
 export { default as NodeHoverMenu } from './NodeHoverMenu';
 export { default as NodeReadmeModal } from './NodeReadmeModal';
 export { NodeSettingsForm } from './NodeSettingsForm';
+export { default as NodeSettingsDrawer } from './NodeSettingsDrawer';
 
 // Export action creators from NodeHoverMenu
 export {
