@@ -28,8 +28,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 import { Save, X, BookOpen, HelpCircle } from 'lucide-react';
 import { NodeReadmeModal } from '@/nodes/components/base';
-// Import data access helpers
-import { useWorkflows, useAgents, formatWorkflowOptions, formatAgentOptions } from '@/nodes/categories/Internal/internalDataAccessServiceForNodes';
+// No longer importing data access helpers - nodes handle their own data access
 // Import from the unified registry
 import { getNodeSettings, hasNode, getNodeDefinitionPath, getNode } from '@/nodes/core/registry/unifiedNodeRegistry';
 import { SettingField, SettingType, NodeSettingsHandlers } from '@/nodes/core/types/nodeSettingsTypes';
@@ -158,87 +157,8 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     loadOptions();
   }, [node, isOpen, fieldOptions.length]);
   
-  // Get node data requirements if this node type has any
-  const getNodeDataRequirements = () => {
-    if (!node || !node.type) return null;
-    
-    const nodeDefinition = getNode(node.type);
-    const handlers = nodeDefinition?.metadata?.handlers;
-    
-    if (handlers && typeof handlers.getDataRequirements === 'function') {
-      try {
-        return handlers.getDataRequirements();
-      } catch (error) {
-        console.error(`Error getting data requirements for ${node.type}:`, error);
-      }
-    }
-    
-    return null;
-  };
-  
-  // Get data requirements for the current node
-  const dataRequirements = getNodeDataRequirements();
-  
-  // Fetch workflows if required by this node
-  const { data: workflows } = useWorkflows(
-    isOpen && Boolean(dataRequirements?.requiresWorkflows)
-  );
-  
-  // Fetch agents if required by this node  
-  const { data: agents } = useAgents(
-    isOpen && Boolean(dataRequirements?.requiresAgents)
-  );
-  
-  // Update field options when related data is loaded
-  useEffect(() => {
-    if (!node || !isOpen || !fieldOptions.length) return;
-    
-    // Check if we have workflow data and the node requires it
-    if (dataRequirements?.requiresWorkflows && workflows && workflows.length > 0) {
-      console.log(`Updating workflow options for ${node.type}:`, workflows);
-      
-      // Format workflows as dropdown options
-      const workflowOptions = formatWorkflowOptions(workflows);
-      
-      // Get a fresh copy of the fields
-      const updatedFields = [...fieldOptions];
-      
-      // Find fields that might need workflow options (by convention, these usually have 'workflow' in their ID)
-      updatedFields.forEach(field => {
-        // Look for workflowId field or any field that might need workflow data
-        if (field.id === 'workflowId' || field.key === 'workflowId') {
-          field.options = workflowOptions;
-          console.log(`Updated ${field.id} with workflow options`);
-        }
-      });
-      
-      // Update field options to trigger re-render
-      setFieldOptions([...updatedFields]);
-    }
-    
-    // Check if we have agent data and the node requires it
-    if (dataRequirements?.requiresAgents && agents && agents.length > 0) {
-      console.log(`Updating agent options for ${node.type}:`, agents);
-      
-      // Format agents as dropdown options
-      const agentOptions = formatAgentOptions(agents);
-      
-      // Get a fresh copy of the fields
-      const updatedFields = [...fieldOptions];
-      
-      // Find fields that might need agent options
-      updatedFields.forEach(field => {
-        // Look for agentId field or any field that might need agent data
-        if (field.id === 'agentId' || field.key === 'agentId') {
-          field.options = agentOptions;
-          console.log(`Updated ${field.id} with agent options`);
-        }
-      });
-      
-      // Update field options to trigger re-render
-      setFieldOptions([...updatedFields]);
-    }
-  }, [workflows, agents, node, isOpen, fieldOptions, dataRequirements]);
+  // The drawer no longer needs to fetch data or know about requirements
+  // All data fetching is now handled by the individual nodes' loadFieldOptions handlers
   
   // Helper function to map field types from node settings to drawer settings format
   const mapFieldType = (type: string): SettingsField['type'] => {

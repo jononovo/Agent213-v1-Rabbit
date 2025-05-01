@@ -137,39 +137,38 @@ export const nodeMetadata = {
       return saveData;
     },
     
-    // Declare data requirements for this node
-    getDataRequirements: () => {
-      return {
-        requiresWorkflows: true
-      };
-    },
-    
-    // Update field options with the workflow data provided by the drawer
-    // This is a simpler version that just updates the options without fetching data
+    // Load field options for the workflow selection dropdown
     loadFieldOptions: async (fields: SettingField[]): Promise<SettingField[]> => {
       try {
         console.log('Called loadFieldOptions handler for embed_other_workflow');
         
-        // We're expecting the drawer to provide workflows via the general mechanism
-        // We just need to update the field options here
+        // Import the data service to fetch workflows
+        // Using direct import here to maintain node independence
+        const { useWorkflows, formatWorkflowOptions } = await import('@/nodes/categories/Internal/internalDataAccessServiceForNodes');
+        
+        // Fetch workflows using the data service
+        // Since we're in an async function and not a React component, we need to fetch manually
+        const res = await fetch('/api/workflows');
+        if (!res.ok) throw new Error('Failed to fetch workflows');
+        const workflows = await res.json();
+        
+        // Format workflows as dropdown options using the helper
+        const workflowOptions = formatWorkflowOptions(workflows);
         
         // Make a copy of the fields array to avoid mutating the original
         const updatedFields = [...fields];
         
-        // We'll still check for workflowId fields, but we won't fetch data ourselves
+        // Update any field that needs workflow options
         for (const field of updatedFields) {
           if ((field.key === 'workflowId') || (field.id === 'workflowId')) {
-            // Check if the drawer already provided workflow options
-            // If not, the drawer will handle fetching workflows based on our requirements
-            if (!field.options || field.options.length === 0) {
-              console.log('No options for workflowId field - drawer should provide them');
-            }
+            console.log('Updating workflowId field with', workflowOptions.length, 'options');
+            field.options = workflowOptions;
           }
         }
         
         return updatedFields;
       } catch (error) {
-        console.error('Error in loadFieldOptions handler:', error);
+        console.error('Error loading workflow options:', error);
         // Return the original fields if there was an error
         return fields;
       }
