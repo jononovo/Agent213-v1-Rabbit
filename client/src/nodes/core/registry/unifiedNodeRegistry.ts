@@ -33,7 +33,7 @@ interface IntegrationCapabilities {
 }
 
 // Registry data structures
-export interface RegisteredNode {
+interface RegisteredNode {
   // Core node info
   type: string;
   name: string;
@@ -121,7 +121,7 @@ export async function loadNodeComponent(nodeType: string): Promise<any> {
   
   if (!node) {
     console.warn(`Node ${nodeType} not found in registry, using BaseNode`);
-    const { default: BaseNode } = await import('../../core/base/ui');
+    const { BaseNode } = await import('../../core/base');
     return BaseNode;
   }
   
@@ -131,7 +131,7 @@ export async function loadNodeComponent(nodeType: string): Promise<any> {
     return uiModule.default;
   } catch (error) {
     console.warn(`Failed to load UI for ${nodeType}, using BaseNode`);
-    const { default: BaseNode } = await import('../../core/base/ui');
+    const { BaseNode } = await import('../../core/base');
     return BaseNode;
   }
 }
@@ -510,116 +510,178 @@ function generateRegistryReport(): void {
     });
   }
   
+  // Report on integration node capabilities
+  const integrationNodes = Array.from(nodeRegistry.values()).filter(n => n.isIntegrationNode);
+  
+  console.log(`Integration Nodes: ${integrationNodes.length}`);
+  
+  if (integrationNodes.length > 0) {
+    const endpointProviders = integrationNodes
+      .filter(n => n.integrationCapabilities?.provides?.endpoint);
+    
+    const webhookProviders = integrationNodes
+      .filter(n => n.integrationCapabilities?.provides?.webhook);
+    
+    const schedulerProviders = integrationNodes 
+      .filter(n => n.integrationCapabilities?.provides?.scheduler);
+    
+    console.log(`  - Endpoint Providers: ${endpointProviders.length}`);
+    console.log(`  - Webhook Providers: ${webhookProviders.length}`);
+    console.log(`  - Scheduler Providers: ${schedulerProviders.length}`);
+  }
+  
   console.groupEnd();
 }
 
-// Get node by type
-export function getNode(nodeType: string): RegisteredNode | undefined {
-  return nodeRegistry.get(nodeType);
-}
-
-// Check if a node exists
-export function hasNode(nodeType: string): boolean {
-  return nodeRegistry.has(nodeType);
-}
-
-// Get node data/settings
-export function getNodeSettings(nodeType: string): Record<string, any> | undefined {
-  const node = nodeRegistry.get(nodeType);
-  return node?.defaultData;
-}
-
-// Get all registered nodes
+/**
+ * Get all registered nodes
+ */
 export function getAllNodes(): RegisteredNode[] {
   return Array.from(nodeRegistry.values());
 }
 
-// Get nodes by category
-export function getNodesByCategory(category: string): RegisteredNode[] {
-  return Array.from(nodeRegistry.values()).filter(node => node.category === category);
+/**
+ * Get a specific node by type
+ */
+export function getNode(nodeType: string): RegisteredNode | undefined {
+  return nodeRegistry.get(nodeType);
 }
 
-// Get node capabilities for integration nodes
-export function getNodeCapabilities(nodeType: string): IntegrationCapabilities | undefined {
-  const node = nodeRegistry.get(nodeType);
-  return node?.isIntegrationNode ? node.integrationCapabilities : undefined;
+/**
+ * Check if a node type exists in the registry
+ */
+export function hasNode(nodeType: string): boolean {
+  return nodeRegistry.has(nodeType);
 }
 
-// Check if a node is an integration node
-export function isIntegrationNode(nodeType: string): boolean {
+/**
+ * Get the executor for a specific node type
+ */
+export function getNodeExecutor(nodeType: string): EnhancedNodeExecutor | undefined {
+  return nodeRegistry.get(nodeType)?.executor;
+}
+
+/**
+ * Get settings fields for a specific node type
+ */
+export function getNodeSettings(nodeType: string): any[] {
   const node = nodeRegistry.get(nodeType);
-  return node?.isIntegrationNode ?? false;
+  return node?.definition?.settings || [];
+}
+
+/**
+ * Get all node types in the registry
+ */
+export function getAllNodeTypes(): string[] {
+  return Array.from(nodeRegistry.keys());
+}
+
+/**
+ * Get node types by category
+ */
+export function getNodeTypesByCategory(category: 'System' | 'Custom' | 'Integration'): string[] {
+  return Array.from(nodeRegistry.values())
+    .filter(node => node.folderPath === category)
+    .map(node => node.type);
+}
+
+/**
+ * Get all system node types
+ */
+export function getSystemNodeTypes(): string[] {
+  return getNodeTypesByCategory('System');
+}
+
+/**
+ * Get all custom node types
+ */
+export function getCustomNodeTypes(): string[] {
+  return getNodeTypesByCategory('Custom');
+}
+
+/**
+ * Get all integration node types
+ */
+export function getIntegrationNodeTypes(): string[] {
+  return getNodeTypesByCategory('Integration');
 }
 
 /**
  * Get all integration nodes
  */
 export function getAllIntegrationNodes(): RegisteredNode[] {
-  return Array.from(nodeRegistry.values()).filter(node => node.isIntegrationNode);
+  return Array.from(nodeRegistry.values())
+    .filter(node => node.isIntegrationNode);
 }
 
 /**
  * Get integration nodes by capability
  */
-function getIntegrationNodesByCapability(capability: string): RegisteredNode[] {
-  return getAllIntegrationNodes().filter(node => {
-    return node.integrationCapabilities?.provides?.[capability as keyof typeof node.integrationCapabilities.provides];
-  });
+export function getIntegrationNodesByCapability(capability: string): RegisteredNode[] {
+  const capabilityPath = capability.split('.');
+  
+  return Array.from(nodeRegistry.values())
+    .filter(node => {
+      if (!node.isIntegrationNode || !node.integrationCapabilities) return false;
+      
+      // Navigate the capability path
+      let obj: any = node.integrationCapabilities;
+      for (const part of capabilityPath) {
+        if (!obj || typeof obj !== 'object') return false;
+        obj = obj[part];
+      }
+      
+      return Boolean(obj); // Return true if the capability exists and is truthy
+    });
 }
 
 /**
- * Get all endpoint providers
- * 
- * @returns Array of nodes that provide HTTP endpoint functionality
+ * Get all nodes that provide an HTTP endpoint
  */
 export function getEndpointProviders(): RegisteredNode[] {
-  return getIntegrationNodesByCapability('endpoint');
+  return Array.from(nodeRegistry.values())
+    .filter(node => node.isIntegrationNode && node.integrationCapabilities?.provides?.endpoint);
 }
 
 /**
- * Get all webhook providers
- * 
- * @returns Array of nodes that provide webhook functionality
+ * Get all nodes that provide webhook capabilities
  */
 export function getWebhookProviders(): RegisteredNode[] {
-  return getIntegrationNodesByCapability('webhook');
+  return Array.from(nodeRegistry.values())
+    .filter(node => node.isIntegrationNode && node.integrationCapabilities?.provides?.webhook);
 }
 
 /**
- * Get all scheduler providers
- * 
- * @returns Array of nodes that provide scheduling capabilities
+ * Get all nodes that provide scheduler capabilities
  */
 export function getSchedulerProviders(): RegisteredNode[] {
-  return getIntegrationNodesByCapability('scheduler');
+  return Array.from(nodeRegistry.values())
+    .filter(node => node.isIntegrationNode && node.integrationCapabilities?.provides?.scheduler);
 }
 
 /**
- * Get path to node executor file
+ * Get the path to a node's executor file
  */
 export function getNodeExecutorPath(nodeType: string): string {
   const node = nodeRegistry.get(nodeType);
-  if (!node) return `../../categories/System/${nodeType}/executor`;
-  return `../../categories/${node.folderPath}/${nodeType}/executor`;
+  if (!node) return '';
+  return `/src/nodes/categories/${node.folderPath}/${nodeType}/executor.ts`;
 }
 
 /**
- * Get path to node definition file
+ * Get the path to a node's definition file
  */
 export function getNodeDefinitionPath(nodeType: string): string {
   const node = nodeRegistry.get(nodeType);
-  if (!node) return `../../categories/System/${nodeType}/definition`;
-  return `../../categories/${node.folderPath}/${nodeType}/definition`;
+  if (!node) return '';
+  return `/src/nodes/categories/${node.folderPath}/${nodeType}/definition.ts`;
 }
 
 /**
- * Get path to node UI component file
+ * Get the path to a node's UI component file
  */
 export function getNodeUIPath(nodeType: string): string {
   const node = nodeRegistry.get(nodeType);
-  if (!node) return `../../categories/System/${nodeType}/ui`;
-  return `../../categories/${node.folderPath}/${nodeType}/ui`;
+  if (!node) return '';
+  return `/src/nodes/categories/${node.folderPath}/${nodeType}/ui.tsx`;
 }
-
-// Note: The registry is no longer initialized automatically on module import
-// It must be explicitly initialized by calling initializeRegistry() when needed
