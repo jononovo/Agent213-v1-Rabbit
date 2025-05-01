@@ -69,7 +69,7 @@ export async function handleNodeDebugRequest(req: Request, res: Response): Promi
       });
       
       // Attempt to dynamically import the node executor
-      const nodePath = `../client/src/nodes/${category}/${nodeType}/executor`;
+      const nodePath = `../client/src/nodes/categories/${category}/${nodeType}/executor`;
       console.log(`[Node Debug] Attempting to load executor from ${nodePath}`);
       
       const { execute } = await import(nodePath);
