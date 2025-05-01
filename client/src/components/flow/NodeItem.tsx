@@ -1,13 +1,12 @@
 import { memo } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import * as Lucide from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Circle } from 'lucide-react';
+import DynamicIcon from '@/components/ui/dynamic-icon';
 
 export interface NodeData {
   label: string;
   description?: string;
-  icon?: string | React.ComponentType<any>;
+  icon?: string | React.ComponentType<any> | null | object;
   [key: string]: any;
 }
 
@@ -16,58 +15,12 @@ export interface NodeItemProps {
     type: string;
     name: string;
     description: string | null;
-    icon?: string | null | React.ComponentType<any>;
+    icon?: string | null | React.ComponentType<any> | object;
     data: NodeData;
     [key: string]: any;
   };
   expanded?: boolean;
 }
-
-// Helper type for icon components
-type IconComponent = React.ComponentType<{ className?: string }>;
-
-const DynamicIcon = ({ icon }: { icon?: string | IconComponent | null | object }) => {
-  // If icon is not provided or is null/undefined
-  if (!icon) {
-    return <Circle className="h-5 w-5" />;
-  }
-  
-  // If icon is a React component
-  if (typeof icon === 'function') {
-    const IconComponent = icon as IconComponent;
-    return <IconComponent className="h-5 w-5" />;
-  }
-  
-  // If icon is an object (empty or otherwise)
-  if (typeof icon === 'object') {
-    return <Circle className="h-5 w-5" />;
-  }
-  
-  // If icon is a string
-  if (typeof icon === 'string') {
-    try {
-      const iconName = icon || 'circle';
-      // Ensure we have a valid string before calling methods on it
-      const capitalizedName = typeof iconName === 'string' && iconName.charAt 
-        ? iconName.charAt(0).toUpperCase() + iconName.slice(1) 
-        : 'Circle';
-        
-      const IconComponent = (Lucide as any)[capitalizedName];
-      
-      if (!IconComponent) {
-        return <Circle className="h-5 w-5" />;
-      }
-      
-      return <IconComponent className="h-5 w-5" />;
-    } catch (error) {
-      console.error("Error rendering icon in NodeItem:", error);
-      return <Circle className="h-5 w-5" />;
-    }
-  }
-  
-  // Default fallback for any other case
-  return <Circle className="h-5 w-5" />;
-};
 
 const NodeItem = ({ node, expanded = false }: NodeItemProps) => {
   const onDragStart = (event: React.DragEvent, nodeType: string, data: NodeData) => {
