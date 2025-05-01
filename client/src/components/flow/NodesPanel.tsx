@@ -33,7 +33,7 @@ import {
   Code,
   Box
 } from 'lucide-react';
-import NodeItem from './NodeItem';
+import DynamicIcon from '@/components/ui/dynamic-icon';
 import { getAllNodes, initializeRegistry } from '@/nodes/core/registry/unifiedNodeRegistry';
 import { LucideIcon } from 'lucide-react';
 
@@ -247,26 +247,61 @@ const NodesPanel = () => {
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-2 w-full">
-                        {categoryNodes.map((node) => (
-                          <NodeItem 
-                            key={node.id} 
-                            node={{
-                              type: node.type,
-                              name: node.name,
-                              description: node.description === undefined ? null : node.description,
-                              icon: node.icon || 'circle',
+                        {categoryNodes.map((node) => {
+                          // Get node icon - use the node's icon or fallback to a default
+                          const nodeIcon = node.icon || 'circle';
+                          
+                          // Function to get category-specific color styling
+                          const getCategoryColor = () => {
+                            const category = node.category || '';
+                            
+                            switch (category) {
+                              case 'ai':
+                                return 'border-purple-500/20 bg-purple-500/5 text-purple-500';
+                              case 'data':
+                                return 'border-blue-500/20 bg-blue-500/5 text-blue-500';
+                              case 'triggers':
+                                return 'border-amber-500/20 bg-amber-500/5 text-amber-500';
+                              case 'actions':
+                                return 'border-green-500/20 bg-green-500/5 text-green-500';
+                              default:
+                                return 'border-gray-500/20 bg-gray-500/5 text-gray-500';
+                            }
+                          };
+                          
+                          // Prepare the data that will be transferred on drag
+                          const onDragStart = (event: React.DragEvent) => {
+                            event.dataTransfer.setData('application/reactflow/type', node.type);
+                            event.dataTransfer.setData('application/reactflow/data', JSON.stringify({
+                              label: node.name,
+                              description: node.description || '',
+                              icon: nodeIcon,
                               category: node.category,
-                              data: {
-                                label: node.name,
-                                description: node.description || '',
-                                icon: node.icon || 'circle',
-                                configuration: node.configuration || {},
-                                category: node.category,
-                                defaultData: {}
-                              }
-                            }} 
-                          />
-                        ))}
+                              configuration: node.configuration || {},
+                              defaultData: {}
+                            }));
+                            event.dataTransfer.effectAllowed = 'move';
+                          };
+                          
+                          return (
+                            <div 
+                              key={node.id}
+                              className="mb-3 cursor-grab transition-all duration-200 active:cursor-grabbing"
+                              draggable
+                              onDragStart={onDragStart}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className={`mt-1 w-6 h-6 rounded-md flex items-center justify-center ${getCategoryColor()}`}>
+                                  <DynamicIcon icon={nodeIcon} className="h-4 w-4" />
+                                </div>
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-sm text-foreground">{node.name}</h4>
+                                  <p className="text-xs text-muted-foreground">{node.description || 'No description provided'}</p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                         
                         {categoryNodes.length === 0 && (
                           <div className="p-2 text-center text-sm text-muted-foreground">

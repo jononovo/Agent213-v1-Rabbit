@@ -2,6 +2,20 @@
 
 This comprehensive guide explains how to create custom nodes for the workflow system. It covers the entire process from initial setup to advanced customization and integration with external APIs.
 
+## Quick Reference: Adding Icons to Nodes
+
+The simplest way to add an icon to a node is to specify it in your node's definition.ts file:
+
+```typescript
+export const definition: NodeDefinition = {
+  // Other properties...
+  icon: 'zap', // Just use any Lucide icon name as a string
+  // Rest of definition...
+};
+```
+
+That's it! The BaseNode component will automatically handle rendering the icon with proper styling and fallbacks.
+
 ## Architecture Overview
 
 The workflow platform is built around three main components:
@@ -103,7 +117,8 @@ Edit the `definition.ts` file to define your node's interface and behavior:
      name: 'My Custom Node',
      description: 'Performs custom operations on input data',
      category: 'processing',  // For grouping in the node palette
-     icon: 'calculator',      // Icon name from lucide-react
+     icon: 'calculator',      // Icon name from lucide-react (simplest approach) 
+                              // The BaseNode will automatically render this icon
      version: '1.0.0',        // Semantic versioning
      
      // Default data (from above)
@@ -350,7 +365,10 @@ function MyNodeComponent({ id, data, selected, isConnectable }: NodeProps<MyNode
     </>
   );
   
-  // Create icon element for the header
+  // Create icon element for the header - OPTION 1: Explicit component
+  // Note: This explicit approach is only needed for custom icons.
+  // For most nodes, you can skip this step and just use a string icon name
+  // in your definition.ts file (e.g., icon: 'calculator') and let BaseNode handle it.
   const iconElement = (
     <div className="bg-primary/10 p-1.5 rounded-md">
       <Calculator className="h-4 w-4 text-primary" />
@@ -360,6 +378,11 @@ function MyNodeComponent({ id, data, selected, isConnectable }: NodeProps<MyNode
   // Prepare the node data with the properties expected by BaseNode
   const baseNodeData = {
     ...data,
+    // OPTION 2: Simple string (preferred approach)
+    // Just pass the node definition's icon string and BaseNode will handle it automatically
+    // icon: 'calculator', 
+    
+    // Or use a custom icon element if you need more customization
     icon: iconElement,
     label: nodeData.label || defaultData.label,
     description: nodeData.description || defaultData.description,
