@@ -549,7 +549,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           </button>
         </div>
         
-        <ScrollArea className="px-6 h-[calc(100vh-220px)]">
+        <ScrollArea className="px-6 flex-grow overflow-auto">
           {activeTab === 'properties' && (
             <div className="space-y-4 pb-6">
               <div>
@@ -697,7 +697,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           )}
         </ScrollArea>
         
-        <div className="p-6 pt-2 border-t">
+        <div className="p-6 pt-2 border-t mt-auto">
           <div className="flex justify-between gap-2">
             <Button 
               variant="outline" 
