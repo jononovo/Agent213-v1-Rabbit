@@ -1,6 +1,6 @@
 # API Integration Node
 
-This node provides a standardized interface for making external API requests through the Integration Engine. It handles various HTTP methods, authentication, error handling, and response processing.
+This node provides a standardized interface for making external API requests through the Integration Engine. It handles various HTTP methods, authentication, error handling, and response processing using the BaseExecutor pattern.
 
 ## Features
 
@@ -11,13 +11,51 @@ This node provides a standardized interface for making external API requests thr
 - Pagination support for handling large result sets
 - Multiple authentication options (None, Basic, Bearer Token, OAuth, etc.)
 - Comprehensive error handling with detailed error reporting
+- Built on the standardized BaseExecutor pattern for consistent output formatting
 
 ## How It Works
 
 1. **Configuration**: Set up the API request details (URL, method, headers, etc.)
 2. **Execution**: When the node runs, it sends the API request through the Integration Engine proxy
-3. **Processing**: The response is processed and made available to downstream nodes
-4. **Error Handling**: Any errors are captured and passed to the error output port
+3. **Processing**: The response is processed using the BaseExecutor pattern
+4. **Output Standardization**: The BaseExecutor wraps the results in a consistent format
+5. **Error Handling**: Any errors are standardized and propagated appropriately
+
+## Implementation (BaseExecutor Pattern)
+
+This node uses the streamlined BaseExecutor pattern:
+
+```typescript
+// Define the node's specific data interface
+interface ApiIntegrationData {
+  url: string;
+  method: string;
+  headers?: Record<string, string>;
+  // ... other properties
+}
+
+// Implement only the core business logic
+async function processNode(
+  nodeData: ApiIntegrationData,
+  inputs: Record<string, NodeExecutionData> = {}
+): Promise<Record<string, any>> {
+  // Process the API request here
+  // ...
+  
+  // Return just the pure data - BaseExecutor handles formatting
+  return {
+    response: apiResponse.data,
+    status: apiResponse.status,
+    headers: apiResponse.headers
+  };
+}
+
+// Export using the standardized pattern
+export const execute = createNodeExecutor<ApiIntegrationData>(
+  'api_integration', 
+  processNode
+);
+```
 
 ## Node Configuration
 
