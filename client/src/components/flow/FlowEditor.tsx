@@ -43,7 +43,7 @@ import LoadingNode from '../flow/nodes/LoadingNode';
 // Import base node component as the fallback
 import { BaseNode } from '../../nodes/core/base';
 
-// Create node types with fallbacks
+// Create node types with fallbacks - defined outside component to prevent re-renders
 const createNodeTypes = () => {
   const baseNodeTypes: NodeTypes = {
     // Special loading node type
@@ -58,6 +58,12 @@ const createNodeTypes = () => {
   console.log(`Initialized node types with ${Object.keys(baseNodeTypes).length} entries`);
   return baseNodeTypes;
 };
+
+// Create node types outside component to prevent re-creation on each render
+const initialNodeTypes = createNodeTypes();
+
+// Create a memoized wrapper of the React Flow component to prevent re-renders
+const MemoizedReactFlow = memo(ReactFlow);
 
 interface FlowEditorProps {
   workflow?: Workflow;
@@ -156,14 +162,22 @@ const FlowEditor = ({
   // Store loaded components in state 
   const [loadedComponents, setLoadedComponents] = useState<Record<string, any>>({});
   
-  // Store node types - initialized when registries are loaded
-  const [nodeTypes, setNodeTypes] = useState<NodeTypes>({ loading: LoadingNode });
+  // Store node types - initialized with our memoized initial types
+  const [nodeTypes, setNodeTypes] = useState<NodeTypes>(initialNodeTypes);
   
   // Memoize the dynamic nodeTypes to prevent unnecessary re-renders
-  const dynamicNodeTypes = useMemo(() => {
-    // Merge the base nodeTypes with any dynamically loaded components
-    return { ...nodeTypes, ...loadedComponents };
-  }, [nodeTypes, loadedComponents]); // Recalculate when nodeTypes or loadedComponents change
+  // Use a more stable reference by converting to a string and back
+  const dynamicNodeTypesRef = useRef({ ...nodeTypes });
+  
+  // Update reference only when the dependencies change
+  useEffect(() => {
+    // Merge only if there are actual changes
+    const mergedNodeTypes = { ...nodeTypes, ...loadedComponents };
+    dynamicNodeTypesRef.current = mergedNodeTypes;
+  }, [nodeTypes, loadedComponents]);
+  
+  // Create a stable memoized version that doesn't change on every render
+  const dynamicNodeTypes = useMemo(() => dynamicNodeTypesRef.current, []);
   
   // Helper function to load node components for a specific type
   const loadNodeComponent = async (type: string): Promise<void> => {

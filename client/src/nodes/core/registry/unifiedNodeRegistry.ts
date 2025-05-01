@@ -131,9 +131,32 @@ export async function loadNodeComponent(nodeType: string): Promise<any> {
   try {
     // Load UI component directly from ui.tsx using the folder from registry
     const uiModule = await import(/* @vite-ignore */ `../../categories/${node.folderPath}/${nodeType}/ui`);
-    return uiModule.default;
+    
+    // More flexible component detection logic
+    // First check if there's a default export
+    if (uiModule.default) {
+      console.log(`Successfully loaded component for ${nodeType}`);
+      return uiModule.default;
+    }
+    
+    // Then check if there's a named 'component' export
+    if (uiModule.component) {
+      console.log(`Successfully loaded component for ${nodeType} using named export`);
+      return uiModule.component;
+    }
+    
+    // If neither exists, but the module exports a function directly, use that
+    if (typeof uiModule === 'function') {
+      console.log(`Successfully loaded component for ${nodeType} as direct function`);
+      return uiModule;
+    }
+    
+    // No component found, fall back to BaseNode
+    console.warn(`No suitable component export found for ${nodeType}, using BaseNode`);
+    const { BaseNode } = await import('../../core/base');
+    return BaseNode;
   } catch (error) {
-    console.warn(`Failed to load UI for ${nodeType}, using BaseNode`);
+    console.warn(`Failed to load UI for ${nodeType}, using BaseNode:`, error);
     const { BaseNode } = await import('../../core/base');
     return BaseNode;
   }
@@ -375,7 +398,22 @@ async function loadNodeExecutors(): Promise<void> {
       // Dynamically import the executor
       const executorModule = await import(/* @vite-ignore */ executorPath);
       
-      if (!executorModule || !executorModule.execute) {
+      // More flexible executor detection
+      let executeFunction: Function | undefined;
+      
+      // Check for different ways the execute function might be exported
+      if (executorModule.execute) {
+        // Direct named export
+        executeFunction = executorModule.execute;
+      } else if (executorModule.default && typeof executorModule.default.execute === 'function') {
+        // Default export object with execute method
+        executeFunction = executorModule.default.execute;
+      } else if (typeof executorModule.default === 'function') {
+        // Default export is the execute function
+        executeFunction = executorModule.default;
+      }
+      
+      if (!executeFunction) {
         // Skip showing the error since some nodes might be under development
         // console.warn(`Invalid executor for node type ${nodeType}: Missing execute function`);
         continue;
