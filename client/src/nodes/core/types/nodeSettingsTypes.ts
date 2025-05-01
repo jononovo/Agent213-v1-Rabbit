@@ -84,5 +84,5 @@ export interface NodeSettingsHandlers {
    * @param fields The current field definitions
    * @returns Updated field definitions with loaded options
    */
-  loadFieldOptions: (fields: SettingField[]) => Promise<SettingField[]>;
+  loadFieldOptions?: (fields: SettingField[]) => Promise<SettingField[]>;
 }

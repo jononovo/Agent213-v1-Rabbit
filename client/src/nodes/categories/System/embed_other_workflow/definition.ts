@@ -9,12 +9,65 @@ import { NodeDefinition } from '../../../core/types/nodeDefinitions';
 import { SettingField, NodeSettingsHandlers } from '../../../core/types/nodeSettingsTypes';
 import { z } from 'zod';
 
+// Create the definition with metadata directly included
 const definition: NodeDefinition = {
   type: 'embed_other_workflow',
   name: 'Embed Other Workflow',
   description: 'Embed and run another workflow from within your current workflow',
   category: 'actions',
   version: '1.0.0',
+  // Include metadata directly in the definition object
+  metadata: {
+    tags: ['workflow', 'embed', 'run', 'trigger', 'integration'],
+    color: '#4B5563',
+    // Include handlers directly
+    handlers: {
+      initializeSettings: (nodeData: Record<string, any>) => {
+        const settings = { ...(nodeData.settings || {}) };
+        if (nodeData.workflowId !== undefined) {
+          settings.workflowId = nodeData.workflowId.toString();
+        }
+        return settings;
+      },
+      prepareSaveData: (settings: Record<string, any>, nodeProperties?: Record<string, any>) => {
+        const saveData = { ...settings };
+        if (nodeProperties) {
+          saveData.nodeProperties = nodeProperties;
+        }
+        if (settings.workflowId) {
+          saveData.workflowId = settings.workflowId;
+        }
+        return saveData;
+      },
+      loadFieldOptions: async (fields: SettingField[]): Promise<SettingField[]> => {
+        console.log('NODE DEBUG: loadFieldOptions called on embed_other_workflow node');
+        try {
+          const res = await fetch('/api/workflows');
+          if (!res.ok) throw new Error('Failed to fetch workflows');
+          const workflows = await res.json();
+          console.log('NODE DEBUG: Fetched workflows:', workflows);
+          
+          const workflowOptions = workflows.map((workflow: any) => ({
+            value: workflow.id.toString(),
+            label: workflow.name
+          }));
+          
+          const updatedFields = [...fields];
+          updatedFields.forEach(field => {
+            if ((field.key === 'workflowId') || (field.id === 'workflowId')) {
+              console.log(`NODE DEBUG: Updating ${field.id || field.key} with ${workflowOptions.length} options`);
+              field.options = workflowOptions;
+            }
+          });
+          
+          return updatedFields;
+        } catch (error) {
+          console.error('NODE DEBUG: Error fetching workflows:', error);
+          return fields;
+        }
+      }
+    }
+  },
   inputs: {
     input: {
       type: 'any',

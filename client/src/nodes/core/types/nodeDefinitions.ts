@@ -33,6 +33,9 @@ export interface NodeSettingsHandlers {
   
   // Handle setting changes
   handleSettingChange?: (fieldId: string, value: any, currentSettings: Record<string, any>) => Record<string, any>;
+  
+  // Load field options (e.g. for populating dropdowns)
+  loadFieldOptions?: (fields: any[]) => Promise<any[]>;
 }
 
 /**
