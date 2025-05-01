@@ -587,7 +587,7 @@ function BaseNode({
   
   // Create icon element for the header
   const iconElement = (
-    <div className="bg-primary/10 p-1.5 rounded-md">
+    <div className="p-1.5">
       {typeof icon === 'string' ? (
         <DynamicIcon icon={icon} className="h-4 w-4 text-primary" />
       ) : React.isValidElement(icon) ? (
