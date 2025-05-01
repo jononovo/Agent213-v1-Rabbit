@@ -417,29 +417,62 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
 
   const handleSave = () => {
     if (node) {
-      // Create a copy of the current settings
-      const updatedSettings = { ...settings };
-      
-      // For embed_other_workflow nodes, we need to make the workflowId directly accessible
-      // in the node data as well as in settings
-      const nodeUpdates: Record<string, any> = {
-        ...updatedSettings,
-        nodeProperties: {
+      try {
+        // Create a copy of the current settings
+        const updatedSettings = { ...settings };
+        
+        // Node properties object with label and description
+        const nodeProperties = {
           label: nodeName,
           description: nodeDescription
+        };
+        
+        // Get node type and check for custom handlers
+        const nodeType = node.type || '';
+        if (!nodeType) return;
+        const nodeDefinition = getNode(nodeType);
+        
+        // Check if node has a custom save handler
+        if (nodeDefinition?.metadata?.handlers?.prepareSaveData) {
+          try {
+            // Use custom handler to prepare data for saving
+            const customSaveData = nodeDefinition.metadata.handlers.prepareSaveData(
+              updatedSettings,
+              nodeProperties
+            );
+            
+            console.log(`Used custom handler to prepare save data for ${nodeType}:`, customSaveData);
+            
+            // Update the node with data from custom handler
+            onSettingsChange(node.id, customSaveData);
+            onClose();
+            return;
+          } catch (error) {
+            console.error(`Error using custom save handler for ${nodeType}:`, error);
+            // Continue with default handling below
+          }
         }
-      };
-      
-      // For embed_other_workflow nodes, add workflowId as a direct property 
-      // This is required for the workflow executor
-      if (node.type === 'embed_other_workflow' && updatedSettings.workflowId) {
-        nodeUpdates.workflowId = updatedSettings.workflowId;
-        console.log(`Saving ${node.type} node with workflowId:`, updatedSettings.workflowId);
+        
+        // Default handling for all nodes (fallback)
+        const nodeUpdates: Record<string, any> = {
+          ...updatedSettings,
+          nodeProperties
+        };
+        
+        // Special case handling for embed_other_workflow 
+        // (maintain backward compatibility)
+        if (nodeType === 'embed_other_workflow' && updatedSettings.workflowId) {
+          nodeUpdates.workflowId = updatedSettings.workflowId;
+          console.log(`Saving ${nodeType} node with workflowId:`, updatedSettings.workflowId);
+        }
+        
+        // Update the node with all changes
+        onSettingsChange(node.id, nodeUpdates);
+        onClose();
+      } catch (error) {
+        console.error("Error saving node settings:", error);
+        // Could add a toast here to show the error
       }
-      
-      // Update the node with all changes
-      onSettingsChange(node.id, nodeUpdates);
-      onClose();
     }
   };
 

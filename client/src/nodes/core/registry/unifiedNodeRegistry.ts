@@ -6,7 +6,7 @@
  * to ensure consistency across the entire application.
  */
 
-import { NodeDefinition, PortDefinition } from '../../types';
+import { NodeDefinition, PortDefinition, NodeMetadata } from '../../types';
 import { EnhancedNodeExecutor, NodeExecutionData } from '../../../lib/types/workflow';
 
 // Integration node capabilities
@@ -48,6 +48,9 @@ interface RegisteredNode {
   executor?: EnhancedNodeExecutor;
   uiComponent?: any;
   defaultData?: Record<string, any>;
+  
+  // Metadata containing additional configuration and handlers
+  metadata?: NodeMetadata;
   
   // Integration capabilities (only for integration nodes)
   isIntegrationNode?: boolean;
@@ -217,6 +220,9 @@ function registerNodeDefinition(definition: NodeDefinition, folderPath: string):
       executor: undefined,
       uiComponent: undefined,
       defaultData: definition.defaultData,
+      
+      // Metadata from the node definition file (if available)
+      metadata: definition.metadata,
       
       // Integration-specific properties
       isIntegrationNode,
