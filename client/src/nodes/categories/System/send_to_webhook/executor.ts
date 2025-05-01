@@ -41,8 +41,30 @@ async function processNode(
   nodeData: SendToWebhookNodeData,
   inputs: Record<string, NodeExecutionData> = {}
 ): Promise<Record<string, any>> {
-  // Get input data
-  const inputData = inputs.data?.items?.[0]?.json || {};
+  // Get input data with deep inspection
+  let inputData = {};
+  
+  // Log the raw input for debugging
+  console.log("*** WEBHOOK EXECUTOR RAW INPUT ***", JSON.stringify(inputs, null, 2));
+  
+  // Try multiple paths to find the actual data
+  if (inputs.data?.items?.[0]?.json) {
+    inputData = inputs.data.items[0].json;
+    console.log("Found input data at inputs.data.items[0].json");
+  } else if (inputs.data?.items?.[0]) {
+    inputData = inputs.data.items[0];
+    console.log("Found input data at inputs.data.items[0]");
+  } else if (inputs.data) {
+    inputData = inputs.data;
+    console.log("Found input data at inputs.data");
+  }
+  
+  console.log("*** PROCESSED INPUT DATA ***", JSON.stringify(inputData, null, 2));
+  
+  // If we have no data at all, this is a serious issue - abort
+  if (!inputData || Object.keys(inputData).length === 0) {
+    throw new Error("No input data found for webhook - unable to process request");
+  }
   
   // Check if this is responding to an original webhook request
   // This can be specified either in the node settings or detected from the input
@@ -93,11 +115,24 @@ async function processNode(
   // Validate required fields for external webhook calls
   // Only require URL if we're not responding to an original webhook
   
-  // Use the URL from node settings directly
-  let effectiveUrl = nodeData.url;
+  // Look for URL in multiple places with the following priority:
+  // 1. URL from input data (if function node provided it)
+  // 2. URL from node settings
+  // 3. Hardcoded fallback URL (only for 5 Ducks integration)
+  
+  let effectiveUrl = inputData.url || nodeData.url;
+  
+  if (nodeData.settings && nodeData.settings.url) {
+    if (!effectiveUrl) {
+      effectiveUrl = nodeData.settings.url;
+      console.log('Using URL from node settings:', effectiveUrl);
+    }
+  }
   
   // Check if node settings contains the URL
   console.log('Node data URL setting:', nodeData.url);
+  console.log('Node settings URL:', nodeData.settings?.url);
+  console.log('Input data URL:', inputData.url);
   console.log('Full node data:', JSON.stringify(nodeData, null, 2));
   
   // Use hardcoded URL for 5 Ducks if nothing else is found

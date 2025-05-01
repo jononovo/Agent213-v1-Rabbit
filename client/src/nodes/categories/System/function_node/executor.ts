@@ -71,27 +71,23 @@ async function processNode(
         console.log("Function body match:", !!functionBodyMatch);
         const functionBody = functionBodyMatch ? functionBodyMatch[1] : functionCode;
         
-        // Create a safe way to execute the function code
-        let processFunction: (input: any) => any;
-        
-        if (functionCode.trim().startsWith("function process")) {
-          // If the code defines a function, create a wrapper to call it
+        // Create a safer, simpler way to execute the function code
+        // eslint-disable-next-line no-new-func
+        const processFunction = new Function('input', `
+          // Define the process function directly from the provided code
+          ${functionCode}
+          
+          // Call the process function with the input
           try {
-            // eslint-disable-next-line no-new-func
-            const funcWrapper = new Function('input', `
-              ${functionCode}
-              return process(input);
-            `);
-            processFunction = funcWrapper;
-          } catch (err) {
-            console.error("Error creating function:", err);
-            throw new Error("Error creating function: " + err.message);
+            return process(input);
+          } catch (error) {
+            console.error("Error executing process function:", error);
+            return { 
+              error: error.message, 
+              success: false 
+            };
           }
-        } else {
-          // Otherwise, execute the code directly
-          // eslint-disable-next-line no-new-func
-          processFunction = new Function('input', functionBody);
-        }
+        `);
         
         // Execute the function with the input data
         console.log(`Executing custom function with input:`, inputData);
