@@ -106,12 +106,8 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           } catch (error) {
             console.error(`Error using custom handler for ${nodeType}:`, error);
           }
-        } else {
-          // Fall back to default handling for specific node types
-          if (nodeType === 'embed_other_workflow' && node.data.workflowId) {
-            initialSettings.workflowId = node.data.workflowId.toString();
-          }
         }
+        // No else clause needed - individual node handlers now handle specialized initialization
       }
       
       // Set the initial settings
@@ -461,13 +457,6 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           ...updatedSettings,
           nodeProperties
         };
-        
-        // Special case handling for embed_other_workflow 
-        // (maintain backward compatibility)
-        if (nodeType === 'embed_other_workflow' && updatedSettings.workflowId) {
-          nodeUpdates.workflowId = updatedSettings.workflowId;
-          console.log(`Saving ${nodeType} node with workflowId:`, updatedSettings.workflowId);
-        }
         
         // Update the node with all changes
         onSettingsChange(node.id, nodeUpdates);
