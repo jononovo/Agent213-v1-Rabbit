@@ -27,8 +27,8 @@ export const definition: NodeDefinition = {
   type: 'text_formatter',
   name: 'Text Formatter',
   description: 'Applies formatting operations to text input',
-  category: 'processing',
-  icon: 'type',
+  category: 'content', // Changed from 'processing' to match UI categories
+  icon: 'Type',  // Changed to match icon naming in ICON_MAP
   version: '1.0.0',
   defaultData,
   inputs: {
