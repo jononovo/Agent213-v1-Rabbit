@@ -1,0 +1,27 @@
+OK, so I have a question here about a UI component for nodes.
+We have the base node and then for every node that uses it, there are other add-on components that are sort of included by default.
+One of them is a drawer that shows the configuration parameters for that node, the other is a hover menu, the other is a readme link within the drawer.
+
+The file I believe is being used for the drawer is this one:  https://replit.com/@jononovo/Agent220-v1-Migrate-WF-UI-to-Module#client/src/nodes/components/base/NodeSettingsForm.tsx
+
+However, there is another one with a lot of hardcoded UI information in it over here: https://replit.com/@jononovo/Agent220-v1-Migrate-WF-UI-to-Module#client/src/nodes/ui/flow/NodeSettingsDrawer.tsx
+
+And it seems like perhaps the notes that are benefiting from that hardcoded information or the notes that have the UI that I want to keep.
+
+1. And so first I want you to figure out is this second note the one that is applying the UI to the nodes being used.
+
+2. If so, how can we:
+A. move any critical code from that file into the original drawer component?
+Or should we even keep them separate for some reason? 
+Do they have different purposes?
+
+B. regarding the UI that is being saved in that file, it is what I wanted to keep, how can we migrate that into the UI of the specific notes so that is stored within the UI component that is inside their folder?
+
+C. I suppose I knock on question is, are you aware of how the base note expansion of customization should be working? 
+Because as you know, all notes, get their structure from the base note, but we do want to add additional customization on top of it and we did create a structure to allow that.
+We also outlined that structure in some of the documentation files.
+But I'm unsure exactly how it works.
+Perhaps you could research how that structure works and let me know.
+And perhaps for you, I customizations we can even add a secondary folder or file within that node folder. ( or we could keep it all within the node UI file.)
+
+However, some of the customizations are a bit extensive and maybe it would make sense to allow for additional files, but I'm not sure if this is necessary.
