@@ -502,7 +502,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
 
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-      <SheetContent side="right" className="w-[400px] sm:w-[540px] p-0">
+      <SheetContent side="right" className="w-[400px] sm:w-[540px] p-0 flex flex-col">
         <div className="p-6 pb-1">
           <SheetHeader className="p-0">
             <SheetTitle>Node Configuration <span className="text-sm text-muted-foreground">({node.type})</span></SheetTitle>
