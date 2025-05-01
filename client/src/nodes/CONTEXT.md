@@ -66,16 +66,19 @@ When editing or creating nodes, follow these principles:
 ### DO:
 - ✅ Use existing node templates as starting points
 - ✅ Place new nodes in the appropriate category folder
-- ✅ Customize nodes by passing props to BaseNode
+- ✅ Always use the BaseExecutor pattern in executor.ts
+- ✅ Customize node UIs by passing props to BaseNode
 - ✅ Create reusable UI components in the custom_node_ui folder
 - ✅ Document all node interfaces and behavior
 - ✅ Follow file naming conventions (snake_case for files)
 - ✅ Use standardized export patterns in index.ts
 
 ### DON'T:
-- ❌ Copy and modify the BaseNode component itself
+- ❌ Copy and modify the BaseNode or BaseExecutor components
+- ❌ Create nodes that don't use the BaseExecutor pattern
 - ❌ Create nodes that don't extend from BaseNode
-- ❌ Override standardized behavior from BaseNode
+- ❌ Manually format node outputs (let BaseExecutor handle it)
+- ❌ Override standardized behavior from BaseNode or BaseExecutor
 - ❌ Duplicate functionality that already exists
 - ❌ Place node-specific components in the shared folders
 
@@ -87,16 +90,18 @@ When editing or creating nodes, follow these principles:
    ```
 
 2. **Define node interface** in `definition.ts`:
-   - Set unique type name
+   - Create a TypeScript interface for node data
+   - Set unique type name and node metadata
    - Define input/output ports
-   - Specify settings fields
+   - Specify settings fields 
    - Set default values
 
 3. **Implement processing logic** in `executor.ts`:
-   - Create async execute function
-   - Process input data
-   - Return output in the standard format
-   - Include proper error handling
+   - Import `createNodeExecutor` from NodeExecutorBase
+   - Create typed `processNode` function for core logic
+   - Return a simple object with output values
+   - Use `createNodeExecutor<YourNodeType>()` to create the execute function
+   - Let BaseExecutor handle standardized formatting and error handling
 
 4. **Create the UI component** in `ui.tsx`:
    - Import BaseNode
@@ -184,73 +189,60 @@ export default definition;
 
 ### executor.ts
 ```typescript
-import { NodeExecutionData } from '@/lib/types/workflow';
+import { NodeExecutionData } from '@/nodes/core/types/nodeExecutionTypes';
+import { createNodeExecutor } from '@/nodes/core/base/NodeExecutorBase';
+import { TextProcessorData } from './definition';
 
-export const execute = async (
-  nodeData: Record<string, any>,
+/**
+ * Process the text processor node
+ * Implements the core logic using the BaseExecutor pattern
+ */
+async function processNode(
+  nodeData: TextProcessorData,
   inputs: Record<string, NodeExecutionData> = {}
-): Promise<Record<string, NodeExecutionData>> => {
-  try {
-    const startTime = new Date();
-    
-    // Get settings
-    const { operation = 'uppercase', preserveWhitespace = true } = nodeData;
-    
-    // Get input text
-    const inputText = inputs?.text?.items?.[0]?.json || '';
-    
-    // Process based on operation
-    let result = '';
-    
-    // Remove extra whitespace if not preserving
-    const textToProcess = preserveWhitespace 
-      ? inputText 
-      : inputText.replace(/\s+/g, ' ').trim();
-    
-    switch (operation) {
-      case 'uppercase':
-        result = textToProcess.toUpperCase();
-        break;
-      case 'lowercase':
-        result = textToProcess.toLowerCase();
-        break;
-      case 'capitalize':
-        result = textToProcess
-          .split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-          .join(' ');
-        break;
-      default:
-        throw new Error(`Unknown operation: ${operation}`);
-    }
-    
-    const endTime = new Date();
-    
-    // Return result
-    return {
-      result: {
-        items: [{ json: result }],
-        meta: {
-          startTime,
-          endTime,
-          source: `text_processor:${operation}`
-        }
-      }
-    };
-  } catch (error) {
-    console.error('Error in text_processor:', error);
-    
-    return {
-      result: {
-        items: [{ json: null }],
-        meta: {
-          error: true,
-          errorMessage: error.message
-        }
-      }
-    };
+): Promise<Record<string, any>> {
+  // Get settings
+  const { operation = 'uppercase', preserveWhitespace = true } = nodeData;
+  
+  // Get input text
+  const inputText = inputs?.text?.items?.[0]?.json || '';
+  
+  // Process based on operation
+  let result = '';
+  
+  // Remove extra whitespace if not preserving
+  const textToProcess = preserveWhitespace 
+    ? inputText 
+    : inputText.replace(/\s+/g, ' ').trim();
+  
+  switch (operation) {
+    case 'uppercase':
+      result = textToProcess.toUpperCase();
+      break;
+    case 'lowercase':
+      result = textToProcess.toLowerCase();
+      break;
+    case 'capitalize':
+      result = textToProcess
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      break;
+    default:
+      throw new Error(`Unknown operation: ${operation}`);
   }
-};
+  
+  // Return just the result - BaseExecutor handles formatting
+  return {
+    result: result
+  };
+}
+
+/**
+ * Export the standardized execute function
+ * This creates a unified interface across all nodes
+ */
+export const execute = createNodeExecutor<TextProcessorData>('text_processor', processNode);
 
 export default execute;
 ```
