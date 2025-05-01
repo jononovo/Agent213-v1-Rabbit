@@ -163,7 +163,13 @@ const NodesPanel = () => {
 
   // Group nodes by category
   const groupedNodes = filteredNodes.reduce<Record<string, Node[]>>((acc, node) => {
-    const category = node.category || 'general';
+    // Get list of valid category IDs
+    const validCategoryIds = NODE_CATEGORIES.map(category => category.id);
+    // Use node.category if it exists and is a valid category, otherwise use 'general'
+    const category = (node.category && validCategoryIds.includes(node.category)) 
+      ? node.category 
+      : 'general';
+    
     if (!acc[category]) {
       acc[category] = [];
     }
