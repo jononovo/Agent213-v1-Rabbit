@@ -66,8 +66,20 @@ export async function executeWorkflow(job: Job): Promise<WorkflowExecutionOutput
   try {
     console.log(`[Workflow Engine] Executing workflow ${workflowId}`);
     
-    // Load the workflow from storage
-    const workflow = await storage.getWorkflow(workflowId);
+    // Load the workflow from the main server's API
+    let workflow;
+    try {
+      const response = await fetch(`http://localhost:5000/api/workflow-data/${workflowId}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch workflow data: ${response.statusText}`);
+      }
+      workflow = await response.json();
+    } catch (fetchError) {
+      console.error(`[Workflow Engine] Error fetching workflow data: ${fetchError}`);
+      // Fallback to direct storage access if API call fails
+      workflow = await storage.getWorkflow(workflowId);
+    }
+    
     if (!workflow) {
       throw new Error(`Workflow not found: ${workflowId}`);
     }
@@ -164,31 +176,95 @@ export async function executeWorkflow(job: Job): Promise<WorkflowExecutionOutput
     
     console.log(`[Workflow Engine] Workflow ${workflowId} executed in ${output.executionTime}ms with status ${output.status}`);
     
-    // Create a log entry for the workflow execution
+    // Create a log entry for the workflow execution or update existing one
     try {
-      await storage.createLog({
-        workflowId,
-        agentId: job.data?.agentId || undefined,
-        status: output.status,
-        input: job.data?.input || {},
-        output: { results: output.results },
-        error: Object.keys(output.errors).length > 0 ? JSON.stringify(output.errors) : undefined,
-        executionPath: {
-          executionTime: output.executionTime,
-          nodeResults: Array.from(context.nodeResults.entries()).reduce((acc: Record<string, any>, [nodeId, result]) => {
-            acc[nodeId] = { 
-              type: flowData.nodes.find((n: any) => n.id === nodeId)?.type || 'unknown',
-              success: !context.errors.has(nodeId)
-            };
-            return acc;
-          }, {}),
-          startedAt: context.startedAt.toISOString(),
-          completedAt: new Date().toISOString()
+      // Check if we already have a log to update (for webhook triggers)
+      const existingLogs = job.data.isWebhook ? await storage.getLogs(undefined, workflowId, 5) : [];
+      const recentRunningLog = existingLogs.find(log => log.status === 'running');
+      
+      if (recentRunningLog) {
+        // Update the existing log
+        console.log(`[Workflow Engine] Updating existing log ${recentRunningLog.id} for webhook trigger`);
+        
+        try {
+          // First try to update via API to ensure proper update
+          const updateResponse = await fetch(`http://localhost:5000/api/logs/${recentRunningLog.id}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              status: output.status,
+              output: { results: output.results },
+              error: Object.keys(output.errors).length > 0 ? JSON.stringify(output.errors) : undefined,
+              completedAt: new Date().toISOString(),
+              executionPath: {
+                executionTime: output.executionTime,
+                nodeResults: Array.from(context.nodeResults.entries()).reduce((acc: Record<string, any>, [nodeId, result]) => {
+                  acc[nodeId] = { 
+                    type: flowData.nodes.find((n: any) => n.id === nodeId)?.type || 'unknown',
+                    success: !context.errors.has(nodeId)
+                  };
+                  return acc;
+                }, {}),
+                startedAt: context.startedAt.toISOString(),
+                completedAt: new Date().toISOString()
+              }
+            })
+          });
+          
+          if (!updateResponse.ok) {
+            throw new Error(`Failed to update log: ${updateResponse.statusText}`);
+          }
+        } catch (apiError) {
+          console.error(`[Workflow Engine] Error updating log via API, fallback to direct update:`, apiError);
+          
+          // Fallback to direct storage update
+          await storage.updateLog(recentRunningLog.id, {
+            status: output.status,
+            output: { results: output.results },
+            error: Object.keys(output.errors).length > 0 ? JSON.stringify(output.errors) : undefined,
+            completedAt: new Date(),
+            executionPath: {
+              executionTime: output.executionTime,
+              nodeResults: Array.from(context.nodeResults.entries()).reduce((acc: Record<string, any>, [nodeId, result]) => {
+                acc[nodeId] = { 
+                  type: flowData.nodes.find((n: any) => n.id === nodeId)?.type || 'unknown',
+                  success: !context.errors.has(nodeId)
+                };
+                return acc;
+              }, {}),
+              startedAt: context.startedAt.toISOString(),
+              completedAt: new Date().toISOString()
+            }
+          });
         }
-      });
+      } else {
+        // Create a new log
+        await storage.createLog({
+          workflowId,
+          agentId: job.data?.agentId || undefined,
+          status: output.status,
+          input: job.data?.input || {},
+          output: { results: output.results },
+          error: Object.keys(output.errors).length > 0 ? JSON.stringify(output.errors) : undefined,
+          executionPath: {
+            executionTime: output.executionTime,
+            nodeResults: Array.from(context.nodeResults.entries()).reduce((acc: Record<string, any>, [nodeId, result]) => {
+              acc[nodeId] = { 
+                type: flowData.nodes.find((n: any) => n.id === nodeId)?.type || 'unknown',
+                success: !context.errors.has(nodeId)
+              };
+              return acc;
+            }, {}),
+            startedAt: context.startedAt.toISOString(),
+            completedAt: new Date().toISOString()
+          }
+        });
+      }
     } catch (logError) {
-      console.error(`[Workflow Engine] Error creating log for workflow ${workflowId}:`, logError);
-      // Don't fail the workflow execution if log creation fails
+      console.error(`[Workflow Engine] Error handling workflow log for ${workflowId}:`, logError);
+      // Don't fail the workflow execution if log handling fails
     }
     
     return output;

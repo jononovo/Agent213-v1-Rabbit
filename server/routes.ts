@@ -3287,5 +3287,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Add an endpoint for updating logs
+  app.patch('/api/logs/:id', async (req: Request, res: Response) => {
+    try {
+      const logId = parseInt(req.params.id, 10);
+      if (isNaN(logId)) {
+        return res.status(400).json({ error: 'Invalid log ID' });
+      }
+      
+      const log = await storage.getLog(logId);
+      if (!log) {
+        return res.status(404).json({ error: 'Log not found' });
+      }
+      
+      const updatedLog = await storage.updateLog(logId, req.body);
+      res.json(updatedLog);
+    } catch (error) {
+      console.error('Error updating log:', error);
+      res.status(500).json({
+        error: 'Failed to update log',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   return server;
 }

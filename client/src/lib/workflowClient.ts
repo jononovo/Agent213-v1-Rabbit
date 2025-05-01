@@ -196,15 +196,38 @@ export async function executeWorkflow(
         // Update log on server when workflow completes
         if (logToServer && logId) {
           try {
+            console.log(`Updating log ${logId} with status: ${finalState.status}`);
             await apiClient.patch(`/api/logs/${logId}`, {
               status: finalState.status,
               output: finalState.output,
               error: finalState.error,
-              completedAt: new Date()
+              completedAt: new Date().toISOString(),
+              executionPath: {
+                completedAt: new Date().toISOString(),
+                // Include more relevant execution details
+                nodeResults: Object.keys(finalState.nodeResults || {}).reduce((acc, key) => {
+                  acc[key] = {
+                    type: key.split('-')[0], // Extract node type from id
+                    success: !finalState.errors || !finalState.errors[key]
+                  };
+                  return acc;
+                }, {})
+              }
             });
+            console.log(`Successfully updated log ${logId} status to ${finalState.status}`);
           } catch (error) {
             console.warn('Failed to update execution log on server:', error);
-            // Continue execution even if log update fails
+            // Try again with a simpler payload that might have fewer serialization issues
+            try {
+              await apiClient.patch(`/api/logs/${logId}`, {
+                status: finalState.status,
+                completedAt: new Date().toISOString()
+              });
+              console.log(`Successfully updated log ${logId} status (minimal update)`);
+            } catch (retryError) {
+              console.error('Failed to update log even with minimal payload:', retryError);
+              // Continue execution even if log update fails
+            }
           }
         }
         
