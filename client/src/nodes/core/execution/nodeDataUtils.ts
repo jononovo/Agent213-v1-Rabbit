@@ -1,7 +1,7 @@
 /**
  * Node Data Utilities
  * 
- * This module provides utilities for handling data transfer between nodes,
+ * This module provides utilities for handling data transfer between nodes during execution,
  * including type validation and data transformation.
  */
 
