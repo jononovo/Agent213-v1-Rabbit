@@ -133,6 +133,9 @@ The AI Agent Workflow Platform is built around a modular node-based architecture
 2. **Discoverability**: Components are automatically discovered and registered
 3. **Type Safety**: Strong typing ensures consistent interfaces and validation
 4. **Separation of Concerns**: Clear boundaries between definition, execution, and presentation
+5. **UI Consistency**: All nodes use the BaseNode structure for consistent styling and behavior
+
+> **Note**: For migrating existing nodes to use the BaseNode structure, see the [BaseNode Migration Guide](./basenode-migration-guide.md).
 
 ### Architecture Overview
 
