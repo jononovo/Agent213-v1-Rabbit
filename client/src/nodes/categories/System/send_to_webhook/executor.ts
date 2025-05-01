@@ -93,6 +93,15 @@ async function processNode(
       // The searchId and other important fields are in the body
       inputData = inputs[firstKey].items[0].json.body;
       console.log(`Found webhook body data at inputs.${firstKey}.items[0].json.body`);
+    } else if (firstKey && inputs[firstKey]?.items?.[0]?.json) {
+      // For data coming from function node, we might need to construct a proper response
+      // For the 5 Ducks integration, we'll auto-populate with function node's result
+      inputData = {
+        searchId: inputs[firstKey].items[0].json.searchId || "unknown_search_id",
+        status: "completed",
+        results: inputs[firstKey].items[0].json
+      };
+      console.log(`Constructed 5 Ducks response format with searchId:`, inputData.searchId);
     }
   }
   
