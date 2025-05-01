@@ -43,6 +43,21 @@ export interface SettingField {
 }
 
 /**
+ * Node data requirements for settings drawer
+ * This allows nodes to declare what external data they need
+ */
+export interface NodeDataRequirements {
+  // Whether the node needs workflows data
+  requiresWorkflows?: boolean;
+  
+  // Whether the node needs agents data
+  requiresAgents?: boolean;
+  
+  // Other potential data requirements can be added here
+  // For example: requiresIntegrations, requiresTemplates, etc.
+}
+
+/**
  * Handlers for node settings behavior
  */
 export interface NodeSettingsHandlers {
@@ -85,4 +100,12 @@ export interface NodeSettingsHandlers {
    * @returns Updated field definitions with loaded options
    */
   loadFieldOptions?: (fields: SettingField[]) => Promise<SettingField[]>;
+  
+  /**
+   * Get data requirements for this node
+   * This allows the settings drawer to fetch required data
+   * 
+   * @returns Data requirements object
+   */
+  getDataRequirements?: () => NodeDataRequirements;
 }
