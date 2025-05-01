@@ -3,11 +3,14 @@
  * 
  * This file contains the logic for executing the Claude API node.
  * It handles the API call to Claude and processes the response.
+ * 
+ * Uses the standardized NodeExecutorBase pattern for consistent
+ * output formatting across all nodes.
  */
 
 // Import node types and utilities
 import { NodeExecutionData } from '../../../core/types/nodeExecutionTypes';
-import { createNodeOutput, createErrorOutput } from '../../../core/utils/nodeOutputUtils';
+import { createNodeExecutor } from '../../../core/base/NodeExecutorBase';
 
 /**
  * Calls the Claude API with configured parameters
@@ -121,74 +124,59 @@ function extractInputText(inputs: Record<string, any> = {}): string {
 }
 
 /**
- * Execute the Claude API node
+ * Main node processing function
  */
-export const execute = async (
+async function processNode(
   nodeData: any,
   inputs: Record<string, any> = {}
-): Promise<Record<string, NodeExecutionData>> => {
-  // Record start time
-  const startTime = new Date();
+): Promise<Record<string, any>> {
+  // Extract input text from node data or connected nodes
+  let prompt = '';
+  if (inputs && Object.keys(inputs).length > 0) {
+    prompt = extractInputText(inputs);
+  } else if (nodeData.inputText) {
+    prompt = nodeData.inputText;
+  }
   
-  try {
-    // Extract input text from node data or connected nodes
-    let prompt = '';
-    if (inputs && Object.keys(inputs).length > 0) {
-      prompt = extractInputText(inputs);
-    } else if (nodeData.inputText) {
-      prompt = nodeData.inputText;
-    }
-    
-    // Validate input
-    if (!prompt) {
-      return {
-        output: createErrorOutput('No input text provided', 'claude')
-      };
-    }
-    
-    // Get API key from node data or environment
-    const apiKey = nodeData.apiKey || process.env.CLAUDE_API_KEY || '';
-    
-    // Validate API key
-    if (!apiKey) {
-      return {
-        output: createErrorOutput('Claude API key is not configured', 'claude')
-      };
-    }
-    
-    // Get node settings
-    const model = nodeData.model || 'claude-3-7-sonnet-20250219';
-    const systemPrompt = nodeData.systemPrompt;
-    const temperature = Number(nodeData.temperature || 0.7);
-    const maxTokens = Number(nodeData.maxTokens || 2000);
-    
-    // Call Claude API
-    const generatedText = await callClaudeAPI(
-      prompt, 
-      apiKey, 
-      model,
-      systemPrompt,
-      temperature,
-      maxTokens
-    );
-    
-    // Return successful result using the utility function
-    const result = {
+  // Validate input
+  if (!prompt) {
+    throw new Error('No input text provided');
+  }
+  
+  // Get API key from node data or environment
+  const apiKey = nodeData.apiKey || process.env.CLAUDE_API_KEY || '';
+  
+  // Validate API key
+  if (!apiKey) {
+    throw new Error('Claude API key is not configured');
+  }
+  
+  // Get node settings
+  const model = nodeData.model || 'claude-3-7-sonnet-20250219';
+  const systemPrompt = nodeData.systemPrompt;
+  const temperature = Number(nodeData.temperature || 0.7);
+  const maxTokens = Number(nodeData.maxTokens || 2000);
+  
+  // Call Claude API
+  const generatedText = await callClaudeAPI(
+    prompt, 
+    apiKey, 
+    model,
+    systemPrompt,
+    temperature,
+    maxTokens
+  );
+  
+  // Return result
+  return {
+    output: {
       text: generatedText,
       model: model
-    };
-    
-    return {
-      output: createNodeOutput(result, { 
-        startTime,
-        additionalMeta: { source: 'claude' }
-      })
-    };
-  } catch (error: any) {
-    // Return error result using the utility function
-    const errorMessage = error.message || 'Error processing Claude API request';
-    return {
-      output: createErrorOutput(errorMessage, 'claude')
-    };
-  }
-};
+    }
+  };
+}
+
+/**
+ * Export the standardized execute function
+ */
+export const execute = createNodeExecutor('claude', processNode);

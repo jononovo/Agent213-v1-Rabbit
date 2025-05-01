@@ -429,7 +429,8 @@ function createEnhancedExecutor(
       // Format the result based on the shape returned by the executor
       if (typeof result === 'object' && result !== null) {
         // If the executor returns a properly formatted NodeExecutionData object, use it directly
-        if (result.items && result.meta) {
+        if (result.items && Array.isArray(result.items) && result.meta) {
+          console.log(`Node ${node.type} using standardized output format`);
           return result;
         }
         
