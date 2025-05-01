@@ -364,7 +364,7 @@ interface NodeExecutionData {
 }
 ```
 
-> **⚠️ Important:** The older utility functions `createNodeOutput` and `createErrorOutput` from `client/src/nodes/core/execution/nodeOutputUtils.ts` are now deprecated. All nodes should use the BaseExecutor pattern instead. See the [BaseExecutor documentation](../client/src/nodes/core/base/README.md) for more details.
+> **⚠️ Important:** The older utility functions `createNodeOutput` and `createErrorOutput` have been completely removed from the codebase. All nodes must use the BaseExecutor pattern. See the [BaseExecutor documentation](../client/src/nodes/core/base/README.md) for more details.
 
 ## Node Testing Framework
 

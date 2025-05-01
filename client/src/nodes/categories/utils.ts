@@ -5,7 +5,9 @@
  * with relative imports to avoid path resolution issues.
  */
 
-// Re-export core types and utilities
+// Re-export core types
 export * from '../core/types/nodeDefinitions';
 export * from '../core/types/nodeExecutionTypes';
-export * from '../core/utils/nodeOutputUtils';
+
+// Export BaseExecutor pattern
+export * from '../core/base/NodeExecutorBase';
