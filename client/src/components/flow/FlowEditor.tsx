@@ -35,7 +35,7 @@ import {
   getNode,
   initializeRegistry,
   loadNodeComponent as loadComponentFromRegistry 
-} from '@/lib/unifiedNodeRegistry';
+} from '@/nodes/core/registry/unifiedNodeRegistry';
 import NodeSettingsDrawer from './NodeSettingsDrawer';
 
 // Import loading placeholder node

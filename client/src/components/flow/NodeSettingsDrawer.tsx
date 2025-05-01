@@ -24,7 +24,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Agent } from '@shared/schema';
 import { NodeReadmeModal } from '@/nodes/components/base';
 // Import from the unified registry
-import { getNodeSettings, hasNode, getNodeDefinitionPath } from '@/lib/unifiedNodeRegistry';
+import { getNodeSettings, hasNode, getNodeDefinitionPath } from '@/nodes/core/registry/unifiedNodeRegistry';
 
 interface NodeSettingsDrawerProps {
   isOpen: boolean;

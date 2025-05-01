@@ -34,7 +34,7 @@ import {
   Box
 } from 'lucide-react';
 import NodeItem from './NodeItem';
-import { getAllNodes, initializeRegistry } from '@/lib/unifiedNodeRegistry';
+import { getAllNodes, initializeRegistry } from '@/nodes/core/registry/unifiedNodeRegistry';
 import { LucideIcon } from 'lucide-react';
 
 // Node categories based on the documentation
