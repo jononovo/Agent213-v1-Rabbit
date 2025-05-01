@@ -11,6 +11,9 @@ import { createNodeExecutor } from '../../../core/base/NodeExecutorBase';
 interface FunctionNodeData {
   code?: string;
   implementation?: string;
+  settings?: {
+    code?: string;
+  };
 }
 
 /**
@@ -31,22 +34,44 @@ async function processNode(
     
     let result;
     
-    // Process custom function implementation if available
-    const functionCode = nodeData.code || nodeData.implementation;
+    // Process custom function implementation if available - check both data and settings
+    let functionCode = nodeData.code || nodeData.implementation;
+    
+    // Also try to get code from settings, which is where the UI stores it
+    if (!functionCode && nodeData.settings && nodeData.settings.code) {
+      functionCode = nodeData.settings.code;
+    }
+    
+    console.log("Function code available:", !!functionCode);
+    if (functionCode) {
+      console.log("Function code type:", typeof functionCode);
+      console.log("Function code length:", functionCode.length);
+      console.log("Function code snippet:", functionCode.substring(0, 100) + "...");
+    }
     
     if (functionCode && typeof functionCode === 'string') {
       try {
+        // Get the settings to check if code exists
+        console.log("Full function node data:", JSON.stringify(nodeData, null, 2));
+        
         // Create a safe function from the code
         // First extract the function body
         const functionBodyMatch = functionCode.match(/function\s+process\s*\([^)]*\)\s*{([\s\S]*)}/);
+        console.log("Function body match:", !!functionBodyMatch);
         const functionBody = functionBodyMatch ? functionBodyMatch[1] : functionCode;
         
         // Create a function that takes the input and executes the code
         // eslint-disable-next-line no-new-func
         const processFunction = new Function('input', `
           try {
+            // Execute function body directly if it starts with "function process"
+            if (${JSON.stringify(functionCode)}.trim().startsWith("function process")) {
+              return eval(${JSON.stringify(functionCode)})(input);
+            }
+            // Otherwise execute the extracted body
             ${functionBody}
           } catch (error) {
+            console.error("Error in function execution:", error);
             return { error: error.message, success: false };
           }
         `);
