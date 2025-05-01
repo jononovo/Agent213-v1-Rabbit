@@ -37,8 +37,9 @@ const definition: NodeDefinition = {
     {
       key: 'workflowId',
       type: 'select', 
-      label: 'Workflow',
-      description: 'Select the workflow to trigger',
+      label: 'Target Workflow',
+      description: 'The workflow that will be triggered by this node.',
+      placeholder: 'Select target workflow',
       // The options will be dynamically populated in the UI
       options: [],
       // Flag that this field requires workflows data
@@ -139,36 +140,39 @@ export const nodeMetadata = {
     // Load field options for the workflow selection dropdown
     loadFieldOptions: async (fields: SettingField[]): Promise<SettingField[]> => {
       try {
+        console.log('Called loadFieldOptions handler for embed_other_workflow');
+        console.log('Initial fields:', fields);
+        
         // Fetch workflows from API
         const res = await fetch('/api/workflows');
         if (!res.ok) throw new Error('Failed to fetch workflows');
         const workflows = await res.json();
+        console.log('Fetched workflows:', workflows);
         
-        // Create workflow options
+        // Create workflow options in the format expected by the dropdown
         const workflowOptions = workflows.map((workflow: any) => ({
           value: workflow.id.toString(),
-          label: `${workflow.name} (ID: ${workflow.id})`
+          label: workflow.name
         }));
         
-        // Find and update the workflowId field with the new options
+        // Make a copy of the fields array to avoid mutating the original
         const updatedFields = [...fields];
         
-        // Debug log to see the field structure
-        console.log('Field structure in loadFieldOptions:', updatedFields);
-        
-        // Find the workflow selection field using a flexible approach
-        // This handles both old formats with field.key and new formats with field.id
-        const workflowIdField = updatedFields.find(field => {
-          // Accept any field that has an ID or key of 'workflowId'
-          // This ensures compatibility with different field formats
-          return field.id === 'workflowId' || field.key === 'workflowId';
-        });
-        
-        if (workflowIdField) {
-          workflowIdField.options = workflowOptions;
-          console.log('Updated workflowId field options:', workflowOptions);
+        // Loop through all fields to find any that match our target
+        for (const field of updatedFields) {
+          console.log('Checking field:', field);
+          
+          // Look for field with key='workflowId' or id='workflowId'
+          if ((field.key === 'workflowId') || (field.id === 'workflowId')) {
+            console.log('Found workflowId field:', field);
+            
+            // Update the options directly
+            field.options = workflowOptions;
+            console.log('Updated field with workflow options:', workflowOptions);
+          }
         }
         
+        console.log('Returning updated fields:', updatedFields);
         return updatedFields;
       } catch (error) {
         console.error('Error loading workflow options:', error);
