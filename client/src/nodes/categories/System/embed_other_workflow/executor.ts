@@ -3,14 +3,17 @@
  * 
  * Handles the execution logic for the Embed Other Workflow node,
  * managing API calls to trigger other workflows and process their results.
+ * 
+ * Uses the standardized BaseExecutor pattern - the single unified
+ * approach for all node executors in the workflow system.
  */
 
-// Import types from core
-import { 
-  NodeExecutionData,
-  WorkflowItem 
-} from '../../../core/types/nodeExecutionTypes';
+import { NodeExecutionData, WorkflowItem } from '../../../core/types/nodeExecutionTypes';
+import { createNodeExecutor } from '../../../core/base/NodeExecutorBase';
 
+/**
+ * Type definition for this node's specific configuration
+ */
 interface EmbedWorkflowNodeData {
   workflowId?: number | string | null;
   inputField?: string;
@@ -57,118 +60,92 @@ async function apiRequest(endpoint: string, method: string = 'GET', data?: any):
 }
 
 /**
- * Execute an Embed Other Workflow node with the provided input
+ * Process the Embed Other Workflow node
+ * This implements the core logic specific to the node
  */
-export async function execute(
+async function processNode(
   nodeData: EmbedWorkflowNodeData,
-  input?: NodeExecutionData
-): Promise<NodeExecutionData> {
-  const startTime = new Date();
-  const meta = {
-    startTime,
-    endTime: new Date(),
-    source: 'embed_other_workflow',
-    error: false,
-    errorMessage: ''
-  };
+  inputs: Record<string, NodeExecutionData> = {}
+): Promise<Record<string, any>> {
+  // Find the first input with items
+  let input: NodeExecutionData | undefined;
+  for (const key in inputs) {
+    if (inputs[key] && inputs[key].items && Array.isArray(inputs[key].items)) {
+      input = inputs[key];
+      break;
+    }
+  }
   
-  // Validate input - ensure we have valid items to process
+  // Create default input if none was provided
   if (!input || !input.items || !Array.isArray(input.items)) {
-    // Create a default input with a single empty item if none is provided
     input = {
       items: [{ json: {} }],
       meta: {
-        startTime,
+        startTime: new Date(),
         endTime: new Date()
       }
     };
   }
   
-  try {
-    // Validate required workflow ID
-    if (!nodeData.workflowId) {
-      throw new Error('No workflow selected. Please configure the node with a valid workflow.');
-    }
-
-    console.log(`Triggering workflow ID ${nodeData.workflowId} with ${input.items.length} items`);
-    
-    // Format the input data based on the selected inputField
-    const inputField = nodeData.inputField || 'json';
-    const timeout = nodeData.timeout || 30000;
-    const waitForCompletion = nodeData.waitForCompletion !== false;
-    
-    const triggerPayload = {
-      workflowId: nodeData.workflowId,
-      inputData: input.items.map(item => {
-        if (inputField === 'json') {
-          return item.json;
-        } else if (inputField === 'content' && item.json?.content) {
-          return item.json.content;
-        } else if (typeof item.json === 'string') {
-          // Handle case where text might be stored in json
-          return item.json;
-        }
-        return item.json; // Default to json if no match
-      })
-    };
-    
-    // Call the API to trigger the workflow
-    let workflowResult;
-    if (waitForCompletion) {
-      // Execute and wait for results
-      workflowResult = await apiRequest('/api/workflows/execute', 'POST', {
-        workflowId: nodeData.workflowId,
-        input: triggerPayload.inputData,
-        timeout: timeout
-      });
-    } else {
-      // Trigger execution without waiting
-      workflowResult = await apiRequest('/api/workflows/trigger', 'POST', {
-        workflowId: nodeData.workflowId,
-        input: triggerPayload.inputData
-      });
-    }
-    
-    // Process the result
-    const endTime = new Date();
-    const processedItems: WorkflowItem[] = [
-      {
-        json: workflowResult,
-        meta: {
-          source: 'embed_other_workflow',
-          timestamp: endTime
-        }
-      }
-    ];
-    
-    // Return the output data
-    return {
-      items: processedItems,
-      meta: {
-        startTime,
-        endTime,
-        source: 'embed_other_workflow',
-        details: workflowResult
-      }
-    };
-  } catch (error: any) {
-    console.error('Error executing embed_other_workflow node:', error);
-    const errorMessage = error.message || 'Unknown error occurred';
-    
-    return {
-      items: input.items.map(item => ({
-        json: { error: true, message: errorMessage },
-        meta: {
-          source: 'embed_other_workflow',
-          timestamp: new Date()
-        }
-      })),
-      meta: {
-        ...meta,
-        endTime: new Date(),
-        error: true,
-        errorMessage: `Embed Other Workflow error: ${errorMessage}`
-      }
-    };
+  // Validate required workflow ID
+  if (!nodeData.workflowId) {
+    throw new Error('No workflow selected. Please configure the node with a valid workflow.');
   }
+
+  console.log(`Triggering workflow ID ${nodeData.workflowId} with ${input.items.length} items`);
+  
+  // Format the input data based on the selected inputField
+  const inputField = nodeData.inputField || 'json';
+  const timeout = nodeData.timeout || 30000;
+  const waitForCompletion = nodeData.waitForCompletion !== false;
+  
+  const triggerPayload = {
+    workflowId: nodeData.workflowId,
+    inputData: input.items.map(item => {
+      if (inputField === 'json') {
+        return item.json;
+      } else if (inputField === 'content' && item.json?.content) {
+        return item.json.content;
+      } else if (typeof item.json === 'string') {
+        // Handle case where text might be stored in json
+        return item.json;
+      }
+      return item.json; // Default to json if no match
+    })
+  };
+  
+  // Call the API to trigger the workflow
+  let workflowResult;
+  if (waitForCompletion) {
+    // Execute and wait for results
+    workflowResult = await apiRequest('/api/workflows/execute', 'POST', {
+      workflowId: nodeData.workflowId,
+      input: triggerPayload.inputData,
+      timeout: timeout
+    });
+  } else {
+    // Trigger execution without waiting
+    workflowResult = await apiRequest('/api/workflows/trigger', 'POST', {
+      workflowId: nodeData.workflowId,
+      input: triggerPayload.inputData
+    });
+  }
+  
+  // Return the result - BaseExecutor will handle the formatting
+  return {
+    result: workflowResult,
+    details: {
+      workflowId: nodeData.workflowId,
+      inputItemCount: input.items.length,
+      waitedForCompletion: waitForCompletion
+    }
+  };
 }
+
+/**
+ * Export the standardized execute function
+ * 
+ * This line is identical across all node executors, ensuring
+ * a single unified approach throughout the entire system.
+ */
+export const execute = createNodeExecutor<EmbedWorkflowNodeData>('embed_other_workflow', processNode);
