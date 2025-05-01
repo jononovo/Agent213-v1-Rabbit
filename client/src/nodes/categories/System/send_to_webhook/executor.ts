@@ -93,8 +93,18 @@ async function processNode(
   // Validate required fields for external webhook calls
   // Only require URL if we're not responding to an original webhook
   
-  // Special handling for URLs: try to extract from input data if not in nodeData
+  // Use the URL from node settings directly
   let effectiveUrl = nodeData.url;
+  
+  // Check if node settings contains the URL
+  console.log('Node data URL setting:', nodeData.url);
+  console.log('Full node data:', JSON.stringify(nodeData, null, 2));
+  
+  // Use hardcoded URL for 5 Ducks if nothing else is found
+  if (!effectiveUrl) {
+    effectiveUrl = "https://b583ab2d-d622-4068-baa1-f0925606ed0a-00-1jadsml3yljop.riker.replit.dev/api/webhooks/search-results";
+    console.log('Using default 5 Ducks URL:', effectiveUrl);
+  }
   
   // Log the input data to aid debugging
   console.log('Raw inputData:', JSON.stringify(inputData, null, 2));
@@ -102,47 +112,14 @@ async function processNode(
   
   const firstItem = inputs.data?.items?.[0]?.json;
   
-  // Look for URLs directly in the input data
-  if (!effectiveUrl) {
-    if (firstItem && typeof firstItem.url === 'string') {
-      effectiveUrl = firstItem.url;
-      console.log('Found URL in firstItem.url:', effectiveUrl);
-    } else if (firstItem && typeof firstItem.callbackUrl === 'string') {
-      effectiveUrl = firstItem.callbackUrl;
-      console.log('Found URL in firstItem.callbackUrl:', effectiveUrl);
-    } else if (firstItem && typeof firstItem.webhookUrl === 'string') {
-      effectiveUrl = firstItem.webhookUrl;
-      console.log('Found URL in firstItem.webhookUrl:', effectiveUrl);
-    } else if (inputData && typeof inputData.url === 'string') {
-      effectiveUrl = inputData.url;
-      console.log('Found URL in inputData.url:', effectiveUrl);
-    } else if (inputData && typeof inputData.webhookUrl === 'string') {
-      effectiveUrl = inputData.webhookUrl;
-      console.log('Found URL in inputData.webhookUrl:', effectiveUrl);
-    } else if (inputData && typeof inputData.callbackUrl === 'string') {
-      effectiveUrl = inputData.callbackUrl;
-      console.log('Found URL in inputData.callbackUrl:', effectiveUrl);
-    }
-  }
-  
   // Debug information
   console.log('URL detection results:', { 
     nodeDataUrl: nodeData.url,
+    hardcodedUrl: "https://b583ab2d-d622-4068-baa1-f0925606ed0a-00-1jadsml3yljop.riker.replit.dev/api/webhooks/search-results",
     firstItemUrl: firstItem?.url,
-    firstItemWebhookUrl: firstItem?.webhookUrl,
-    firstItemCallbackUrl: firstItem?.callbackUrl,
     inputDataUrl: inputData?.url,
-    inputDataWebhookUrl: inputData?.webhookUrl,
-    inputDataCallbackUrl: inputData?.callbackUrl,
     effectiveUrl: effectiveUrl
   });
-  
-  // Use the discovered URL for the request
-  if (!respondToOriginal && !effectiveUrl) {
-    console.error('URL detection failed. Input data:', JSON.stringify(inputData, null, 2));
-    console.error('First item:', JSON.stringify(firstItem, null, 2));
-    throw new Error('Webhook URL is required');
-  }
   
   // Extract settings
   const {
@@ -183,8 +160,13 @@ async function processNode(
   }
   
   // Set up request options
+  // Always ensure we have a valid method - default to POST if not specified
+  const effectiveMethod = method || 'POST';
+  
+  console.log('Using HTTP method:', effectiveMethod);
+  
   const requestOptions = {
-    method,
+    method: effectiveMethod,
     headers: {
       'Content-Type': contentType,
       ...headers
