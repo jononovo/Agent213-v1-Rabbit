@@ -318,6 +318,9 @@ export const nodeMetadata = {
       
       return saveData;
     }
+    
+    // In the future, we can add a handleSettingChange handler to move
+    // the template selection logic from the drawer to here
   }
 };
 

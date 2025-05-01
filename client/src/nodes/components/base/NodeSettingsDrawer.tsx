@@ -382,9 +382,10 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   };
 
   const handleSettingChange = (fieldId: string, value: any) => {
+    // Update the settings with the new value
     let updatedSettings = { ...settings, [fieldId]: value };
     
-    // For function node template selection, handle it with a node-specific approach
+    // If this is a function node template selection, apply the template to code field
     if (node?.type === 'function_node' && fieldId === 'selectedTemplate' && value) {
       try {
         // Dynamically import the function node definition which contains our templates
@@ -409,9 +410,10 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       } catch (error) {
         console.error('Error applying template:', error);
       }
+    } else {
+      // For regular field changes, just update the settings state
+      setSettings(updatedSettings);
     }
-    
-    setSettings(updatedSettings);
   };
 
   const handleSave = () => {
