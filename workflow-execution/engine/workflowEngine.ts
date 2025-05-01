@@ -280,8 +280,10 @@ async function executeNode(
     
     try {
       // Find registered executor for this node type
-      // Add 'categories' to the path to match the actual file structure
-      const { execute } = await import(`../../../client/src/nodes/categories/${getNodeCategory(node)}/${nodeType}/executor`);
+      // Use a full workspace path instead of a relative path
+      const executorPath = `${process.cwd()}/client/src/nodes/categories/${getNodeCategory(node)}/${nodeType}/executor`;
+      console.log(`[Workflow Engine] Loading executor from: ${executorPath}`);
+      const { execute } = await import(executorPath);
       
       if (typeof execute !== 'function') {
         throw new Error(`Invalid executor for node type: ${nodeType} - execute function not found`);
