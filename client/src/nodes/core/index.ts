@@ -6,9 +6,7 @@
  */
 
 // Export registry functionality
-export * from './registry/nodeRegistry';
-export * from './registry/nodeDiscovery';
-export * from './registry/nodeValidation';
+export * from './registry/unifiedNodeRegistry';
 
 // Export type definitions
 export * from './types/nodeDefinitions';
