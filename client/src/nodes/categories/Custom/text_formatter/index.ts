@@ -10,9 +10,11 @@ import definition from './definition';
 import { execute } from './executor';
 import TextFormatterNode from './ui';
 
-// Named exports for static imports
+// Named exports for static imports - MUST use this exact pattern for registration
 export { definition, execute };
-export const component = TextFormatterNode;
+
+// Export the UI component - this is critical for component registration
+export { TextFormatterNode as component };
 
 // Default export for dynamic imports
-export default { definition, execute, component };
+export default { definition, execute, component: TextFormatterNode };

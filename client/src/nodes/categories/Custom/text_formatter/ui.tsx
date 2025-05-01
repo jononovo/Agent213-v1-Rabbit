@@ -101,4 +101,5 @@ function TextFormatterNode({ id, data, selected, isConnectable }: NodeProps<Text
 }
 
 // Export the component with memo for optimization
+// IMPORTANT: Must use default export for dynamic loading to work
 export default memo(TextFormatterNode);
