@@ -384,7 +384,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   const handleSettingChange = (fieldId: string, value: any) => {
     let updatedSettings = { ...settings, [fieldId]: value };
     
-    // Special handling for function node templates
+    // For function node template selection, handle it with a node-specific approach
     if (node?.type === 'function_node' && fieldId === 'selectedTemplate' && value) {
       try {
         // Dynamically import the function node definition which contains our templates
@@ -572,19 +572,6 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           
           {activeTab === 'settings' && (
             <div className="pb-6">
-              {node.type === 'function_node' && (
-                <div className="mb-4">
-                  <p className="text-sm text-muted-foreground">
-                    Configure settings for {node.type}
-                  </p>
-                  
-                  <Alert className="mt-2">
-                    <AlertDescription>
-                      Configure this node's settings below.
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              )}
               
               {fieldOptions.length > 0 ? (
                 <div className="space-y-4 pb-6">

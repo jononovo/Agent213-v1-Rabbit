@@ -287,6 +287,37 @@ export const nodeMetadata = {
     };
   }
 }`
+  },
+  
+  // Add handlers for settings initialization and saving
+  handlers: {
+    // Initialize settings from node data
+    initializeSettings: (nodeData: Record<string, any>) => {
+      // Start with existing settings or empty object
+      const settings = { ...(nodeData.settings || {}) };
+      
+      // Copy standard function node fields from node data to settings
+      ['code', 'selectedTemplate', 'useAsyncFunction', 'timeout', 
+       'errorHandling', 'cacheResults', 'executionEnvironment'].forEach(key => {
+        if (nodeData[key] !== undefined) {
+          settings[key] = nodeData[key];
+        }
+      });
+      
+      return settings;
+    },
+    
+    // Handle template selection and prepare save data
+    prepareSaveData: (settings: Record<string, any>, nodeProperties?: Record<string, any>) => {
+      const saveData = { ...settings };
+      
+      // Add nodeProperties (like label and description)
+      if (nodeProperties) {
+        saveData.nodeProperties = nodeProperties;
+      }
+      
+      return saveData;
+    }
   }
 };
 
