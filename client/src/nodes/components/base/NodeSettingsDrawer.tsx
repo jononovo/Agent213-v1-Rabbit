@@ -32,7 +32,7 @@ import { Agent } from '@shared/schema';
 import { NodeReadmeModal } from '@/nodes/components/base';
 // Import from the unified registry
 import { getNodeSettings, hasNode, getNodeDefinitionPath, getNode } from '@/nodes/core/registry/unifiedNodeRegistry';
-import { SettingField } from '@/nodes/core/types/nodeSettingsTypes';
+import { SettingField, SettingType } from '@/nodes/core/types/nodeSettingsTypes';
 
 // We need to get the NodeData type - import it from the proper location
 // This might need an adjustment based on your specific structure
@@ -202,19 +202,20 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   // Helper function to map field types from node settings to drawer settings format
   const mapFieldType = (type: string): SettingsField['type'] => {
     const typeMap: Record<string, SettingsField['type']> = {
-      'text': 'text',
-      'textarea': 'textarea',
-      'number': 'number',
-      'select': 'select',
-      'checkbox': 'select', // Convert checkbox to select with yes/no options
-      'slider': 'number',   // Convert slider to number input
-      'password': 'password',
-      'json': 'json',
-      'radio': 'radio',
-      'multiselect': 'multiselect'
+      'text': SettingType.TEXT,
+      'textarea': SettingType.TEXTAREA,
+      'number': SettingType.NUMBER,
+      'select': SettingType.SELECT,
+      'checkbox': SettingType.SELECT, // Convert checkbox to select with yes/no options
+      'slider': SettingType.NUMBER,   // Convert slider to number input
+      'password': SettingType.PASSWORD,
+      'json': SettingType.JSON,
+      'radio': SettingType.RADIO,
+      'multiselect': SettingType.MULTISELECT,
+      'workflow_selector': SettingType.WORKFLOW
     };
     
-    return typeMap[type] || 'text'; // Default to text for unknown types
+    return typeMap[type] || SettingType.TEXT; // Default to text for unknown types
   };
 
   // Get fields configuration based on node type
@@ -273,7 +274,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
         {
           id: 'eventType',
           label: 'Event Type',
-          type: 'select',
+          type: SettingType.SELECT,
           placeholder: 'Select event type',
           description: 'The type of system event this node responds to.',
           options: [
@@ -286,7 +287,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
         {
           id: 'priority',
           label: 'Priority Level',
-          type: 'select',
+          type: SettingType.SELECT,
           placeholder: 'Select priority',
           description: 'Execution priority for this internal operation.',
           options: [
@@ -299,7 +300,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
         {
           id: 'customConfig',
           label: 'Custom Configuration',
-          type: 'textarea',
+          type: SettingType.TEXTAREA,
           placeholder: 'Enter any custom configuration as JSON...',
           description: 'Additional configuration options in JSON format.'
         }
@@ -314,15 +315,15 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       // Generate fields from the settingsData object
       Object.entries(node.data.settingsData).forEach(([key, value]) => {
         const valueType = typeof value;
-        let fieldType: SettingsField['type'] = 'text';
+        let fieldType: SettingsField['type'] = SettingType.TEXT;
         
         // Determine field type based on value type
         if (valueType === 'number') {
-          fieldType = 'number';
+          fieldType = SettingType.NUMBER;
         } else if (valueType === 'boolean') {
-          fieldType = 'select';
+          fieldType = SettingType.SELECT;
         } else if (valueType === 'object') {
-          fieldType = 'json';
+          fieldType = SettingType.JSON;
         }
         
         // Create field definition
@@ -348,7 +349,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
         };
         
         // Add options for boolean fields
-        if (fieldType === 'select' && typeof value === 'boolean') {
+        if (fieldType === SettingType.SELECT && typeof value === 'boolean') {
           field.options = [
             { value: 'true', label: 'Yes' },
             { value: 'false', label: 'No' }
@@ -364,7 +365,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       basicSettings.unshift({
         id: 'label',
         label: 'Node Label',
-        type: 'text',
+        type: SettingType.TEXT,
         description: 'The display name for this node',
         defaultValue: node?.data?.label || ''
       });
