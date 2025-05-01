@@ -44,8 +44,8 @@ export async function handleNodeDebugRequest(req: Request, res: Response): Promi
       const categoryMap: Record<string, string> = {
         'claude': 'System',
         'function_node': 'System',
-        'webhook_trigger': 'Integration',
-        'perplexity_api': 'Integration',
+        'webhook_trigger': 'System', // Updated: webhook_trigger is in System, not Integration
+        'perplexity_api': 'System', // Updated: also in System
         'embed_other_workflow': 'System',
         'send_to_webhook': 'System'
       };
@@ -134,8 +134,8 @@ export function getNodeCategory(nodeType: string): string {
   const categoryMap: Record<string, string> = {
     'claude': 'System',
     'function_node': 'System',
-    'webhook_trigger': 'Integration',
-    'perplexity_api': 'Integration',
+    'webhook_trigger': 'System', // Updated: webhook_trigger is in System, not Integration
+    'perplexity_api': 'System', // Updated: also in System
     'embed_other_workflow': 'System',
     'send_to_webhook': 'System'
   };
