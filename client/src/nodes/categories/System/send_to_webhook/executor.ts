@@ -88,7 +88,21 @@ async function processNode(
   // Regular webhook sending logic for non-response cases
   // Validate required fields for external webhook calls
   // Only require URL if we're not responding to an original webhook
-  if (!respondToOriginal && !nodeData.url) {
+  
+  // Special handling for URLs: try to extract from input data if not in nodeData
+  const effectiveUrl = nodeData.url || 
+                      (inputData && inputData.url) || 
+                      (inputData && inputData.webhookUrl) ||
+                      (inputData && inputData.callbackUrl);
+  
+  // Use the discovered URL for the request
+  if (!respondToOriginal && !effectiveUrl) {
+    console.error('URL detection failed:', { 
+      nodeDataUrl: nodeData.url,
+      inputDataUrl: inputData?.url,
+      inputDataWebhookUrl: inputData?.webhookUrl,
+      inputDataCallbackUrl: inputData?.callbackUrl
+    });
     throw new Error('Webhook URL is required');
   }
   
@@ -131,7 +145,7 @@ async function processNode(
   
   // Make the request with retry logic for external webhook
   const result = await makeRequestWithRetry(
-    url, 
+    effectiveUrl || url, // Use the extracted URL if available
     requestOptions, 
     timeout, 
     retryCount, 
