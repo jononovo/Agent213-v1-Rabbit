@@ -45,7 +45,8 @@ const NODE_CATEGORIES = [
   { id: 'content', name: 'Content', description: 'Content creation, formatting, and rendering' },
   { id: 'code', name: 'Code', description: 'Custom code and function execution' },
   { id: 'actions', name: 'Actions', description: 'Nodes that perform operations and trigger workflows based on events' },
-  { id: 'internal', name: 'Internal', description: 'Internal system nodes that trigger system operations' }
+  { id: 'internal', name: 'Internal', description: 'Internal system nodes that trigger system operations' },
+  { id: 'general', name: 'General', description: 'General-purpose nodes and utilities' }
 ];
 
 // Map of icon names to Lucide components for dynamic node icons
@@ -162,7 +163,7 @@ const NodesPanel = () => {
 
   // Group nodes by category
   const groupedNodes = filteredNodes.reduce<Record<string, Node[]>>((acc, node) => {
-    const category = node.category || 'custom';
+    const category = node.category || 'general';
     if (!acc[category]) {
       acc[category] = [];
     }
@@ -208,6 +209,7 @@ const NodesPanel = () => {
             <TabsTrigger value="code" className="px-4">Code</TabsTrigger>
             <TabsTrigger value="actions" className="px-4">Actions</TabsTrigger>
             <TabsTrigger value="internal" className="px-4">Internal</TabsTrigger>
+            <TabsTrigger value="general" className="px-4">General</TabsTrigger>
           </TabsList>
         </div>
       </Tabs>
