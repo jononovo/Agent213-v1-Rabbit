@@ -174,112 +174,81 @@ Edit the `definition.ts` file to define your node's interface and behavior:
 
 ### 3. Implementing the Node Logic
 
-Create the processing logic in `executor.ts`:
+Create the processing logic in `executor.ts` using the BaseExecutor pattern:
 
 ```typescript
-import { NodeExecutionData } from '@/lib/types/workflow';
+import { NodeExecutionData } from '@/nodes/core/types/nodeExecutionTypes';
+import { createNodeExecutor } from '@/nodes/core/base/NodeExecutorBase';
+import { MyNodeData } from './definition';
 
 /**
- * Node executor function
+ * Process the node's logic
  * 
- * This function is called when the node is executed in a workflow.
- * It processes the input data and returns the output data.
+ * This function contains only the business logic for the node.
+ * It receives node data and input values, and returns the computation results.
+ * The BaseExecutor pattern handles standardizing output format and error handling.
  */
-export const execute = async (
+async function processNode(
   // Node configuration data (from settings)
-  nodeData: Record<string, any>,
+  nodeData: MyNodeData,
   // Inputs from connected nodes
-  inputs: Record<string, NodeExecutionData> = {},
-): Promise<Record<string, NodeExecutionData>> => {
-  try {
-    // Get start time for performance tracking
-    const startTime = new Date();
-    
-    // Extract settings from node data
-    const { operation = 'add', useCache = false, maxRetries = 3 } = nodeData;
-    
-    // Get input values (with type safety and fallbacks)
-    const firstValue = inputs?.first_value?.items?.[0]?.json || 0;
-    const secondValue = inputs?.second_value?.items?.[0]?.json || 0;
-    
-    // Process based on selected operation
-    let result;
-    let description;
-    
-    switch (operation) {
-      case 'add':
-        result = firstValue + secondValue;
-        description = `Added ${firstValue} and ${secondValue}`;
-        break;
-      case 'subtract':
-        result = firstValue - secondValue;
-        description = `Subtracted ${secondValue} from ${firstValue}`;
-        break;
-      case 'multiply':
-        result = firstValue * secondValue;
-        description = `Multiplied ${firstValue} by ${secondValue}`;
-        break;
-      default:
-        throw new Error(`Unknown operation: ${operation}`);
-    }
-    
-    // Add any custom processing logic here
-    if (useCache) {
-      // Example of using a caching mechanism
-      console.log(`Caching result: ${result}`);
-    }
-    
-    // Get end time
-    const endTime = new Date();
-    
-    // Return multiple outputs (matching the outputs defined in definition.ts)
-    return {
-      // First output
-      result: {
-        items: [{ 
-          json: result 
-        }],
-        meta: {
-          startTime,
-          endTime,
-          source: `my_custom_node:${operation}`
-        }
-      },
-      
-      // Second output
-      operation_log: {
-        items: [{ 
-          json: description 
-        }],
-        meta: {
-          startTime,
-          endTime
-        }
-      }
-    };
-  } catch (error) {
-    // Proper error handling is crucial
-    console.error(`Error in my_custom_node executor:`, error);
-    
-    // Return error state for all outputs
-    return {
-      result: {
-        items: [{ json: null }],
-        meta: {
-          error: true,
-          errorMessage: error.message
-        }
-      },
-      operation_log: {
-        items: [{ json: `Error: ${error.message}` }],
-        meta: {
-          error: true,
-          errorMessage: error.message
-        }
-      }
-    };
+  inputs: Record<string, NodeExecutionData> = {}
+): Promise<Record<string, any>> {
+  // Extract settings from node data
+  const { operation = 'add', useCache = false, maxRetries = 3 } = nodeData;
+  
+  // Get input values (with type safety and fallbacks)
+  const firstValue = inputs?.first_value?.items?.[0]?.json || 0;
+  const secondValue = inputs?.second_value?.items?.[0]?.json || 0;
+  
+  // Process based on selected operation
+  let result;
+  let description;
+  
+  switch (operation) {
+    case 'add':
+      result = firstValue + secondValue;
+      description = `Added ${firstValue} and ${secondValue}`;
+      break;
+    case 'subtract':
+      result = firstValue - secondValue;
+      description = `Subtracted ${secondValue} from ${firstValue}`;
+      break;
+    case 'multiply':
+      result = firstValue * secondValue;
+      description = `Multiplied ${firstValue} by ${secondValue}`;
+      break;
+    default:
+      throw new Error(`Unknown operation: ${operation}`);
   }
-};
+  
+  // Add any custom processing logic here
+  if (useCache) {
+    // Example of using a caching mechanism
+    console.log(`Caching result: ${result}`);
+  }
+  
+  // With BaseExecutor, we just return the pure output values
+  // All metadata, timing, and error handling is managed for us
+  return {
+    // First output - just the result value
+    result: result,
+    
+    // Second output - just the description value
+    operation_log: description
+  };
+}
+
+/**
+ * Export the execute function using the BaseExecutor pattern
+ * 
+ * This creates a standardized executor that:
+ * - Wraps your business logic in proper error handling
+ * - Formats outputs in the standard NodeExecutionData format
+ * - Adds timing and metadata automatically
+ * - Creates appropriate WorkflowItems for your data
+ */
+export const execute = createNodeExecutor<MyNodeData>('my_custom_node', processNode);
 
 export default execute;
 ```
