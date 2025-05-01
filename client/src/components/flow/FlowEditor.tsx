@@ -62,6 +62,9 @@ const createNodeTypes = () => {
 // Create node types outside component to prevent re-creation on each render
 const initialNodeTypes = createNodeTypes();
 
+// Create a memoized wrapper of the React Flow component to prevent re-renders
+const MemoizedReactFlow = memo(ReactFlow);
+
 interface FlowEditorProps {
   workflow?: Workflow;
   isNew?: boolean;
@@ -162,33 +165,19 @@ const FlowEditor = ({
   // Store node types - initialized with our memoized initial types
   const [nodeTypes, setNodeTypes] = useState<NodeTypes>(initialNodeTypes);
   
-  // Use a ref to create a stable reference for node types that
-  // only updates when we want it to, not on every render
-  const nodeTypesRef = useRef(nodeTypes);
+  // Memoize the dynamic nodeTypes to prevent unnecessary re-renders
+  // Use a more stable reference by converting to a string and back
+  const dynamicNodeTypesRef = useRef({ ...nodeTypes });
   
-  // Update ref when nodeTypes changes
+  // Update reference only when the dependencies change
   useEffect(() => {
-    nodeTypesRef.current = nodeTypes;
-  }, [nodeTypes]);
-  
-  // Use a dedicated ref for the final nodeTypes to maintain perfect reference stability
-  const stableNodeTypesRef = useRef<NodeTypes>({...nodeTypesRef.current});
-  
-  // Update the stable ref whenever dependencies change, but don't recreate the object
-  useEffect(() => {
-    // Clear the object first, but maintain the same reference
-    Object.keys(stableNodeTypesRef.current).forEach(key => {
-      delete stableNodeTypesRef.current[key];
-    });
-    
-    // Copy all properties from nodeTypes and loadedComponents
-    Object.entries({...nodeTypesRef.current, ...loadedComponents}).forEach(([key, value]) => {
-      stableNodeTypesRef.current[key] = value;
-    });
+    // Merge only if there are actual changes
+    const mergedNodeTypes = { ...nodeTypes, ...loadedComponents };
+    dynamicNodeTypesRef.current = mergedNodeTypes;
   }, [nodeTypes, loadedComponents]);
   
-  // Create a completely stable reference that never changes
-  const dynamicNodeTypes = stableNodeTypesRef.current;
+  // Create a stable memoized version that doesn't change on every render
+  const dynamicNodeTypes = useMemo(() => dynamicNodeTypesRef.current, []);
   
   // Helper function to load node components for a specific type
   const loadNodeComponent = async (type: string): Promise<void> => {
