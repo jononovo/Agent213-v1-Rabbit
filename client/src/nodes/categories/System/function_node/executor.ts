@@ -130,4 +130,14 @@ async function processNode(
 /**
  * Export the standardized execute function
  */
-export const execute = createNodeExecutor<FunctionNodeData>('function_node', processNode);
+// Log the result for debugging
+function logExecutionResult(result: any) {
+  console.log('FUNCTION NODE EXECUTION RESULT:');
+  console.log(JSON.stringify(result, null, 2));
+  return result;
+}
+
+export const execute = createNodeExecutor<FunctionNodeData>('function_node', async (data, inputs) => {
+  const result = await processNode(data, inputs);
+  return logExecutionResult(result);
+});
