@@ -3264,5 +3264,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
+  // Add an endpoint for the workflow execution server to get workflow data
+  app.get('/api/workflow-data/:id', async (req: Request, res: Response) => {
+    try {
+      const workflowId = parseInt(req.params.id, 10);
+      if (isNaN(workflowId)) {
+        return res.status(400).json({ error: 'Invalid workflow ID' });
+      }
+      
+      const workflow = await storage.getWorkflow(workflowId);
+      if (!workflow) {
+        return res.status(404).json({ error: 'Workflow not found' });
+      }
+      
+      res.json(workflow);
+    } catch (error) {
+      console.error('Error getting workflow data:', error);
+      res.status(500).json({
+        error: 'Failed to get workflow data',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   return server;
 }

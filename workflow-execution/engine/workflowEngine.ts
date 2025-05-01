@@ -8,6 +8,7 @@
 import { Job, WorkflowExecutionContext, WorkflowValidationResult, WorkflowExecutionOutput } from '../../shared/types/workflow';
 import { NodeExecutionData } from '../../shared/nodeTypes';
 import { storage } from '../../server/storage';
+import fetch from 'node-fetch';
 
 /**
  * Validate a workflow before execution
