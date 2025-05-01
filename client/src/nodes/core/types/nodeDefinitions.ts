@@ -30,6 +30,9 @@ export interface NodeSettingsHandlers {
   
   // Prepare data for saving
   prepareSaveData?: (settings: Record<string, any>, nodeProperties?: Record<string, any>) => Record<string, any>;
+  
+  // Handle setting changes
+  handleSettingChange?: (fieldId: string, value: any, currentSettings: Record<string, any>) => Record<string, any>;
 }
 
 /**

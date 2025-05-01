@@ -382,38 +382,38 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   };
 
   const handleSettingChange = (fieldId: string, value: any) => {
-    // Update the settings with the new value
-    let updatedSettings = { ...settings, [fieldId]: value };
-    
-    // If this is a function node template selection, apply the template to code field
-    if (node?.type === 'function_node' && fieldId === 'selectedTemplate' && value) {
-      try {
-        // Dynamically import the function node definition which contains our templates
-        import('@/nodes/categories/System/function_node/definition').then((module) => {
-          // Access the template library and type it properly
-          const templateLibrary = module.nodeMetadata?.templateLibrary as Record<string, string> || {};
-          
-          // Get the template code for the selected value
-          if (typeof value === 'string' && value in templateLibrary) {
-            const templateCode = templateLibrary[value];
-            
-            // Update the code field with the selected template
-            updatedSettings = { 
-              ...updatedSettings, 
-              code: templateCode 
-            };
-            setSettings(updatedSettings);
-          }
-        }).catch(err => {
-          console.error('Failed to load function_node templates:', err);
-        });
-      } catch (error) {
-        console.error('Error applying template:', error);
-      }
-    } else {
-      // For regular field changes, just update the settings state
-      setSettings(updatedSettings);
+    // Get node type and check for custom handlers
+    const nodeType = node?.type || '';
+    if (!nodeType) {
+      // If no node type, just update the setting directly
+      setSettings({ ...settings, [fieldId]: value });
+      return;
     }
+
+    // Try to get node definition with handlers
+    const nodeDefinition = getNode(nodeType);
+    
+    // Check if node has a custom setting change handler
+    if (nodeDefinition?.metadata?.handlers?.handleSettingChange) {
+      try {
+        // Use the custom handler to process the setting change
+        const updatedSettings = nodeDefinition.metadata.handlers.handleSettingChange(
+          fieldId,
+          value, 
+          settings
+        );
+        
+        // Update state with the result from the handler
+        setSettings(updatedSettings);
+        return;
+      } catch (error) {
+        console.error(`Error using custom setting handler for ${nodeType}:`, error);
+        // Fall through to default handling
+      }
+    }
+    
+    // Default handling - just update the setting directly
+    setSettings({ ...settings, [fieldId]: value });
   };
 
   const handleSave = () => {

@@ -287,7 +287,7 @@ export const nodeMetadata = {
     };
   }
 }`
-  },
+  } as const, // This makes the object type literal and enables string key lookups
   
   // Add handlers for settings initialization and saving
   handlers: {
@@ -307,6 +307,31 @@ export const nodeMetadata = {
       return settings;
     },
     
+    // Handle setting changes, particularly for template selection
+    handleSettingChange: (fieldId: string, value: any, currentSettings: Record<string, any>) => {
+      // Create a copy of the current settings with the new value
+      const updatedSettings = { ...currentSettings, [fieldId]: value };
+      
+      // Special handling for template selection
+      if (fieldId === 'selectedTemplate' && value) {
+        // Get the template code for the selected value from the templateLibrary
+        const templateLibrary = nodeMetadata.templateLibrary;
+        
+        if (typeof value === 'string') {
+          // Check if the value is a valid template key
+          const templateKey = value as keyof typeof templateLibrary;
+          if (templateKey in templateLibrary) {
+            const templateCode = templateLibrary[templateKey];
+            
+            // Update the code field with the selected template
+            updatedSettings.code = templateCode;
+          }
+        }
+      }
+      
+      return updatedSettings;
+    },
+    
     // Handle template selection and prepare save data
     prepareSaveData: (settings: Record<string, any>, nodeProperties?: Record<string, any>) => {
       const saveData = { ...settings };
@@ -318,9 +343,6 @@ export const nodeMetadata = {
       
       return saveData;
     }
-    
-    // In the future, we can add a handleSettingChange handler to move
-    // the template selection logic from the drawer to here
   }
 };
 
