@@ -254,7 +254,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     }
     
     // Get settings from node definition via the unified registry
-    const nodeSettings = getNodeSettings(type);
+    const nodeSettings = getNodeSettings(type as string);
     
     if (nodeSettings && nodeSettings.length > 0) {
       console.log(`Found ${nodeSettings.length} settings in node definition for ${type}:`, nodeSettings);
