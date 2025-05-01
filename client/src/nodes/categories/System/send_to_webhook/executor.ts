@@ -94,19 +94,35 @@ async function processNode(
   // Only require URL if we're not responding to an original webhook
   
   // Special handling for URLs: try to extract from input data if not in nodeData
-  const effectiveUrl = nodeData.url || 
-                      (inputData && inputData.url) || 
-                      (inputData && inputData.webhookUrl) ||
-                      (inputData && inputData.callbackUrl);
+  let effectiveUrl = nodeData.url;
+  
+  // Look for URLs directly in the input data
+  if (!effectiveUrl && inputData) {
+    if (typeof inputData.url === 'string') {
+      effectiveUrl = inputData.url;
+    } else if (typeof inputData.webhookUrl === 'string') {
+      effectiveUrl = inputData.webhookUrl;
+    } else if (typeof inputData.callbackUrl === 'string') {
+      effectiveUrl = inputData.callbackUrl;
+    } else if (inputData.json && typeof inputData.json.callbackUrl === 'string') {
+      // Look inside 'json' property if it exists
+      effectiveUrl = inputData.json.callbackUrl;
+    }
+  }
+  
+  // Debug information
+  console.log('URL detection results:', { 
+    nodeDataUrl: nodeData.url,
+    inputDataUrl: inputData?.url,
+    inputDataWebhookUrl: inputData?.webhookUrl,
+    inputDataCallbackUrl: inputData?.callbackUrl,
+    inputDataJsonCallbackUrl: inputData?.json?.callbackUrl,
+    effectiveUrl: effectiveUrl
+  });
   
   // Use the discovered URL for the request
   if (!respondToOriginal && !effectiveUrl) {
-    console.error('URL detection failed:', { 
-      nodeDataUrl: nodeData.url,
-      inputDataUrl: inputData?.url,
-      inputDataWebhookUrl: inputData?.webhookUrl,
-      inputDataCallbackUrl: inputData?.callbackUrl
-    });
+    console.error('URL detection failed. Input data:', JSON.stringify(inputData, null, 2));
     throw new Error('Webhook URL is required');
   }
   
@@ -122,25 +138,30 @@ async function processNode(
     errorHandling = 'fail'
   } = nodeData;
   
+  // Extract the json property if it exists and use it as the data to send
+  const dataToSend = inputData.json || inputData;
+  
+  console.log('Preparing to send data:', dataToSend);
+  
   // Set up the appropriate content type and body formatting based on contentType
   let formattedBody;
   if (contentType === 'application/json') {
-    formattedBody = JSON.stringify(inputData);
+    formattedBody = JSON.stringify(dataToSend);
   } else if (contentType === 'application/x-www-form-urlencoded') {
     // Convert object to URL encoded format
     const params = new URLSearchParams();
-    for (const key in inputData) {
-      if (typeof inputData[key] !== 'object') {
-        params.append(key, inputData[key]);
+    for (const key in dataToSend) {
+      if (typeof dataToSend[key] !== 'object') {
+        params.append(key, dataToSend[key]);
       } else {
-        params.append(key, JSON.stringify(inputData[key]));
+        params.append(key, JSON.stringify(dataToSend[key]));
       }
     }
     formattedBody = params.toString();
   } else {
     // Default to string representation for text/plain
-    formattedBody = typeof inputData === 'string' ? 
-      inputData : JSON.stringify(inputData);
+    formattedBody = typeof dataToSend === 'string' ? 
+      dataToSend : JSON.stringify(dataToSend);
   }
   
   // Set up request options

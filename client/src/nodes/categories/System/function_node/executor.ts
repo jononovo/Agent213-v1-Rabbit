@@ -6,9 +6,18 @@
  */
 
 import { NodeExecutionData } from '../../../core/types/nodeExecutionTypes';
+import { createNodeExecutor } from '../../../core/base/NodeExecutorBase';
 
-export async function execute(
-  nodeData: Record<string, any>,
+interface FunctionNodeData {
+  code?: string;
+  implementation?: string;
+}
+
+/**
+ * Process a function node
+ */
+async function processNode(
+  nodeData: FunctionNodeData,
   inputs: Record<string, NodeExecutionData> = {}
 ): Promise<NodeExecutionData> {
   const startTime = new Date();
@@ -18,20 +27,34 @@ export async function execute(
     const firstInputKey = Object.keys(inputs)[0];
     const inputData = firstInputKey ? inputs[firstInputKey]?.items?.[0]?.json : null;
     
-    // Create a result object that includes input data
-    const result = {
-      success: true,
-      message: "Function executed successfully",
-      timestamp: startTime.toISOString(),
-      data: inputData || {}
-    };
+    console.log(`Function node starting execution with input:`, inputData);
+    
+    let result;
     
     // Process custom function implementation if available
-    if (nodeData.implementation && typeof nodeData.implementation === 'string') {
+    const functionCode = nodeData.code || nodeData.implementation;
+    
+    if (functionCode && typeof functionCode === 'string') {
       try {
-        // In a full implementation, we would evaluate the custom function here
-        // Currently showing a placeholder since dynamic function evaluation is restricted
-        console.log("Custom function implementation exists but not executed");
+        // Create a safe function from the code
+        // First extract the function body
+        const functionBodyMatch = functionCode.match(/function\s+process\s*\([^)]*\)\s*{([\s\S]*)}/);
+        const functionBody = functionBodyMatch ? functionBodyMatch[1] : functionCode;
+        
+        // Create a function that takes the input and executes the code
+        // eslint-disable-next-line no-new-func
+        const processFunction = new Function('input', `
+          try {
+            ${functionBody}
+          } catch (error) {
+            return { error: error.message, success: false };
+          }
+        `);
+        
+        // Execute the function with the input data
+        console.log(`Executing custom function with input:`, inputData);
+        result = processFunction(inputData);
+        console.log(`Function execution result:`, result);
       } catch (functionError: any) {
         console.error("Error executing custom function:", functionError);
         return {
@@ -53,6 +76,14 @@ export async function execute(
           }
         };
       }
+    } else {
+      // Default pass-through behavior if no code provided
+      result = {
+        success: true,
+        message: "Function executed successfully (pass-through mode)",
+        timestamp: startTime.toISOString(),
+        data: inputData || {}
+      };
     }
     
     // Return in the expected format
@@ -60,7 +91,7 @@ export async function execute(
       items: [
         { 
           json: result,
-          text: JSON.stringify(result)
+          text: typeof result === 'string' ? result : JSON.stringify(result)
         }
       ],
       meta: {
@@ -71,6 +102,7 @@ export async function execute(
     };
   } catch (error: any) {
     // Handle unexpected errors
+    console.error("Unexpected error in function node:", error);
     return {
       items: [
         {
@@ -91,3 +123,8 @@ export async function execute(
     };
   }
 }
+
+/**
+ * Export the standardized execute function
+ */
+export const execute = createNodeExecutor<FunctionNodeData>('function_node', processNode);
