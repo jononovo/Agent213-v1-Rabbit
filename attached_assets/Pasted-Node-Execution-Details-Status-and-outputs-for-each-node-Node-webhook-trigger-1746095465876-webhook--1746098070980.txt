@@ -1,0 +1,112 @@
+Node Execution Details
+Status and outputs for each node
+
+Node webhook_trigger-1746095465876(webhook_trigger-1746095465876)
+completed
+Output:
+{
+  "items": [
+    {
+      "json": {
+        "success": true,
+        "message": "Webhook trigger executed successfully",
+        "timestamp": "2025-05-01T11:11:30.776Z",
+        "webhookUrl": "https://b6a08856-bec8-4b81-94b9-606d33b78fd2-00-1h6bieaom2jnj.worf.replit.dev:3001/webhooks/workflow/17/node/undefined",
+        "registered": false,
+        "webhookData": {
+          "workflowId": "17",
+          "method": "POST",
+          "payload": {
+            "inputText": "Test webhook payload"
+          }
+        }
+      },
+      "text": "{\"success\":true,\"message\":\"Webhook trigger executed successfully\",\"timestamp\":\"2025-05-01T11:11:30.776Z\",\"webhookUrl\":\"https://b6a08856-bec8-4b81-94b9-606d33b78fd2-00-1h6bieaom2jnj.worf.replit.dev:3001/webhooks/workflow/17/node/undefined\",\"registered\":false,\"webhookData\":{\"workflowId\":\"17\",\"method\":\"POST\",\"payload\":{\"inputText\":\"Test webhook payload\"}}}"
+    }
+  ],
+  "meta": {
+    "startTime": "2025-05-01T11:11:30.776Z",
+    "endTime": "2025-05-01T11:11:30.777Z",
+    "source": "webhook_trigger",
+    "webhookData": {
+      "workflowId": "17"
+    }
+  }
+}
+Started: 2025-05-01T11:11:30.747Z • Ended: 2025-05-01T11:11:30.777Z • Duration: 0.03s
+Node function_node-1746095459246(function_node-1746095459246)
+completed
+Output:
+{
+  "items": [
+    {
+      "json": {
+        "success": true,
+        "message": "Debug function node executed successfully",
+        "timestamp": "2025-05-01T11:11:30.786Z",
+        "inputDetails": {
+          "hasInputs": true,
+          "inputKeys": [
+            "input",
+            "icon",
+            "category",
+            "configuration",
+            "defaultData",
+            "inputText",
+            "metadata"
+          ],
+          "firstInputItems": 0
+        }
+      },
+      "text": "{\"success\":true,\"message\":\"Debug function node executed successfully\",\"timestamp\":\"2025-05-01T11:11:30.786Z\",\"inputDetails\":{\"hasInputs\":true,\"inputKeys\":[\"input\",\"icon\",\"category\",\"configuration\",\"defaultData\",\"inputText\",\"metadata\"],\"firstInputItems\":0}}"
+    }
+  ],
+  "meta": {
+    "startTime": "2025-05-01T11:11:30.786Z",
+    "endTime": "2025-05-01T11:11:30.787Z",
+    "source": "function_node_debug_version"
+  }
+}
+Started: 2025-05-01T11:11:30.781Z • Ended: 2025-05-01T11:11:30.787Z • Duration: 0.01s
+Node send_to_webhook-1746095462128(send_to_webhook-1746095462128)
+completed
+Output:
+{
+  "items": [
+    {
+      "json": {
+        "success": true,
+        "message": "This node is configured to respond to the original webhook"
+      },
+      "text": "{\"success\":true,\"message\":\"This node is configured to respond to the original webhook\"}",
+      "_key": "response"
+    },
+    {
+      "json": 200,
+      "text": "200",
+      "_key": "status"
+    },
+    {
+      "json": {},
+      "text": "{}",
+      "_key": "headers"
+    },
+    {
+      "json": {
+        "success": true,
+        "isWebhookResponse": true,
+        "status": 200,
+        "message": "Configured to respond to original webhook"
+      },
+      "text": "{\"success\":true,\"isWebhookResponse\":true,\"status\":200,\"message\":\"Configured to respond to original webhook\"}",
+      "_key": "meta"
+    }
+  ],
+  "meta": {
+    "startTime": "2025-05-01T11:11:30.795Z",
+    "endTime": "2025-05-01T11:11:30.796Z",
+    "executionTime": 1,
+    "source": "send_to_webhook"
+  }
+}
+Started: 2025-05-01T11:11:30.792Z • Ended: 2025-05-01T11:11:30.796Z • Duration: 0.00s

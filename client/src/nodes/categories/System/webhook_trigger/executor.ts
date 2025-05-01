@@ -30,10 +30,25 @@ export async function execute(
         (typeof window !== 'undefined' && window.location.pathname.match(/\/workflow-test\/(\d+)/)?.[1]);
     
     // Make sure we have the node ID for test execution
-    // The nodeId variable is sometimes missing, but we can get it from the id property
-    // which is consistently populated with the unique node instance ID in test mode
-    const effectiveNodeId = nodeId || id || 
-        (typeof id === 'string' && id.includes('-') ? id : undefined);
+    // In test mode, the nodeId might be missing but we can identify it in multiple ways
+    
+    // First, check if nodeId is directly provided
+    let effectiveNodeId = nodeId;
+    
+    // If not, try to use the id parameter which should be the full instance ID (nodetype-timestamp)
+    if (!effectiveNodeId && id) {
+      effectiveNodeId = id;
+    }
+    
+    // If still not found and we're in browser context, try to extract from URL
+    if (!effectiveNodeId && typeof window !== 'undefined') {
+      // For test execution in the node tester UI, the node ID is in the URL path
+      const urlMatch = window.location.pathname.match(/\/([^\/]+?-\d+)/);
+      if (urlMatch && urlMatch[1]) {
+        effectiveNodeId = urlMatch[1];
+        console.log('DEBUG: Extracted node ID from URL:', effectiveNodeId);
+      }
+    }
     
     console.log('DEBUG: Effective IDs:', { workflowId: effectiveWorkflowId, nodeId: effectiveNodeId });
     
