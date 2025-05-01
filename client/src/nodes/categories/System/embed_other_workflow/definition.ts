@@ -39,7 +39,11 @@ const definition: NodeDefinition = {
       label: 'Workflow',
       description: 'Select the workflow to trigger',
       // The options will be dynamically populated in the UI
-      options: []
+      options: [],
+      // Flag that this field requires workflows data
+      requiresWorkflows: true,
+      // When true, store workflowId in both settings and as a direct node data property
+      saveToNodeData: true
     },
     {
       key: 'inputField',
@@ -95,6 +99,39 @@ const definition: NodeDefinition = {
 export const nodeMetadata = {
   tags: ['workflow', 'embed', 'run', 'trigger', 'integration'],
   color: '#4B5563',
+  
+  // Add handlers for initialization and saving
+  handlers: {
+    // Initialize settings from node data, moving properties to settings if needed
+    initializeSettings: (nodeData) => {
+      const settings = { ...(nodeData.settings || {}) };
+      
+      // Move workflowId from node data to settings if it exists
+      if (nodeData.workflowId !== undefined) {
+        settings.workflowId = nodeData.workflowId.toString();
+      }
+      
+      return settings;
+    },
+    
+    // Prepare final node data before saving
+    prepareSaveData: (settings, nodeProperties) => {
+      const saveData = { ...settings };
+      
+      // Add nodeProperties (like label and description)
+      if (nodeProperties) {
+        saveData.nodeProperties = nodeProperties;
+      }
+      
+      // For embed_other_workflow, add workflowId as a direct property for easy access
+      // This is required by the workflow executor
+      if (settings.workflowId) {
+        saveData.workflowId = settings.workflowId;
+      }
+      
+      return saveData;
+    }
+  }
 };
 
 export default definition;

@@ -84,18 +84,32 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   // Reset settings when node changes
   React.useEffect(() => {
     if (node && node.data) {
-      // Initialize with current settings or defaults, merging direct properties and settings
-      const initialSettings: Record<string, any> = {
+      let initialSettings: Record<string, any> = {
         ...(node.data.settings || {}),
       };
       
-      // Check for direct properties that should be in settings (like workflowId)
-      if (node.type === 'embed_other_workflow' && node.data.workflowId) {
-        initialSettings.workflowId = node.data.workflowId.toString();
+      // Try to get the node's definition to check for custom initialization handlers
+      try {
+        const nodeType = node.type;
+        // Dynamically import the node's definition
+        import(`@/nodes/categories/System/${nodeType}/definition`).then((module) => {
+          // Check if the module has custom initialization handlers
+          if (module.nodeMetadata?.handlers?.initializeSettings) {
+            // Use the custom handler to initialize settings
+            const customSettings = module.nodeMetadata.handlers.initializeSettings(node.data);
+            if (customSettings) {
+              initialSettings = customSettings;
+              setSettings(customSettings);
+              console.log(`Used custom handler to initialize settings for ${nodeType}`);
+            }
+          }
+        }).catch(err => {
+          // No custom handler found, continue with default settings
+          console.log(`No custom initialization handler for ${nodeType}`);
+        });
+      } catch (error) {
+        // Silently continue with default initialization if dynamic import fails
       }
-      
-      // Handle node-specific initialization here in the future if needed
-      // The drawer should not have special cases for specific node types
       
       setSettings(initialSettings);
       setNodeName(node.data.label || '');
