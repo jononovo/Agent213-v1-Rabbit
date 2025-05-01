@@ -103,7 +103,7 @@ export const nodeMetadata = {
   // Add handlers for initialization and saving
   handlers: {
     // Initialize settings from node data, moving properties to settings if needed
-    initializeSettings: (nodeData) => {
+    initializeSettings: (nodeData: Record<string, any>) => {
       const settings = { ...(nodeData.settings || {}) };
       
       // Move workflowId from node data to settings if it exists
@@ -115,7 +115,7 @@ export const nodeMetadata = {
     },
     
     // Prepare final node data before saving
-    prepareSaveData: (settings, nodeProperties) => {
+    prepareSaveData: (settings: Record<string, any>, nodeProperties?: Record<string, any>) => {
       const saveData = { ...settings };
       
       // Add nodeProperties (like label and description)

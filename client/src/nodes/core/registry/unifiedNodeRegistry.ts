@@ -6,7 +6,7 @@
  * to ensure consistency across the entire application.
  */
 
-import { NodeDefinition, PortDefinition, NodeMetadata } from '../../types';
+import { NodeDefinition, PortDefinition, NodeMetadata } from '../types';
 import { EnhancedNodeExecutor, NodeExecutionData } from '../../../lib/types/workflow';
 
 // Integration node capabilities

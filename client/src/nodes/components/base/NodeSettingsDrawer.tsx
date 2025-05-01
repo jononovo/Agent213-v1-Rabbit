@@ -89,25 +89,28 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       };
       
       // Get the node definition from registry to check for custom initialization handlers
-      const nodeType = node.type;
-      const nodeDefinition = getNode(nodeType);
+      const nodeType = node.type || '';
       
-      // Check if the node has custom initialization handlers
-      if (nodeDefinition?.metadata?.handlers?.initializeSettings) {
-        try {
-          // Use the custom handler to initialize settings
-          const customSettings = nodeDefinition.metadata.handlers.initializeSettings(node.data);
-          if (customSettings) {
-            initialSettings = customSettings;
-            console.log(`Used custom handler to initialize settings for ${nodeType}`);
+      if (nodeType) {
+        const nodeDefinition = getNode(nodeType);
+        
+        // Check if the node has custom initialization handlers
+        if (nodeDefinition?.metadata?.handlers?.initializeSettings) {
+          try {
+            // Use the custom handler to initialize settings
+            const customSettings = nodeDefinition.metadata.handlers.initializeSettings(node.data);
+            if (customSettings) {
+              initialSettings = customSettings;
+              console.log(`Used custom handler to initialize settings for ${nodeType}`);
+            }
+          } catch (error) {
+            console.error(`Error using custom handler for ${nodeType}:`, error);
           }
-        } catch (error) {
-          console.error(`Error using custom handler for ${nodeType}:`, error);
-        }
-      } else {
-        // Fall back to default handling for specific node types
-        if (nodeType === 'embed_other_workflow' && node.data.workflowId) {
-          initialSettings.workflowId = node.data.workflowId.toString();
+        } else {
+          // Fall back to default handling for specific node types
+          if (nodeType === 'embed_other_workflow' && node.data.workflowId) {
+            initialSettings.workflowId = node.data.workflowId.toString();
+          }
         }
       }
       
