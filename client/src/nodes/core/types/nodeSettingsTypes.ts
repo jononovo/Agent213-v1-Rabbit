@@ -17,7 +17,8 @@ export const SettingType = {
   RADIO: 'radio',
   PASSWORD: 'password',
   JSON: 'json',
-  WORKFLOW: 'workflow_selector'
+  WORKFLOW: 'workflow_selector',
+  MULTISELECT: 'multiselect'
 } as const;
 
 export type SettingFieldType = typeof SettingType[keyof typeof SettingType];
@@ -38,11 +39,6 @@ export interface SettingField {
   max?: number;      // Maximum value (for number fields)
   step?: number;     // Step value (for number fields)
   showWhen?: (settings: Record<string, any>) => boolean; // Conditional display function
-  
-  // Special flags for external data requirements
-  requiresAgents?: boolean;     // Field requires agent data to be loaded
-  requiresWorkflows?: boolean;  // Field requires workflow data to be loaded
-  requiresIntegrations?: boolean; // Field requires integration data to be loaded
 }
 
 /**
