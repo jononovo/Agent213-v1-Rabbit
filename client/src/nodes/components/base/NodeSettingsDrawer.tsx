@@ -62,7 +62,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   node,
   onSettingsChange,
 }) => {
-  const [activeTab, setActiveTab] = React.useState<TabType>('properties');
+  const [activeTab, setActiveTab] = React.useState<TabType>('settings');
   const [settings, setSettings] = React.useState<Record<string, any>>({});
   const [nodeName, setNodeName] = React.useState('');
   const [nodeDescription, setNodeDescription] = React.useState('');
@@ -250,41 +250,33 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       return transformedSettings;
     }
     
-    // Fall back to default settings for internal nodes that don't have definition files yet
+    // Fall back to generic settings for special internal nodes without definition files
     if (type && type.startsWith('internal_') && !hasNode(type)) {
+      // Create a minimal set of basic controls for internal system nodes
       return [
         {
-          id: 'eventType',
-          label: 'Event Type',
-          type: SettingType.SELECT,
-          placeholder: 'Select event type',
-          description: 'The type of system event this node responds to.',
-          options: [
-            { value: 'ui_action', label: 'UI Action' },
-            { value: 'system_event', label: 'System Event' },
-            { value: 'scheduled', label: 'Scheduled Task' },
-            { value: 'manual', label: 'Manual Trigger' }
-          ]
+          id: 'name',
+          label: 'Node Name',
+          type: SettingType.TEXT,
+          placeholder: 'Enter internal node name',
+          description: 'Internal identifier for this system node.'
         },
         {
-          id: 'priority',
-          label: 'Priority Level',
+          id: 'enabled',
+          label: 'Enabled',
           type: SettingType.SELECT,
-          placeholder: 'Select priority',
-          description: 'Execution priority for this internal operation.',
+          description: 'Whether this internal node is active.',
           options: [
-            { value: 'low', label: 'Low' },
-            { value: 'medium', label: 'Medium' },
-            { value: 'high', label: 'High' },
-            { value: 'critical', label: 'Critical' }
+            { value: 'true', label: 'Yes' },
+            { value: 'false', label: 'No' }
           ]
         },
         {
           id: 'customConfig',
-          label: 'Custom Configuration',
+          label: 'Configuration',
           type: SettingType.TEXTAREA,
-          placeholder: 'Enter any custom configuration as JSON...',
-          description: 'Additional configuration options in JSON format.'
+          placeholder: 'Enter any configuration as JSON...',
+          description: 'Additional configuration in JSON format.'
         }
       ];
     }

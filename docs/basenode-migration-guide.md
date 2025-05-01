@@ -521,6 +521,59 @@ const customHandles = (
 - Check the theme settings for custom colors
 - Use the same icon size and background styling as other nodes
 
+### 6. Dynamic Field Options Not Loading
+
+**Problem**: Dropdown options or other dynamic content doesn't load in the settings drawer.
+
+**Solutions**:
+- Implement the `loadFieldOptions` handler in your node's metadata
+- Use async/await pattern to fetch data properly
+- Always return a copy of the fields array, not the original
+- Add proper error handling with fallback to original fields
+- Check browser console for network errors
+- Verify the correct field keys/ids are being targeted
+
+**Example fix**:
+```typescript
+// Add to your node definition's metadata
+metadata: {
+  tags: ['example', 'node'],
+  color: '#4B5563',
+  handlers: {
+    // Other handlers...
+    
+    // Load dynamic options for fields
+    loadFieldOptions: async (fields: SettingField[]): Promise<SettingField[]> => {
+      try {
+        // Fetch your data
+        const response = await fetch('/api/workflows');
+        if (!response.ok) throw new Error('Failed to fetch data');
+        const data = await response.json();
+        
+        // Create a copy of the fields array (important!)
+        const updatedFields = [...fields];
+        
+        // Update any field that needs options
+        updatedFields.forEach(field => {
+          // Match by key or id (handle both cases)
+          if (field.key === 'targetField' || field.id === 'targetField') {
+            field.options = data.map(item => ({
+              value: item.id.toString(),
+              label: item.name
+            }));
+          }
+        });
+        
+        return updatedFields;
+      } catch (error) {
+        console.error('Error loading field options:', error);
+        // Always return the original fields on error
+        return fields;
+      }
+    }
+  }
+}
+
 ### 6. Type Errors in Node Properties
 
 **Problem**: TypeScript errors when accessing node properties.

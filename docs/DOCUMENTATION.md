@@ -294,6 +294,12 @@ The Default node implementation serves as both a template and extension point fo
      - Local settings drawer (within the node component)
      - Global settings drawer (using a global event system)
    - Setting useGlobalSettingsOnly=true enforces use of the global drawer
+   - Nodes can implement NodeSettingsHandlers in their metadata:
+     - initializeSettings: Transform node data into settings
+     - handleSettingChange: Handle setting value changes
+     - prepareSaveData: Prepare final data for saving
+     - loadFieldOptions: Dynamically fetch and populate dropdown options
+   - Self-sufficient node pattern allows nodes to fetch their own required data
 
 8. **Hover Menu Pattern**:
    - Customizable hover menu appears after short delay (400ms)
